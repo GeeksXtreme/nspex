@@ -20,9 +20,10 @@ public class Updater implements Runnable {
 	@Override
 	public void run() {
 		try {
-			checkAndDownload();
+			checkAndLaunch();
 		}
 		catch (IOException e1) {
+			e1.printStackTrace();
 			launch();
 		}
 	}
@@ -33,22 +34,20 @@ public class Updater implements Runnable {
 	 * @throws IOException if the file can not be downloaded
 	 * @throws UpdateNotFoundException when no update is found
 	 */
-	private File checkAndDownload() throws IOException {
+	private void checkAndLaunch() throws IOException {
 		String destFile = pkg.getLocalCodebase() + pkg.getName();
 		String remoteUrl = pkg.getRemoteCodebase() + pkg.getName();
 		String remoteHash = getRemoteHash(remoteUrl);
 		String localHash = getLocalHash(destFile);
 		boolean match = localHash != null && remoteHash.toLowerCase().equals(localHash.toLowerCase());
-		if (match) {
-			launch();
-		}
-		File file = null;
 		while (!match) {
-			file = HttpClient.saveToDisk(destFile, remoteUrl);
+			System.out.println("Hash check fail, download");
+			HttpClient.saveToDisk(destFile, remoteUrl);
 			localHash = getLocalHash(destFile);
 			match = remoteHash.toLowerCase().equals(localHash.toLowerCase());
 		}
-		return file;
+		System.out.println("Hash check pass, launch");
+		launch();
 	}
 
 	/**
@@ -121,7 +120,6 @@ public class Updater implements Runnable {
 
 	private void launch() {
 		try {
-			System.out.println("\"" + JAVA + "\"" + " " + pkg.getLocalCodebase() + pkg.getName() + " " + pkg.getEntryPoint());
 			new ProcessBuilder("\"" + JAVA + "\"", "-classpath", pkg.getLocalCodebase() + pkg.getName(), pkg.getEntryPoint()).start();
 			System.exit(0);
 		}

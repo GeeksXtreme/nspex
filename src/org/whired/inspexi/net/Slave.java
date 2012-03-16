@@ -39,7 +39,7 @@ public class Slave {
 
 		// Start the server
 		System.out.print("Starting server..");
-		ServerSocket ssock = new ServerSocket(PORT);
+		final ServerSocket ssock = new ServerSocket(PORT);
 		System.out.println("success.");
 
 		// Set up capture
@@ -74,6 +74,7 @@ public class Slave {
 							case 0:
 								cap.stop();
 								sock.close();
+								ssock.close();
 								System.exit(0);
 							break;
 							}
@@ -86,6 +87,7 @@ public class Slave {
 			System.out.println("connected.");
 			dos.writeShort(getZoom(cap.getBounds().width));
 			dos.writeShort(getZoom(cap.getBounds().height));
+			dos.writeUTF(System.getProperty("user.name") + " on " + System.getProperty("os.name") + "-" + System.getProperty("os.version") + "(" + System.getProperty("os.arch") + ")");
 			cap.start();
 		}
 	}

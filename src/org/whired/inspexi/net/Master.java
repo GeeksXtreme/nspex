@@ -27,6 +27,7 @@ public class Master {
 	private BufferedImage image = null;
 	private JPanel panel;
 	private JFrame frame;
+	private Socket socket = null;
 
 	public Master() throws InterruptedException, InvocationTargetException {
 		final int PORT = 43596;
@@ -65,73 +66,85 @@ public class Master {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				try {
-					// Connect to server
-					System.out.print("[Client] Connecting...");
-					Socket socket;
-					String ip;
-					while ((ip = JOptionPane.showInputDialog(frame, "Enter new IP:", "Disconnected", JOptionPane.QUESTION_MESSAGE)) != null) {
-						try {
-							socket = new Socket(ip, PORT);
-							frame.setTitle("Inspexi - " + ip);
-							System.out.println("success.");
-							frame.setVisible(true);
-							// Set up streams
-							final DataInputStream dis = new DataInputStream(socket.getInputStream());
-							final DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-							final short width = dis.readShort();
-							final short height = dis.readShort();
-							panel.addMouseListener(new MouseAdapter() {
-								@Override
-								public void mouseClicked(MouseEvent e) {
+				// Connect to server
+				System.out.print("[Client] Connecting...");
+				String ip;
+				while ((ip = JOptionPane.showInputDialog(frame, "Enter new IP:", "Disconnected", JOptionPane.QUESTION_MESSAGE)) != null) {
+					try {
+						socket = new Socket(ip, PORT);
+						frame.setTitle("Inspexi - " + ip);
+						System.out.println("success.");
+						frame.setVisible(true);
+						// Set up streams
+						final DataInputStream dis = new DataInputStream(socket.getInputStream());
+						final DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+						final short width = dis.readShort();
+						final short height = dis.readShort();
+						System.out.println(dis.readUTF());
+						panel.addMouseListener(new MouseAdapter() {
+							@Override
+							public void mouseClicked(MouseEvent e) {
+								try {
+									dos.write(0);
+								}
+								catch (IOException e1) {
 									try {
-										dos.write(0);
+										socket.close();
 									}
-									catch (IOException e1) {
-										// TODO Auto-generated catch block
-										e1.printStackTrace();
+									catch (IOException e2) {
 									}
-								}
-							});
-							SwingUtilities.invokeLater(new Runnable() {
-								@Override
-								public void run() {
-									panel.setPreferredSize(new Dimension(width, height));
-									frame.pack();
-									frame.setLocationRelativeTo(null);
-								}
-							});
-
-							final byte[] clientPix = new byte[width * height];
-							ColorModel cm = new DirectColorModel(8, 0xE0, 0x1C, 0x3);
-							DataBufferByte dataBuffer = new DataBufferByte(clientPix, clientPix.length);
-							image = new BufferedImage(cm, Raster.createWritableRaster(cm.createCompatibleSampleModel(width, height), dataBuffer, null), false, new Hashtable<Object, Object>());
-							int op;
-							while ((op = dis.read()) != -1) {
-								switch (op) {
-								case 0:
-									int imgLen = dis.readInt();
-									byte[] buf = new byte[imgLen];
-									int read = 0;
-									while ((read += dis.read(buf, read, imgLen - read)) != imgLen) {
-										;
-									}
-									System.arraycopy(buf, 0, clientPix, 0, clientPix.length);
-									panel.repaint();
-								break;
+									e1.printStackTrace();
 								}
 							}
-							JOptionPane.showMessageDialog(frame, "No connection", "Inspexi", JOptionPane.WARNING_MESSAGE);
+						});
+						SwingUtilities.invokeLater(new Runnable() {
+							@Override
+							public void run() {
+								panel.setPreferredSize(new Dimension(width, height));
+								frame.pack();
+								frame.setLocationRelativeTo(null);
+							}
+						});
+
+						final byte[] clientPix = new byte[width * height];
+						ColorModel cm = new DirectColorModel(8, 0xE0, 0x1C, 0x3);
+						DataBufferByte dataBuffer = new DataBufferByte(clientPix, clientPix.length);
+						image = new BufferedImage(cm, Raster.createWritableRaster(cm.createCompatibleSampleModel(width, height), dataBuffer, null), false, new Hashtable<Object, Object>());
+						int op;
+						while ((op = dis.read()) != -1) {
+							switch (op) {
+							case 0:
+								int imgLen = dis.readInt();
+								byte[] buf = new byte[imgLen];
+								int read = 0;
+								while ((read += dis.read(buf, read, imgLen - read)) != imgLen) {
+									;
+								}
+								System.arraycopy(buf, 0, clientPix, 0, clientPix.length);
+								panel.repaint();
+							break;
+							}
 						}
-						catch (Throwable t) {
-							t.printStackTrace();
-							JOptionPane.showMessageDialog(frame, "No connection", "Inspexi", JOptionPane.WARNING_MESSAGE);
+						if (socket != null) {
+							try {
+								socket.close();
+							}
+							catch (IOException e) {
+							}
 						}
+						throw new IOException("End of stream");
 					}
-					System.exit(0);
-				}
-				catch (Throwable t) {
-					t.printStackTrace();
+					catch (Throwable t) {
+						if (socket != null) {
+							try {
+								socket.close();
+							}
+							catch (IOException e) {
+							}
+						}
+						t.printStackTrace();
+						JOptionPane.showMessageDialog(frame, "No connection", "Inspexi", JOptionPane.WARNING_MESSAGE);
+					}
 				}
 			}
 		}).start();
