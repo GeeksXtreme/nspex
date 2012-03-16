@@ -21,5 +21,6 @@
 			</manifest>
 			<zipgroupfileset dir="lib" includes="*.jar" />
 		</jar>
+		<checksum file="${slv}" />
 	</target>
 </project>
