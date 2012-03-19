@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project name="ghost" default="default" basedir=".">
-	<description>Builds, tests, and runs the project ghost.</description>
+	<description>Builds, tests, and runs the project.</description>
 	<target name="default">
 
 		<property name="updt" value="dist/ispx_updt.jar" />
 		<property name="slv" value="dist/ispx_slv.jar" />
-		
+		<property name="mstr" value="dist/ispx_mstr.jar" />
+
 		<delete file="${updt}" />
 		<jar destfile="${updt}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/inspexi/updater/**">
 			<manifest>
@@ -15,12 +16,19 @@
 		</jar>
 
 		<delete file="${slv}" />
-		<jar destfile="${slv}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/inspexi/net/Slave* org/whired/inspexi/tools/**">
+		<jar destfile="${slv}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/inspexi/slave/** org/whired/inspexi/tools/**">
 			<manifest>
-				<attribute name="Main-Class" value="org.whired.inspexi.net.Slave" />
+				<attribute name="Main-Class" value="org.whired.inspexi.slave.LocalSlave" />
 			</manifest>
 			<zipgroupfileset dir="lib" includes="*.jar" />
 		</jar>
 		<checksum file="${slv}" />
+
+		<delete file="${mstr}" />
+		<jar destfile="${mstr}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/inspexi/master/** org/whired/inspexi/tools/**">
+			<manifest>
+				<attribute name="Main-Class" value="org.whired.inspexi.master.Master" />
+			</manifest>
+		</jar>
 	</target>
 </project>

@@ -6,13 +6,18 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
-import java.awt.image.DirectColorModel;
-import java.awt.image.Raster;
-import java.util.Hashtable;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Locale;
 
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
@@ -25,86 +30,89 @@ import com.sun.jna.platform.win32.WinDef.RECT;
 import com.sun.jna.platform.win32.WinGDI;
 import com.sun.jna.platform.win32.WinGDI.BITMAPINFO;
 
-public class JNARobot implements Robot {
+public class JNARobot extends Robot {
 
-	private static final double ZOOM = .70f;
-	private final Rectangle bounds;
-	private final HWND desktop = User32.INSTANCE.GetDesktopWindow();
+	private static final HWND desktop = User32.INSTANCE.GetDesktopWindow();
 	private final HDC hdcWindow;
 	private final HDC hdcMemDC;
 	private final RECT wBounds = new RECT();
 	private final BufferedImage unscaled;
 	private final int[] unscaledPix;
 	private final BufferedImage scaled;
-	private final int[] scaledPix;
 	private final Graphics2D graphics;
 	private final HBITMAP hBitmap;
 	private final BITMAPINFO bmi = new BITMAPINFO();
 	private final Memory buffer;
+	private final JPEGImageWriteParam iwparam = new JPEGImageWriteParam(new Locale("en"));
+	private ImageWriter writer;
+	private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-	public JNARobot(Rectangle bounds) {
-		if (bounds == null) {
-			bounds = getScreenBounds();
-		}
-		this.bounds = bounds;
+	public JNARobot(Rectangle bounds, double zoom) {
+		super(bounds, zoom);
 		hdcWindow = User32.INSTANCE.GetDC(desktop);
 		hdcMemDC = GDI32.INSTANCE.CreateCompatibleDC(hdcWindow);
-		wBounds.right = bounds.x + bounds.width;
-		wBounds.left = bounds.x;
-		wBounds.top = bounds.y;
-		wBounds.bottom = bounds.y + bounds.height;
-		unscaled = new BufferedImage(bounds.width, bounds.height, BufferedImage.TYPE_INT_RGB);
+		wBounds.right = getBounds().x + getBounds().width;
+		wBounds.left = getBounds().x;
+		wBounds.top = getBounds().y;
+		wBounds.bottom = getBounds().y + getBounds().height;
+		unscaled = new BufferedImage(getBounds().width, getBounds().height, BufferedImage.TYPE_INT_RGB);
 		unscaledPix = ((DataBufferInt) unscaled.getRaster().getDataBuffer()).getData();
-		scaled = new BufferedImage(getZoom(bounds.width), getZoom(bounds.height), BufferedImage.TYPE_INT_RGB);
-		scaledPix = ((DataBufferInt) scaled.getRaster().getDataBuffer()).getData();
+		scaled = new BufferedImage(getZoom(getBounds().width), getZoom(getBounds().height), BufferedImage.TYPE_INT_RGB);
 		graphics = scaled.createGraphics();
 		graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
 		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-		hBitmap = GDI32.INSTANCE.CreateCompatibleBitmap(hdcWindow, bounds.width, bounds.height);
+		hBitmap = GDI32.INSTANCE.CreateCompatibleBitmap(hdcWindow, getBounds().width, getBounds().height);
 		GDI32.INSTANCE.SelectObject(hdcMemDC, hBitmap);
-		bmi.bmiHeader.biWidth = bounds.width;
-		bmi.bmiHeader.biHeight = -bounds.height;
+		bmi.bmiHeader.biWidth = getBounds().width;
+		bmi.bmiHeader.biHeight = -getBounds().height;
 		bmi.bmiHeader.biPlanes = 1;
 		bmi.bmiHeader.biBitCount = 32;
 		bmi.bmiHeader.biCompression = WinGDI.BI_RGB;
-		buffer = new Memory(bounds.width * bounds.height * 4);
+		buffer = new Memory(getBounds().width * getBounds().height * 4);
+		iwparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+		iwparam.setCompressionQuality(.8F);
+		Iterator<ImageWriter> iter = ImageIO.getImageWritersByFormatName("jpg");
+		if (iter.hasNext()) {
+			writer = iter.next();
+		}
+		try {
+			writer.setOutput(ImageIO.createImageOutputStream(bos));
+		}
+		catch (IOException e1) {
+			e1.printStackTrace();
+		}
 	}
 
-	public JNARobot() {
-		this(null);
+	public JNARobot(double zoom) {
+		this(null, zoom);
 	}
 
 	@Override
 	public byte[] getBytePixels() {
-		long start = System.currentTimeMillis();
-		GDI32.INSTANCE.BitBlt(hdcMemDC, 0, 0, bounds.width, bounds.height, hdcWindow, 0, 0, GDI32.SRCCOPY);
+		GDI32.INSTANCE.BitBlt(hdcMemDC, 0, 0, getBounds().width, getBounds().height, hdcWindow, 0, 0, GDI32.SRCCOPY);
+		GDI32.INSTANCE.GetDIBits(hdcWindow, hBitmap, 0, getBounds().height, buffer, bmi, WinGDI.DIB_RGB_COLORS);
 
-		GDI32.INSTANCE.GetDIBits(hdcWindow, hBitmap, 0, bounds.height, buffer, bmi, WinGDI.DIB_RGB_COLORS);
-
-		int[] toCompress = buffer.getIntArray(0, bounds.width * bounds.height);
+		int[] toCompress = buffer.getIntArray(0, getBounds().width * getBounds().height);
 		System.arraycopy(toCompress, 0, unscaledPix, 0, toCompress.length);
 
 		graphics.drawImage(unscaled, 0, 0, scaled.getWidth(), scaled.getHeight(), 0, 0, unscaled.getWidth(), unscaled.getHeight(), null);
 
-		byte[] pixels = new byte[scaledPix.length];
-		for (int i1 = 0; i1 < scaledPix.length; i1++) {
-			int c = scaledPix[i1] & 0xFFFFFF;
-			int r = (c >> 16 & 0xFF) / 36;
-			int g = (c >> 8 & 0xFF) / 36;
-			int b = (c & 0xFF) / 85;
-			pixels[i1] = (byte) ((r << 5) + (g << 2) + b);
+		try {
+			writer.write(null, new IIOImage(scaled, null, null), iwparam);
 		}
-		System.out.println(System.currentTimeMillis() - start);
-		return pixels;
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+		byte[] toReturn = bos.toByteArray();
+		bos.reset();
+		return toReturn;
 	}
 
-	public static void main(String[] args) {
-		JNARobot t = new JNARobot();
+	public static void main(String[] args) throws IOException {
+		JNARobot t = new JNARobot(.7D);
 		for (int i = 0; i < 5; i++) {
-			byte[] clientPix = t.getBytePixels();
-			ColorModel cm = new DirectColorModel(8, 0xE0, 0x1C, 0x3);
-			DataBufferByte dataBuffer = new DataBufferByte(clientPix, clientPix.length);
-			final BufferedImage image = new BufferedImage(cm, Raster.createWritableRaster(cm.createCompatibleSampleModel(getZoom(t.bounds.width), getZoom(t.bounds.height)), dataBuffer, null), false, new Hashtable<Object, Object>());
+			byte[] compressed = t.getBytePixels();
+			final BufferedImage image = ImageIO.read(new ByteArrayInputStream(compressed));
 			JFrame frame = new JFrame("Inspexi JNA");
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.setAlwaysOnTop(true);
@@ -137,10 +145,6 @@ public class JNARobot implements Robot {
 		RECT wBounds = new RECT();
 		User32.INSTANCE.GetWindowRect(desktop, wBounds);
 		return new Rectangle(wBounds.left, wBounds.top, wBounds.right - wBounds.left, wBounds.bottom - wBounds.top);
-	}
-
-	public static int getZoom(int orig) {
-		return (int) (orig * ZOOM);
 	}
 
 	private interface GDI32 extends com.sun.jna.platform.win32.GDI32 {

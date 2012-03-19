@@ -57,6 +57,7 @@ public class Updater implements Runnable {
 	 * @return the hash that was read
 	 */
 	private String getRemoteHash(String url) throws IOException {
+		System.out.println(url);
 		BufferedReader br = new BufferedReader(new InputStreamReader(HttpClient.getStream(url + ".MD5")));
 		StringBuilder sb = new StringBuilder();
 		String line;
@@ -101,7 +102,7 @@ public class Updater implements Runnable {
 	}
 
 	/**
-	 * Converts an array of bytes to a hexidecimal string
+	 * Converts an array of bytes to a hexadecimal string
 	 * 
 	 * @param bytes the bytes to convert
 	 * @return the resulting string
@@ -120,10 +121,14 @@ public class Updater implements Runnable {
 
 	private void launch() {
 		try {
-			new ProcessBuilder("\"" + JAVA + "\"", "-classpath", pkg.getLocalCodebase() + pkg.getName(), pkg.getEntryPoint()).start();
-			System.exit(0);
+			System.out.println("Exec: " + JAVA + " -classpath " + pkg.getLocalCodebase() + pkg.getName() + " " + pkg.getEntryPoint());
+			new ProcessBuilder(JAVA, "-classpath", pkg.getLocalCodebase() + pkg.getName(), pkg.getEntryPoint()).start();
 		}
 		catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+
+		System.exit(0);
 	}
 }

@@ -30,7 +30,7 @@ public class Package {
 		if (!f.exists()) {
 			f.mkdirs();
 		}
-		return f.getAbsolutePath() + FS;
+		return localCodebase;
 	}
 
 	public String getEntryPoint() {

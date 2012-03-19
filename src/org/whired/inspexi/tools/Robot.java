@@ -2,8 +2,27 @@ package org.whired.inspexi.tools;
 
 import java.awt.Rectangle;
 
-public interface Robot {
-	byte[] getBytePixels();
+public abstract class Robot {
+	private final Rectangle bounds;
+	private final double zoom;
 
-	Rectangle getScreenBounds();
+	protected Robot(Rectangle bounds, double zoom) {
+		if (bounds == null) {
+			bounds = getScreenBounds();
+		}
+		this.bounds = bounds;
+		this.zoom = zoom;
+	}
+
+	public abstract byte[] getBytePixels();
+
+	public abstract Rectangle getScreenBounds();
+
+	public int getZoom(int orig) {
+		return (int) (orig * zoom);
+	}
+
+	public Rectangle getBounds() {
+		return this.bounds;
+	}
 }

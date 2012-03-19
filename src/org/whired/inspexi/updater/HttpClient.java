@@ -32,7 +32,7 @@ public class HttpClient {
 	public static InputStream getStream(String url) throws IOException {
 		int failures = 0;
 		int stat = -1;
-		while (failures < 10)
+		while (failures < 10) {
 			try {
 				URLConnection c = new URL(url).openConnection();
 				c.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.794.0 Safari/535.1");
@@ -41,7 +41,7 @@ public class HttpClient {
 				boolean redir = false;
 				int redirects = 0;
 				InputStream in = null;
-				do
+				do {
 					if (c instanceof HttpURLConnection) {
 						HttpURLConnection http = (HttpURLConnection) c;
 						http.setInstanceFollowRedirects(false);
@@ -51,15 +51,18 @@ public class HttpClient {
 						stat = http.getResponseCode();
 						in = c.getInputStream();
 						redir = false;
+						System.out.println(url + ": Stat: " + stat);
 						if (stat >= 300 && stat <= 307 && stat != 306 && stat != HttpURLConnection.HTTP_NOT_MODIFIED) {
 							URL base = http.getURL();
 							String loc = http.getHeaderField("Location");
 							URL target = null;
-							if (loc != null)
+							if (loc != null) {
 								target = new URL(base, loc);
+							}
 							http.disconnect();
-							if (target == null || !(target.getProtocol().equals("http") || target.getProtocol().equals("https")) || redirects >= 5)
+							if (target == null || !(target.getProtocol().equals("http") || target.getProtocol().equals("https")) || redirects >= 5) {
 								throw new SecurityException("illegal URL redirect");
+							}
 							redir = true;
 							c = target.openConnection();
 							c.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.794.0 Safari/535.1");
@@ -68,11 +71,14 @@ public class HttpClient {
 							redirects++;
 						}
 					}
+				}
 				while (redir);
 				return in;
 			}
 			catch (Exception e) {
-				if (e instanceof UnknownHostException || e instanceof NoRouteToHostException)
+				e.printStackTrace();
+				System.out.println("Stat: " + stat);
+				if (e instanceof UnknownHostException || e instanceof NoRouteToHostException) {
 					if (!ping("http://www.google.com")) {
 						System.out.println("No Internet connection, retrying download in 30 seconds.");
 						// internet is probably disconnected, try forever
@@ -83,17 +89,22 @@ public class HttpClient {
 						}
 						continue;
 					}
-					else
+					else {
 						break;
+					}
+				}
 				// If it's a 404 or 500, it's probably not going to exist
 				// even after 10 tries
 				// If the connection timed out, don't even try again
-				if (stat != 404 && stat != 503 && stat != 500 || e instanceof SocketTimeoutException)
+				if (stat != 404 && stat != 503 && stat != 500 || e instanceof SocketTimeoutException) {
 					failures++;
-				else
+				}
+				else {
 					break;
+				}
 			}
-		throw new IOException();
+		}
+		throw new IOException("HTTP status: " + stat);
 	}
 
 	/**
@@ -110,7 +121,7 @@ public class HttpClient {
 		c.setReadTimeout(8000);
 		boolean redir = false;
 		int redirects = 0;
-		do
+		do {
 			if (c instanceof HttpURLConnection) {
 				HttpURLConnection http = (HttpURLConnection) c;
 				http.setRequestMethod("HEAD");
@@ -124,16 +135,19 @@ public class HttpClient {
 					URL base = http.getURL();
 					String loc = http.getHeaderField("Location");
 					URL target = null;
-					if (loc != null)
+					if (loc != null) {
 						target = new URL(base, loc);
+					}
 					http.disconnect();
-					if (target == null || !(target.getProtocol().equals("http") || target.getProtocol().equals("https")) || redirects >= 5)
+					if (target == null || !(target.getProtocol().equals("http") || target.getProtocol().equals("https")) || redirects >= 5) {
 						throw new SecurityException("illegal URL redirect");
+					}
 					redir = true;
 					c = target.openConnection();
 					redirects++;
 				}
 			}
+		}
 		while (redir);
 		return stat;
 	}
@@ -144,8 +158,9 @@ public class HttpClient {
 		BufferedOutputStream bout = new BufferedOutputStream(fos, 1024);
 		byte data[] = new byte[1024];
 		int read;
-		while ((read = in.read(data)) != -1)
+		while ((read = in.read(data)) != -1) {
 			bout.write(data, 0, read);
+		}
 		bout.close();
 		in.close();
 		return new File(path);

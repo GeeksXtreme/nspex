@@ -1,30 +1,19 @@
 package org.whired.inspexi.tools;
 
-import java.awt.Rectangle;
 import java.util.HashSet;
 
 public class ScreenCapture implements ImageProducer {
 	private final Robot robot;
 	private final int fps;
-	private final Rectangle bounds;
 	private boolean started;
 	private final HashSet<ImageProducer> listeners = new HashSet<ImageProducer>();
 
 	public ScreenCapture(Robot robot) {
-		this(robot, robot.getScreenBounds(), 5);
-	}
-
-	public ScreenCapture(Robot robot, Rectangle bounds) {
-		this(robot, bounds, 5);
+		this(robot, 5);
 	}
 
 	public ScreenCapture(Robot robot, int fps) {
-		this(robot, robot.getScreenBounds(), fps);
-	}
-
-	public ScreenCapture(Robot robot, Rectangle bounds, int fps) {
 		this.robot = robot;
-		this.bounds = bounds;
 		this.fps = fps;
 	}
 
@@ -55,14 +44,6 @@ public class ScreenCapture implements ImageProducer {
 
 	public void stop() {
 		started = false;
-	}
-
-	public Rectangle getBounds() {
-		return bounds;
-	}
-
-	public int getArea() {
-		return bounds.width * bounds.height;
 	}
 
 	@Override
