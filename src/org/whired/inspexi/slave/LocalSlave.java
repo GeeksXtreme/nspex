@@ -22,8 +22,9 @@ public class LocalSlave extends Slave {
 	private DataOutputStream dos = null;
 	private DataInputStream dis = null;
 	private ServerSocket ssock = null;
+	private Socket sock;
 
-	public LocalSlave() throws IOException, AWTException {
+	public LocalSlave() throws AWTException, IOException {
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -74,67 +75,80 @@ public class LocalSlave extends Slave {
 			}
 		});
 		while (true) {
-			System.out.print("Waiting for connection..");
-			final Socket sock = ssock.accept();
-			dos = new DataOutputStream(sock.getOutputStream());
-			dis = new DataInputStream(sock.getInputStream());
-			System.out.println("connected.");
+			try {
+				System.out.print("Waiting for connection..");
+				sock = ssock.accept();
+				dos = new DataOutputStream(sock.getOutputStream());
+				dis = new DataInputStream(sock.getInputStream());
+				System.out.println("connected.");
 
-			// Read intent before doing anything
-			int intent = dis.read();
+				// Read intent before doing anything
+				int intent = dis.read();
+				if (intent == -1) {
+					throw new IOException("End of stream");
+				}
 
-			if (intent == INTENT_REBUILD) {
-				ssock.close();
-				System.exit(0);
-			}
-			else if (intent == INTENT_CHECK || intent == INTENT_CONNECT) {
-				dos.writeUTF(getHost());
-				dos.writeUTF(getOS());
-				dos.writeUTF(getVersion());
-			}
-			if (intent == INTENT_CONNECT) {
-				dos.writeShort(robot.getZoom(robot.getBounds().width));
-				dos.writeShort(robot.getZoom(robot.getBounds().height));
+				if (intent == INTENT_REBUILD) {
+					ssock.close();
+					System.exit(0);
+				}
+				else if (intent == INTENT_CHECK || intent == INTENT_CONNECT) {
+					dos.writeUTF(getHost());
+					dos.writeUTF(getOS());
+					dos.writeUTF(getVersion());
+				}
+				if (intent == INTENT_CONNECT) {
+					dos.writeShort(robot.getZoom(robot.getBounds().width));
+					dos.writeShort(robot.getZoom(robot.getBounds().height));
 
-				new Thread(new Runnable() {
-					@Override
-					public void run() {
-						try {
-							int op;
-							while ((op = dis.read()) != -1) {
-								System.out.println("op: " + op);
-								switch (op) {
-								case INTENT_REBUILD:
-									cap.stop();
-									ssock.close();
-									System.exit(0);
-								break;
-								case OP_DO_COMMAND:
-									String cmd = dis.readUTF();
-									System.out.print("EXEC: " + cmd + "..");
-									String[] args = cmd.split(" ");
-									try {
-										new ProcessBuilder(args).start();
-										System.out.println("success.");
+					new Thread(new Runnable() {
+						@Override
+						public void run() {
+							try {
+								int op;
+								while ((op = dis.read()) != -1) {
+									System.out.println("op: " + op);
+									switch (op) {
+									case INTENT_REBUILD:
+										cap.stop();
+										ssock.close();
+										System.exit(0);
+									break;
+									case OP_DO_COMMAND:
+										String cmd = dis.readUTF();
+										System.out.print("EXEC: " + cmd + "..");
+										String[] args = cmd.split(" ");
+										try {
+											new ProcessBuilder(args).start();
+											System.out.println("success.");
+										}
+										catch (Throwable t) {
+											System.out.println("fail.");
+										}
+
+									break;
 									}
-									catch (Throwable t) {
-										System.out.println("fail.");
-									}
-
-								break;
+								}
+							}
+							catch (Throwable t) {
+								try {
+									sock.close();
+								}
+								catch (IOException e) {
 								}
 							}
 						}
-						catch (Throwable t) {
-							try {
-								sock.close();
-							}
-							catch (IOException e) {
-							}
-						}
-					}
-				}).start();
-				cap.start();
+					}).start();
+					cap.start();
+
+				}
+			}
+			catch (IOException e) {
+				try {
+					sock.close();
+				}
+				catch (IOException e1) {
+				}
 			}
 		}
 	}

@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Calendar;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -29,7 +31,8 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
 
-import org.whired.inspexi.logging.LogFormatter;
+import org.whired.inspexi.tools.logging.Log;
+import org.whired.inspexi.tools.logging.LogFormatter;
 
 public class MasterFrame extends JFrame implements EventListener {
 
@@ -174,6 +177,25 @@ public class MasterFrame extends JFrame implements EventListener {
 		pane.setEditable(false);
 		pane.setFont(font);
 
+		final LogFormatter formatter = new LogFormatter();
+		Log.l.addHandler(new Handler() {
+
+			@Override
+			public void publish(final LogRecord record) {
+				if (isLoggable(record)) {
+					updateTextArea(pane, formatter.format(record), true);
+				}
+			}
+
+			@Override
+			public void flush() {
+			}
+
+			@Override
+			public void close() throws SecurityException {
+			}
+		});
+
 		OutputStream out = new OutputStream() {
 			@Override
 			public void write(int b) throws IOException {
@@ -192,7 +214,7 @@ public class MasterFrame extends JFrame implements EventListener {
 		};
 		PrintStream p = new PrintStream(out, true);
 		System.setOut(p);
-		// System.setErr(p);
+		System.setErr(p);
 
 		scrollPane_1.setViewportView(pane);
 		scrollPane_1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);

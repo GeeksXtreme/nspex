@@ -10,8 +10,8 @@ import java.util.Properties;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import org.whired.inspexi.logging.Log;
 import org.whired.inspexi.tools.Slave;
+import org.whired.inspexi.tools.logging.Log;
 
 public class Master {
 	private MasterFrame frame;
@@ -20,14 +20,13 @@ public class Master {
 		public void connect(final String[] ips) {
 			for (final String ip : ips) {
 				try {
-					RemoteSlave slave = new RemoteSlave(ip, 43596, Slave.INTENT_CONNECT, new SessionListener() {
+					new RemoteSlave(ip, 43596, Slave.INTENT_CONNECT, new SessionListener() {
 						@Override
 						public void sessionEnded(String reason) {
 							Log.l.info("Session with " + ip + " ended: " + reason);
 						}
 
 					});
-					slave.beginSession();
 				}
 				catch (Throwable t) {
 					t.printStackTrace();
@@ -45,7 +44,7 @@ public class Master {
 							Log.l.info("Session with " + ip + " ended: " + reason);
 						}
 
-					}).beginSession();
+					});
 				}
 				catch (Throwable t) {
 					t.printStackTrace();

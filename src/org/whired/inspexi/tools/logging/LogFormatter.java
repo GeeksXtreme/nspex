@@ -1,4 +1,4 @@
-package org.whired.inspexi.logging;
+package org.whired.inspexi.tools.logging;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
