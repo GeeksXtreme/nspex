@@ -7,6 +7,12 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.Calendar;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -16,12 +22,14 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextPane;
-import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
+
+import org.whired.inspexi.logging.LogFormatter;
 
 public class MasterFrame extends JFrame implements EventListener {
 
@@ -38,47 +46,6 @@ public class MasterFrame extends JFrame implements EventListener {
 	};
 
 	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		try {
-			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
-		}
-		catch (Throwable e) {
-			e.printStackTrace();
-		}
-		EventQueue.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					final MasterFrame frame = new MasterFrame(new EventListener() {
-
-						@Override
-						public void connect(String ip) {
-							System.out.println("Connecting to " + ip + "..");
-						}
-
-						@Override
-						public void rebuild(String ip) {
-							System.out.println("Requesting that " + ip + " rebuilds..");
-						}
-
-						@Override
-						public void refresh() {
-							System.out.println("Refreshing slaves");
-						}
-
-					});
-					frame.setVisible(true);
-				}
-				catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-
-	/**
 	 * Create the frame.
 	 */
 	public MasterFrame(EventListener listener) {
@@ -86,7 +53,7 @@ public class MasterFrame extends JFrame implements EventListener {
 
 		setTitle("Inspexi");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 450, 353);
+		setBounds(100, 100, 700, 500);
 		contentPane = new JPanel();
 		contentPane.setBorder(null);
 		setContentPane(contentPane);
@@ -110,6 +77,16 @@ public class MasterFrame extends JFrame implements EventListener {
 		contentPane.add(scrollPane, gbc_scrollPane);
 
 		table = new JTable();
+
+		table.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (table.rowAtPoint(e.getPoint()) == -1 || e.getButton() == MouseEvent.BUTTON3) {
+					table.clearSelection();
+				}
+			}
+		});
+
 		table.setShowVerticalLines(true);
 		table.setFont(font);
 		table.setShowHorizontalLines(true);
@@ -126,10 +103,7 @@ public class MasterFrame extends JFrame implements EventListener {
 		btnConnect.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				int row = table.getSelectedRow();
-				if (row != -1) {
-					connect((String) model.getValueAt(row, 0));
-				}
+				connect(getSelectedIps());
 			}
 		});
 		btnConnect.setToolTipText("Connect");
@@ -144,10 +118,7 @@ public class MasterFrame extends JFrame implements EventListener {
 		btnLoooong.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				int row = table.getSelectedRow();
-				if (row != -1) {
-					rebuild((String) model.getValueAt(row, 0));
-				}
+				rebuild(getSelectedIps());
 			}
 		});
 
@@ -157,7 +128,7 @@ public class MasterFrame extends JFrame implements EventListener {
 			public void actionPerformed(ActionEvent arg0) {
 				String ip;
 				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter IP:")) != null && ip.length() > 0) {
-					model.addRow(new String[] { ip, "-", "-", "-", "Offline" });
+					addClients(new String[] { ip });
 				}
 			}
 		});
@@ -179,7 +150,7 @@ public class MasterFrame extends JFrame implements EventListener {
 		btnRefresh.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				refresh();
+				refresh(getSelectedIps());
 			}
 		});
 		btnRefresh.setToolTipText("Refresh list");
@@ -199,86 +170,173 @@ public class MasterFrame extends JFrame implements EventListener {
 		contentPane.add(scrollPane_1, gbc_scrollPane_1);
 
 		pane = new JTextPane();
+		((DefaultCaret) pane.getCaret()).setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 		pane.setEditable(false);
 		pane.setFont(font);
+
+		OutputStream out = new OutputStream() {
+			@Override
+			public void write(int b) throws IOException {
+				updateTextArea(pane, String.valueOf((char) b), false);
+			}
+
+			@Override
+			public void write(byte[] b, int off, int len) throws IOException {
+				updateTextArea(pane, new String(b, off, len), false);
+			}
+
+			@Override
+			public void write(byte[] b) throws IOException {
+				write(b, 0, b.length);
+			}
+		};
+		PrintStream p = new PrintStream(out, true);
+		System.setOut(p);
+		// System.setErr(p);
 
 		scrollPane_1.setViewportView(pane);
 		scrollPane_1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		scrollPane_1.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane_1.getVerticalScrollBar()));
 	}
 
-	public void addClient(String ip, String host, String os, String version, String status) {
-		for (int i = 0; i < model.getRowCount(); i++) {
-			if (model.getValueAt(i, 0).equals(ip)) {
-				return;
+	public void addClients(final String[] ips) {
+		runOnEdt(new Runnable() {
+			@Override
+			public void run() {
+				for (String ip : ips) {
+					for (int i = 0; i < model.getRowCount(); i++) {
+						if (model.getValueAt(i, 0).equals(ip)) {
+							break;
+						}
+					}
+					model.addRow(new Object[] { ip, "-", "-", "-", "Offline" });
+				}
+			}
+		});
+		refresh(ips);
+	}
+
+	public void removeClient(final String ip) {
+		runOnEdt(new Runnable() {
+			@Override
+			public void run() {
+				for (int i = 0; i < model.getRowCount(); i++) {
+					if (model.getValueAt(i, 0).equals(ip)) {
+						model.removeRow(i);
+						break;
+					}
+				}
+			}
+		});
+	}
+
+	public void updateSlaveList(final String ip, final String host, final String os, final String version) {
+		runOnEdt(new Runnable() {
+			@Override
+			public void run() {
+				for (int i = 0; i < model.getRowCount(); i++) {
+					if (model.getValueAt(i, 0).equals(ip)) {
+						model.setValueAt(ip, i, 0);
+						model.setValueAt(host, i, 1);
+						model.setValueAt(os, i, 2);
+						model.setValueAt(version, i, 3);
+						model.setValueAt("Online", i, 4);
+						return;
+					}
+				}
+				model.addRow(new String[] { ip, host, os, version, "Online" });
+			}
+		});
+	}
+
+	public void setSlaveOffline(final String ip) {
+		runOnEdt(new Runnable() {
+			@Override
+			public void run() {
+				for (int i = 0; i < model.getRowCount(); i++) {
+					if (model.getValueAt(i, 0).equals(ip)) {
+						model.setValueAt("Offline", i, 4);
+						return;
+					}
+				}
+				model.addRow(new String[] { ip, "-", "-", "-", "Offline" });
+			}
+		});
+	}
+
+	private void updateTextArea(final JTextPane pane, final String text, final boolean preformatted) {
+		runOnEdt(new Runnable() {
+			@Override
+			public void run() {
+				Document doc = pane.getStyledDocument();
+				try {
+					doc.insertString(doc.getLength(), !text.contains(System.getProperty("line.separator")) && !preformatted ? "[" + LogFormatter.DATE_FORMAT.format(Calendar.getInstance().getTime()) + "] System: " + text : text, null);
+					pane.setCaretPosition(doc.getLength());
+				}
+				catch (BadLocationException e) {
+				}
+			}
+		});
+	}
+
+	private static void runOnEdt(Runnable run) {
+		if (EventQueue.isDispatchThread()) {
+			run.run();
+		}
+		else {
+			try {
+				EventQueue.invokeAndWait(run);
+			}
+			catch (Throwable t) {
 			}
 		}
-		model.addRow(new Object[] { ip, host, os, version, status });
 	}
 
-	public void removeClient(String ip) {
-		for (int i = 0; i < model.getRowCount(); i++) {
-			if (model.getValueAt(i, 0).equals(ip)) {
-				model.removeRow(i);
-				break;
+	private String[] getAllIps() {
+		final String[] ips = new String[model.getRowCount()];
+		runOnEdt(new Runnable() {
+			@Override
+			public void run() {
+				for (int i = 0; i < model.getRowCount(); i++) {
+					ips[i] = (String) model.getValueAt(i, 0);
+				}
 			}
-		}
-	}
-
-	public void updateSlaveList(String ip, String host, String os, String version) {
-		for (int i = 0; i < model.getRowCount(); i++) {
-			if (model.getValueAt(i, 0).equals(ip)) {
-				model.removeRow(i);
-				model.insertRow(i, new String[] { ip, host, os, version, "Online" });
-				return;
-			}
-		}
-		model.addRow(new String[] { ip, host, os, version, "Online" });
-	}
-
-	public void setSlaveOffline(String ip) {
-		for (int i = 0; i < model.getRowCount(); i++) {
-			if (model.getValueAt(i, 0).equals(ip)) {
-				String[] vals = new String[] { ip, (String) model.getValueAt(i, 1), (String) model.getValueAt(i, 2), (String) model.getValueAt(i, 3), "Offline" };
-				model.removeRow(i);
-				model.insertRow(i, vals);
-				return;
-			}
-		}
-		model.addRow(new String[] { ip, "-", "-", "-", "Offline" });
-	}
-
-	public void log(String message) {
-		Document doc = pane.getStyledDocument();
-		try {
-			doc.insertString(doc.getLength(), message + "\n", null);
-		}
-		catch (BadLocationException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public String[] getIps() {
-		String[] ips = new String[model.getRowCount()];
-		for (int i = 0; i < model.getRowCount(); i++) {
-			ips[i] = (String) model.getValueAt(i, 0);
-		}
+		});
 		return ips;
 	}
 
-	@Override
-	public void connect(String ip) {
-		listener.connect(ip);
+	public String[] getSelectedIps() {
+		final int[] rows = table.getSelectedRows();
+		final String[] ips = new String[rows.length];
+		if (rows.length > 0) {
+			runOnEdt(new Runnable() {
+				@Override
+				public void run() {
+					for (int i = 0; i < rows.length; i++) {
+						ips[i] = (String) model.getValueAt(rows[i], 0);
+					}
+				}
+			});
+			return ips;
+		}
+		else {
+			return getAllIps();
+		}
 	}
 
 	@Override
-	public void rebuild(String ip) {
-		listener.rebuild(ip);
+	public void connect(String[] ips) {
+		listener.connect(ips);
 	}
 
 	@Override
-	public void refresh() {
-		listener.refresh();
+	public void rebuild(String[] ips) {
+		listener.rebuild(ips);
+	}
+
+	@Override
+	public void refresh(String[] ips) {
+		listener.refresh(ips);
 	}
 
 }

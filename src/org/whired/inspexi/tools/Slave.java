@@ -1,9 +1,9 @@
 package org.whired.inspexi.tools;
 
 public abstract class Slave {
-	public static String REMOTE_VERSION = "0.0.3";
+	public static String VERSION = "0.0.4";
 	public static final int INTENT_CHECK = 0, INTENT_REBUILD = 8, INTENT_CONNECT = 1;
-	public static final int OP_TRANSFER_IMAGE = 0;
+	public static final int OP_TRANSFER_IMAGE = 0, OP_DO_COMMAND = 1;
 	private String host, os, version;
 
 	public String getOS() {

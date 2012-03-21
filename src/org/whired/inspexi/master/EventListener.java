@@ -1,9 +1,9 @@
 package org.whired.inspexi.master;
 
 public interface EventListener {
-	void connect(String ip);
+	void connect(String[] ips);
 
-	void rebuild(String ip);
+	void rebuild(String[] ips);
 
-	void refresh();
+	void refresh(String[] ips);
 }
