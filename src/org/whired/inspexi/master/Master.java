@@ -54,7 +54,6 @@ public class Master {
 
 		@Override
 		public void refresh(final String[] ips) {
-
 			new Thread(new Runnable() {
 				@Override
 				public void run() {

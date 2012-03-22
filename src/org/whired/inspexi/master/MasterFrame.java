@@ -1,5 +1,6 @@
 package org.whired.inspexi.master;
 
+import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -173,6 +174,7 @@ public class MasterFrame extends JFrame implements EventListener {
 		contentPane.add(scrollPane_1, gbc_scrollPane_1);
 
 		pane = new JTextPane();
+		pane.setBackground(Color.WHITE);
 		((DefaultCaret) pane.getCaret()).setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 		pane.setEditable(false);
 		pane.setFont(font);

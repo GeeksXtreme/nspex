@@ -97,7 +97,6 @@ public class RemoteSlave extends Slave implements SessionListener {
 						public void run() {
 							final JFrame sframe = new JFrame("Inspexi - " + ip);
 							sframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-							sframe.setAlwaysOnTop(true);
 							panel.setPreferredSize(new Dimension(width, height));
 
 							JScrollPane scrollPane = new JScrollPane();
@@ -194,6 +193,7 @@ public class RemoteSlave extends Slave implements SessionListener {
 				}
 				catch (Throwable t) {
 					try {
+
 						socket.close();
 					}
 					catch (IOException e) {

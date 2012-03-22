@@ -8,6 +8,7 @@ import java.awt.RenderingHints;
 
 import javax.swing.JComponent;
 import javax.swing.JScrollBar;
+import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 
@@ -45,7 +46,7 @@ public class MinimalScrollBar extends BasicScrollBarUI {
 	}
 
 	private void paint(Graphics g, JComponent c, Rectangle r) {
-		g.setColor(new Color(255, 255, 255));
+		g.setColor(((JScrollPane) c.getParent()).getViewport().getView().getBackground());
 		g.fillRect(0, 0, c.getWidth(), c.getHeight());
 		if (this.isThumbRollover() || this.isDragging) {
 			g.setColor(ghostHighlight);

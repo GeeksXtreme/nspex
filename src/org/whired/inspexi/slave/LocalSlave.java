@@ -7,9 +7,12 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import org.whired.inspexi.master.SessionListener;
 import org.whired.inspexi.tools.DirectRobot;
 import org.whired.inspexi.tools.ImageProducer;
 import org.whired.inspexi.tools.JNARobot;
+import org.whired.inspexi.tools.NetTask;
+import org.whired.inspexi.tools.NetTaskQueue;
 import org.whired.inspexi.tools.Robot;
 import org.whired.inspexi.tools.ScreenCapture;
 import org.whired.inspexi.tools.Slave;
@@ -19,9 +22,10 @@ import com.sun.jna.Platform;
 public class LocalSlave extends Slave {
 	private static String FS = System.getProperty("file.separator");
 
-	private DataOutputStream dos = null;
-	private DataInputStream dis = null;
-	private ServerSocket ssock = null;
+	private DataOutputStream dos;
+	private DataInputStream dis;
+	private final ServerSocket ssock;
+	private final ScreenCapture capture;
 	private Socket sock;
 
 	public LocalSlave() throws AWTException, IOException {
@@ -60,18 +64,18 @@ public class LocalSlave extends Slave {
 
 		// Set up capture
 		final Robot robot = Platform.isWindows() ? new JNARobot(.7D) : new DirectRobot(.7D);
-		final ScreenCapture cap = new ScreenCapture(robot, 1);
-		cap.addListener(new ImageProducer() {
+		capture = new ScreenCapture(robot, 1);
+		capture.addListener(new ImageProducer() {
 			@Override
-			public void imageProduced(byte[] image) {
-				try {
-					dos.write(OP_TRANSFER_IMAGE);
-					dos.writeInt(image.length);
-					dos.write(image);
-				}
-				catch (Throwable e) {
-					cap.stop();
-				}
+			public void imageProduced(final byte[] image) {
+				taskQueue.add(new NetTask() {
+					@Override
+					public void run() throws IOException {
+						dos.write(OP_TRANSFER_IMAGE);
+						dos.writeInt(image.length);
+						dos.write(image);
+					};
+				});
 			}
 		});
 		while (true) {
@@ -110,7 +114,7 @@ public class LocalSlave extends Slave {
 									System.out.println("op: " + op);
 									switch (op) {
 									case INTENT_REBUILD:
-										cap.stop();
+										capture.stop();
 										ssock.close();
 										System.exit(0);
 									break;
@@ -139,8 +143,7 @@ public class LocalSlave extends Slave {
 							}
 						}
 					}).start();
-					cap.start();
-
+					capture.start();
 				}
 			}
 			catch (IOException e) {
@@ -152,6 +155,23 @@ public class LocalSlave extends Slave {
 			}
 		}
 	}
+
+	private final NetTaskQueue taskQueue = new NetTaskQueue(new SessionListener() {
+		@Override
+		public void sessionEnded(String reason) {
+			System.out.println("Session ended: " + reason);
+			if (sock != null) {
+				try {
+					if (capture != null) {
+						capture.stop();
+					}
+					sock.close();
+				}
+				catch (IOException e) {
+				}
+			}
+		}
+	});
 
 	public static void main(String[] args) throws IOException, AWTException {
 		new LocalSlave();
