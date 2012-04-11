@@ -23,6 +23,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 
+import org.whired.inspexi.tools.SessionListener;
 import org.whired.inspexi.tools.Slave;
 import org.whired.inspexi.tools.logging.Log;
 
@@ -118,7 +119,6 @@ public class RemoteSlave extends Slave implements SessionListener {
 										dos.writeUTF(command);
 									}
 									catch (Throwable t) {
-										t.printStackTrace();
 										try {
 											socket.close();
 										}

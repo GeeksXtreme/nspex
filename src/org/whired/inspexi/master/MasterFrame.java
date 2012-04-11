@@ -35,13 +35,13 @@ import javax.swing.text.Document;
 import org.whired.inspexi.tools.logging.Log;
 import org.whired.inspexi.tools.logging.LogFormatter;
 
-public class MasterFrame extends JFrame implements EventListener {
+public class MasterFrame extends JFrame implements ControllerEventListener {
 
 	private final JPanel contentPane;
 	private final JTable table;
 	private final Font font = new Font("SansSerif", Font.PLAIN, 9);
 	private final JTextPane pane;
-	private final EventListener listener;
+	private final ControllerEventListener listener;
 	private final DefaultTableModel model = new DefaultTableModel(new String[] { "IP", "Host", "OS", "Version", "Status" }, 0) {
 		@Override
 		public boolean isCellEditable(int rowIndex, int mColIndex) {
@@ -52,7 +52,7 @@ public class MasterFrame extends JFrame implements EventListener {
 	/**
 	 * Create the frame.
 	 */
-	public MasterFrame(EventListener listener) {
+	public MasterFrame(ControllerEventListener listener) {
 		this.listener = listener;
 
 		setTitle("Inspexi");

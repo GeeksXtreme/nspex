@@ -12,6 +12,11 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 
+/**
+ * A minimal skin for scrollbars
+ * 
+ * @author Whired
+ */
 public class MinimalScrollBar extends BasicScrollBarUI {
 
 	final Color transparent = new Color(0, 0, 0, 0);
@@ -52,7 +57,7 @@ public class MinimalScrollBar extends BasicScrollBarUI {
 			g.setColor(ghostHighlight);
 		}
 		else {
-			g.setColor(c.getParent().getBackground());
+			g.setColor(ghostBlue);
 		}
 		((java.awt.Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g.fillRoundRect(r.x + r.width - 8, r.y, 8, r.height, 5, 5);

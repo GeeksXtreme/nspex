@@ -8,15 +8,34 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.security.MessageDigest;
 
+/**
+ * An updater for packages
+ * 
+ * @author Whired
+ */
 public class Updater implements Runnable {
-	public static final String JAVA = System.getProperty("java.home") + Package.FS + "bin" + Package.FS + "java";
+	/**
+	 * An OS independent path to the Java executable
+	 */
+	public static final String JAVA_EXE = System.getProperty("java.home") + Package.FS + "bin" + Package.FS + "java";
 
+	/**
+	 * The package this updater is working with
+	 */
 	private final Package pkg;
 
+	/**
+	 * Creates a new updater for the specified package
+	 * 
+	 * @param pkg the package to update
+	 */
 	public Updater(Package pkg) {
 		this.pkg = pkg;
 	}
 
+	/**
+	 * Runs this updater
+	 */
 	@Override
 	public void run() {
 		try {
@@ -119,10 +138,13 @@ public class Updater implements Runnable {
 		return new String(hexChars);
 	}
 
+	/**
+	 * Launches the package
+	 */
 	private void launch() {
 		try {
-			System.out.println("Exec: " + JAVA + " -classpath " + pkg.getLocalCodebase() + pkg.getName() + " " + pkg.getEntryPoint());
-			new ProcessBuilder(JAVA, "-classpath", pkg.getLocalCodebase() + pkg.getName(), pkg.getEntryPoint()).start();
+			System.out.println("Exec: " + JAVA_EXE + " -classpath " + pkg.getLocalCodebase() + pkg.getName() + " " + pkg.getEntryPoint());
+			new ProcessBuilder(JAVA_EXE, "-classpath", pkg.getLocalCodebase() + pkg.getName(), pkg.getEntryPoint()).start();
 		}
 		catch (IOException e) {
 			// TODO Auto-generated catch block

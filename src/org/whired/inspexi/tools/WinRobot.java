@@ -30,7 +30,12 @@ import com.sun.jna.platform.win32.WinDef.RECT;
 import com.sun.jna.platform.win32.WinGDI;
 import com.sun.jna.platform.win32.WinGDI.BITMAPINFO;
 
-public class JNARobot extends Robot {
+/**
+ * A native windows implementation of a Robot
+ * 
+ * @author Whired
+ */
+public class WinRobot extends Robot {
 
 	private static final HWND desktop = User32.INSTANCE.GetDesktopWindow();
 	private final HDC hdcWindow;
@@ -47,7 +52,13 @@ public class JNARobot extends Robot {
 	private ImageWriter writer;
 	private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-	public JNARobot(Rectangle bounds, double zoom) {
+	/**
+	 * Creates a new windows robot with the specified bounds and zoom
+	 * 
+	 * @param bounds the bounds to capture pixels from
+	 * @param zoom original bounds will be scaled by this value
+	 */
+	public WinRobot(Rectangle bounds, double zoom) {
 		super(bounds, zoom);
 		hdcWindow = User32.INSTANCE.GetDC(desktop);
 		hdcMemDC = GDI32.INSTANCE.CreateCompatibleDC(hdcWindow);
@@ -83,7 +94,12 @@ public class JNARobot extends Robot {
 		}
 	}
 
-	public JNARobot(double zoom) {
+	/**
+	 * Creates a new windows robot with the default (screen size) bounds and specified zoom
+	 * 
+	 * @param zoom original bounds will be scaled by this value
+	 */
+	public WinRobot(double zoom) {
 		this(null, zoom);
 	}
 
@@ -109,7 +125,7 @@ public class JNARobot extends Robot {
 	}
 
 	public static void main(String[] args) throws IOException {
-		JNARobot t = new JNARobot(.7D);
+		WinRobot t = new WinRobot(.7D);
 		for (int i = 0; i < 5; i++) {
 			byte[] compressed = t.getBytePixels();
 			final BufferedImage image = ImageIO.read(new ByteArrayInputStream(compressed));

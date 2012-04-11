@@ -1,4 +1,4 @@
-package org.whired.inspexi.master;
+package org.whired.inspexi.tools;
 
 
 public interface SessionListener {

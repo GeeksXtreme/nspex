@@ -6,16 +6,30 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
+import java.util.logging.Level;
 
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import org.whired.inspexi.tools.SessionListener;
 import org.whired.inspexi.tools.Slave;
 import org.whired.inspexi.tools.logging.Log;
 
+/**
+ * A master server
+ * 
+ * @author Whired
+ */
 public class Master {
+	/**
+	 * The view for this master
+	 */
 	private MasterFrame frame;
-	private final EventListener listener = new EventListener() {
+
+	/**
+	 * Listens for events fired by the view
+	 */
+	private final ControllerEventListener listener = new ControllerEventListener() {
 		@Override
 		public void connect(final String[] ips) {
 			for (final String ip : ips) {
@@ -25,7 +39,6 @@ public class Master {
 						public void sessionEnded(String reason) {
 							Log.l.info("Session with " + ip + " ended: " + reason);
 						}
-
 					});
 				}
 				catch (Throwable t) {
@@ -43,7 +56,6 @@ public class Master {
 						public void sessionEnded(String reason) {
 							Log.l.info("Session with " + ip + " ended: " + reason);
 						}
-
 					});
 				}
 				catch (Throwable t) {
@@ -78,8 +90,18 @@ public class Master {
 		}
 	};
 
-	public Master(final String[] slaveIps) throws ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException {
-		UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+	/**
+	 * Creates a new master that will work with the specified given ips
+	 * 
+	 * @param slaveIps the ips to work with initially
+	 */
+	public Master(final String[] slaveIps) {
+		try {
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+		}
+		catch (Throwable e) {
+			Log.l.log(Level.WARNING, "Failed to set look and feel: ", e);
+		}
 		EventQueue.invokeLater(new Runnable() {
 			@Override
 			public void run() {
@@ -90,8 +112,16 @@ public class Master {
 		});
 	}
 
+	/**
+	 * The location of the properties file that has settings for this slave
+	 */
 	private static final String PROPS_FILE = "props.dat";
 
+	/**
+	 * Loads properties from the path specified in {@link #PROPS_FILE}, or a new {@code Properties} if none could be loaded
+	 * 
+	 * @return the properties
+	 */
 	public static Properties getProps() {
 		Properties props = new Properties();
 		try {
