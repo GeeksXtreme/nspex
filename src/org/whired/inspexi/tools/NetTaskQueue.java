@@ -3,7 +3,6 @@ package org.whired.inspexi.tools;
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingDeque;
 
-
 /**
  * A queue of tasks to execute
  * 
@@ -64,6 +63,7 @@ public class NetTaskQueue {
 						synchronized (NetTaskQueue.this) {
 							acceptingTasks = false;
 						}
+						pendingTasks.clear();
 						listener.sessionEnded(e.toString());
 					}
 					catch (InterruptedException e) {

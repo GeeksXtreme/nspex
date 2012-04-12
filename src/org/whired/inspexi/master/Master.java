@@ -11,7 +11,6 @@ import java.util.logging.Level;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import org.whired.inspexi.tools.SessionListener;
 import org.whired.inspexi.tools.Slave;
 import org.whired.inspexi.tools.logging.Log;
 
@@ -34,15 +33,13 @@ public class Master {
 		public void connect(final String[] ips) {
 			for (final String ip : ips) {
 				try {
-					new RemoteSlave(ip, 43596, Slave.INTENT_CONNECT, new SessionListener() {
-						@Override
-						public void sessionEnded(String reason) {
-							Log.l.info("Session with " + ip + " ended: " + reason);
-						}
-					});
+					RemoteSlaveModel slave = new RemoteSlaveModel(ip, 43596);
+					new RemoteSlaveFullView(slave);
+					slave.connect(Slave.INTENT_CONNECT);
 				}
 				catch (Throwable t) {
 					t.printStackTrace();
+					Log.l.warning("Could not connect to " + ip + ".");
 				}
 			}
 		}
@@ -51,12 +48,7 @@ public class Master {
 		public void rebuild(final String[] ips) {
 			for (final String ip : ips) {
 				try {
-					new RemoteSlave(ip, 43596, Slave.INTENT_REBUILD, new SessionListener() {
-						@Override
-						public void sessionEnded(String reason) {
-							Log.l.info("Session with " + ip + " ended: " + reason);
-						}
-					});
+					new RemoteSlaveModel(ip, 43596).connect(Slave.INTENT_REBUILD);
 				}
 				catch (Throwable t) {
 					t.printStackTrace();
@@ -71,12 +63,14 @@ public class Master {
 				public void run() {
 					for (final String ip : ips) {
 						try {
-							RemoteSlave r = new RemoteSlave(ip, 43596, Slave.INTENT_CHECK, new SessionListener() {
-								@Override
-								public void sessionEnded(String reason) {
-								}
-
-							});
+							RemoteSlaveModel r = new RemoteSlaveModel(ip, 43596);
+							if (ips.length == 1) {
+								r.setImageConsumer(frame);
+								r.connect(Slave.INTENT_CHECK);
+							}
+							else {
+								r.connect(Slave.INTENT_CHECK_BULK);
+							}
 							frame.updateSlaveList(ip, r.getHost(), r.getOS(), r.getVersion());
 						}
 						catch (Throwable t) {
@@ -106,7 +100,7 @@ public class Master {
 			@Override
 			public void run() {
 				frame = new MasterFrame(listener);
-				frame.addClients(slaveIps);
+				frame.addSlaves(slaveIps);
 				frame.setVisible(true);
 			}
 		});

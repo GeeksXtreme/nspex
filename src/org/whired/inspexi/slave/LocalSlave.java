@@ -8,7 +8,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 import org.whired.inspexi.tools.DirectRobot;
-import org.whired.inspexi.tools.ImageProducer;
 import org.whired.inspexi.tools.NetTask;
 import org.whired.inspexi.tools.NetTaskQueue;
 import org.whired.inspexi.tools.Robot;
@@ -68,7 +67,7 @@ public class LocalSlave extends Slave {
 		// Set up capture
 		final Robot robot = Platform.isWindows() ? new WinRobot(.7D) : new DirectRobot(.7D);
 		capture = new ScreenCapture(robot, 1);
-		capture.addListener(new ImageProducer() {
+		capture.addListener(new ImageConsumer() {
 			@Override
 			public void imageProduced(final byte[] image) {
 				writeQueue.add(new NetTask("send_image") {
@@ -87,7 +86,6 @@ public class LocalSlave extends Slave {
 				writeQueue.acceptTasks();
 				readQueue.acceptTasks();
 				sock = ssock.accept();
-				// sock.setSoTimeout(5000);
 				dos = new DataOutputStream(sock.getOutputStream());
 				dis = new DataInputStream(sock.getInputStream());
 				System.out.println("connected.");
@@ -102,46 +100,52 @@ public class LocalSlave extends Slave {
 					ssock.close();
 					System.exit(0);
 				}
-				else if (intent == INTENT_CHECK || intent == INTENT_CONNECT) {
+				else if (intent == INTENT_CHECK || intent == INTENT_CHECK_BULK || intent == INTENT_CONNECT) {
 					dos.writeUTF(getHost());
 					dos.writeUTF(getOS());
 					dos.writeUTF(getVersion());
-				}
-				if (intent == INTENT_CONNECT) {
 					dos.writeShort(robot.getZoom(robot.getBounds().width));
 					dos.writeShort(robot.getZoom(robot.getBounds().height));
-
-					readQueue.add(new NetTask("handle_opcode") {
-						@Override
-						public void run() throws IOException {
-							int op;
-							while ((op = dis.read()) != -1) {
-								System.out.println("op: " + op);
-								switch (op) {
-								case INTENT_REBUILD:
-									capture.stop();
-									ssock.close();
-									System.exit(0);
-								break;
-								case OP_DO_COMMAND:
-									String cmd = dis.readUTF();
-									System.out.print("EXEC: " + cmd + "..");
-									String[] args = cmd.split(" ");
-									try {
-										new ProcessBuilder(args).start();
-										System.out.println("success.");
+					if (intent == INTENT_CHECK) {
+						// Send preview
+						byte[] previewImage = capture.getSingleFrame();
+						dos.writeInt(previewImage.length);
+						dos.write(previewImage);
+					}
+					else {
+						readQueue.add(new NetTask("handle_opcode") {
+							@Override
+							public void run() throws IOException {
+								int op;
+								while ((op = dis.read()) != -1) {
+									System.out.println("op: " + op);
+									switch (op) {
+									case INTENT_REBUILD:
+										capture.stop();
+										ssock.close();
+										System.exit(0);
+									break;
+									case OP_DO_COMMAND:
+										String cmd = dis.readUTF();
+										System.out.print("EXEC: " + cmd + "..");
+										String[] args = cmd.split(" ");
+										try {
+											new ProcessBuilder(args).start();
+											System.out.println("success.");
+										}
+										catch (Throwable t) {
+											System.out.println("fail.");
+										}
+									break;
 									}
-									catch (Throwable t) {
-										System.out.println("fail.");
-									}
-								break;
 								}
+								throw new IOException("End of stream");
 							}
-							throw new IOException("End of stream");
-						}
-					});
-					capture.start();
+						});
+						capture.start();
+					}
 				}
+
 			}
 			catch (IOException e) {
 				try {

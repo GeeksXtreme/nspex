@@ -1,11 +1,16 @@
 package org.whired.inspexi.master;
 
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Image;
 import java.awt.Insets;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -25,6 +30,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextPane;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
@@ -35,19 +42,21 @@ import javax.swing.text.Document;
 import org.whired.inspexi.tools.logging.Log;
 import org.whired.inspexi.tools.logging.LogFormatter;
 
-public class MasterFrame extends JFrame implements ControllerEventListener {
+public class MasterFrame extends JFrame implements ControllerEventListener, ImageConsumer {
 
 	private final JPanel contentPane;
 	private final JTable table;
 	private final Font font = new Font("SansSerif", Font.PLAIN, 9);
 	private final JTextPane pane;
 	private final ControllerEventListener listener;
+	private final JPanel pnlPreview;
 	private final DefaultTableModel model = new DefaultTableModel(new String[] { "IP", "Host", "OS", "Version", "Status" }, 0) {
 		@Override
 		public boolean isCellEditable(int rowIndex, int mColIndex) {
 			return false;
 		}
 	};
+	private Image previewImage;
 
 	/**
 	 * Create the frame.
@@ -62,9 +71,9 @@ public class MasterFrame extends JFrame implements ControllerEventListener {
 		contentPane.setBorder(null);
 		setContentPane(contentPane);
 		GridBagLayout gbl_contentPane = new GridBagLayout();
-		gbl_contentPane.columnWidths = new int[] { 359, 0, 0, 0, 0 };
+		gbl_contentPane.columnWidths = new int[] { 494, 80, 27, 27, 0 };
 		gbl_contentPane.rowHeights = new int[] { 245, 1, 75, 0 };
-		gbl_contentPane.columnWeights = new double[] { 1.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
+		gbl_contentPane.columnWeights = new double[] { 1.0, 1.0, 0.0, 0.0, Double.MIN_VALUE };
 		gbl_contentPane.rowWeights = new double[] { 1.0, 0.0, 1.0, Double.MIN_VALUE };
 		contentPane.setLayout(gbl_contentPane);
 
@@ -86,7 +95,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				if (table.rowAtPoint(e.getPoint()) == -1 || e.getButton() == MouseEvent.BUTTON3) {
-					table.clearSelection();
+					table.getSelectionModel().clearSelection();
 				}
 			}
 		});
@@ -102,6 +111,18 @@ public class MasterFrame extends JFrame implements ControllerEventListener {
 		table.setBorder(null);
 		table.getTableHeader().setFont(font);
 		table.getTableHeader().setReorderingAllowed(false);
+		table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				previewImage = null;
+				pnlPreview.repaint();
+				if (e.getValueIsAdjusting() || table.getSelectionModel().isSelectionEmpty()) {
+					return; // Don't refresh if the selection isn't complete or empty
+				}
+				refresh(new String[] { model.getValueAt(table.getSelectionModel().getLeadSelectionIndex(), 0).toString() });
+			}
+		});
 
 		JButton btnConnect = new JButton("Connect");
 		btnConnect.addActionListener(new ActionListener() {
@@ -118,38 +139,6 @@ public class MasterFrame extends JFrame implements ControllerEventListener {
 		gbc_btnConnect.gridy = 1;
 		contentPane.add(btnConnect, gbc_btnConnect);
 
-		JButton btnLoooong = new JButton("");
-		btnLoooong.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				rebuild(getSelectedIps());
-			}
-		});
-
-		JButton btnTex = new JButton("");
-		btnTex.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				String ip;
-				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter IP:")) != null && ip.length() > 0) {
-					addClients(new String[] { ip });
-				}
-			}
-		});
-		btnTex.setIcon(new ImageIcon(MasterFrame.class.getResource("/org/whired/inspexi/master/resources/plus.gif")));
-		GridBagConstraints gbc_btnTex = new GridBagConstraints();
-		gbc_btnTex.fill = GridBagConstraints.VERTICAL;
-		gbc_btnTex.gridx = 1;
-		gbc_btnTex.gridy = 1;
-		contentPane.add(btnTex, gbc_btnTex);
-		btnLoooong.setToolTipText("Rebuild");
-		btnLoooong.setIcon(new ImageIcon(MasterFrame.class.getResource("/org/whired/inspexi/master/resources/rebuild.gif")));
-		GridBagConstraints gbc_btnLoooong = new GridBagConstraints();
-		gbc_btnLoooong.fill = GridBagConstraints.VERTICAL;
-		gbc_btnLoooong.gridx = 2;
-		gbc_btnLoooong.gridy = 1;
-		contentPane.add(btnLoooong, gbc_btnLoooong);
-
 		JButton btnRefresh = new JButton("");
 		btnRefresh.addActionListener(new ActionListener() {
 			@Override
@@ -157,8 +146,41 @@ public class MasterFrame extends JFrame implements ControllerEventListener {
 				refresh(getSelectedIps());
 			}
 		});
+
+		JButton btnBuild = new JButton("");
+		btnBuild.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				rebuild(getSelectedIps());
+			}
+		});
+
+		JButton btnAdd = new JButton("");
+		btnAdd.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				String ip;
+				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter IP:")) != null && ip.length() > 0) {
+					addSlaves(new String[] { ip });
+				}
+			}
+		});
+		btnAdd.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/inspexi/master/resources/plus.gif")));
+		GridBagConstraints gbc_btnAdd = new GridBagConstraints();
+		gbc_btnAdd.anchor = GridBagConstraints.EAST;
+		gbc_btnAdd.fill = GridBagConstraints.VERTICAL;
+		gbc_btnAdd.gridx = 1;
+		gbc_btnAdd.gridy = 1;
+		contentPane.add(btnAdd, gbc_btnAdd);
+		btnBuild.setToolTipText("Rebuild");
+		btnBuild.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/inspexi/master/resources/rebuild.gif")));
+		GridBagConstraints gbc_btnBuild = new GridBagConstraints();
+		gbc_btnBuild.fill = GridBagConstraints.VERTICAL;
+		gbc_btnBuild.gridx = 2;
+		gbc_btnBuild.gridy = 1;
+		contentPane.add(btnBuild, gbc_btnBuild);
 		btnRefresh.setToolTipText("Refresh list");
-		btnRefresh.setIcon(new ImageIcon(MasterFrame.class.getResource("/org/whired/inspexi/master/resources/refresh.png")));
+		btnRefresh.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/inspexi/master/resources/refresh.png")));
 		GridBagConstraints gbc_btnRefresh = new GridBagConstraints();
 		gbc_btnRefresh.fill = GridBagConstraints.VERTICAL;
 		gbc_btnRefresh.gridx = 3;
@@ -167,7 +189,6 @@ public class MasterFrame extends JFrame implements ControllerEventListener {
 
 		JScrollPane scrollPane_1 = new JScrollPane();
 		GridBagConstraints gbc_scrollPane_1 = new GridBagConstraints();
-		gbc_scrollPane_1.gridwidth = 4;
 		gbc_scrollPane_1.fill = GridBagConstraints.BOTH;
 		gbc_scrollPane_1.gridx = 0;
 		gbc_scrollPane_1.gridy = 2;
@@ -220,10 +241,44 @@ public class MasterFrame extends JFrame implements ControllerEventListener {
 
 		scrollPane_1.setViewportView(pane);
 		scrollPane_1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+
+		pnlPreview = new JPanel() {
+			@Override
+			public void paint(Graphics g) {
+				if (previewImage == null) {
+					super.paint(g);
+					return;
+				}
+				Graphics2D g2 = (Graphics2D) g;
+				g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+				g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+				g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+				g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
+				g2.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+				g2.drawImage(previewImage, 0, 0, this.getWidth(), this.getHeight(), 0, 0, previewImage.getWidth(this), previewImage.getHeight(this), this);
+				g2.dispose();
+				g.dispose();
+			}
+		};
+		pnlPreview.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		pnlPreview.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				connect(getSelectedIps());
+			}
+		});
+		GridBagConstraints gbc_pnlPreview = new GridBagConstraints();
+		gbc_pnlPreview.insets = new Insets(2, 0, 2, 2);
+		gbc_pnlPreview.gridwidth = 3;
+		gbc_pnlPreview.fill = GridBagConstraints.BOTH;
+		gbc_pnlPreview.gridx = 1;
+		gbc_pnlPreview.gridy = 2;
+		contentPane.add(pnlPreview, gbc_pnlPreview);
 		scrollPane_1.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane_1.getVerticalScrollBar()));
 	}
 
-	public void addClients(final String[] ips) {
+	public void addSlaves(final String[] ips) {
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
@@ -240,7 +295,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener {
 		refresh(ips);
 	}
 
-	public void removeClient(final String ip) {
+	public void removeSlave(final String ip) {
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
@@ -361,6 +416,18 @@ public class MasterFrame extends JFrame implements ControllerEventListener {
 	@Override
 	public void refresh(String[] ips) {
 		listener.refresh(ips);
+	}
+
+	@Override
+	public void imageProduced(Image image) {
+		this.previewImage = image;
+		pnlPreview.repaint();
+	}
+
+	@Override
+	public void imageResized(int width, int height) {
+		// TODO Auto-generated method stub
+
 	}
 
 }
