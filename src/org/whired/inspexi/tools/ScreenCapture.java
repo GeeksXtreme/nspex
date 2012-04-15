@@ -26,6 +26,28 @@ public class ScreenCapture implements ImageConsumer {
 	 * A collection of listeners to notify when an image has been produced
 	 */
 	private final HashSet<ImageConsumer> listeners = new HashSet<ImageConsumer>();
+	/**
+	 * The task to run
+	 */
+	private final Runnable captureTask = new Runnable() {
+		@Override
+		public void run() {
+			long start;
+			while (isStarted()) {
+				start = System.currentTimeMillis();
+				imageProduced(ScreenCapture.this, getSingleFrame());
+				try {
+					Thread.sleep(Math.max(1000 / fps - (System.currentTimeMillis() - start), 0));
+				}
+				catch (InterruptedException e) {
+				}
+			}
+		}
+	};
+	/**
+	 * The dedicated thread that the task runs on
+	 */
+	private Thread capThread;
 
 	/**
 	 * Creates a new screen capture with the specified robot and a default FPS of 5
@@ -53,6 +75,12 @@ public class ScreenCapture implements ImageConsumer {
 	 * @param listener the listener to add
 	 */
 	public synchronized void addListener(ImageConsumer listener) {
+		// Restart the capping process if we have a viewer
+		if (listeners.size() == 0) {
+			started = true;
+			capThread = new Thread(captureTask);
+			capThread.start();
+		}
 		listeners.add(listener);
 	}
 
@@ -63,29 +91,10 @@ public class ScreenCapture implements ImageConsumer {
 	 */
 	public synchronized void removeListener(ImageConsumer listener) {
 		listeners.remove(listener);
-	}
-
-	/**
-	 * Starts this screen capture
-	 */
-	public void start() {
-		synchronized (this) {
-			if (!started) {
-				started = true;
-			}
-			else {
-				return;
-			}
-		}
-		long start;
-		while (isStarted()) {
-			start = System.currentTimeMillis();
-			imageProduced(getSingleFrame());
-			try {
-				Thread.sleep(Math.max(1000 / fps - (System.currentTimeMillis() - start), 0));
-			}
-			catch (InterruptedException e) {
-			}
+		// If we have no viewers, stop the capping process
+		if (listeners.size() == 0) {
+			started = false;
+			capThread.interrupt();
 		}
 	}
 
@@ -102,17 +111,10 @@ public class ScreenCapture implements ImageConsumer {
 		return started;
 	}
 
-	/**
-	 * Stops this screen capture
-	 */
-	public synchronized void stop() {
-		started = false;
-	}
-
 	@Override
-	public synchronized void imageProduced(byte[] image) {
+	public synchronized void imageProduced(ImageConsumer trg, byte[] image) {
 		for (ImageConsumer l : listeners) {
-			l.imageProduced(image);
+			l.imageProduced(l, image);
 		}
 	}
 }

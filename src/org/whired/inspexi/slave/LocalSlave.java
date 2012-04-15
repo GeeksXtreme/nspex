@@ -24,11 +24,8 @@ import com.sun.jna.Platform;
 public class LocalSlave extends Slave {
 	private static String FS = System.getProperty("file.separator");
 
-	private DataOutputStream dos;
-	private DataInputStream dis;
 	private final ServerSocket ssock;
 	private final ScreenCapture capture;
-	private Socket sock;
 
 	public LocalSlave() throws AWTException, IOException {
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -67,93 +64,94 @@ public class LocalSlave extends Slave {
 		// Set up capture
 		final Robot robot = Platform.isWindows() ? new WinRobot(.7D) : new DirectRobot(.7D);
 		capture = new ScreenCapture(robot, 1);
-		capture.addListener(new ImageConsumer() {
-			@Override
-			public void imageProduced(final byte[] image) {
-				writeQueue.add(new NetTask("send_image") {
-					@Override
-					public void run() throws IOException {
-						dos.write(OP_TRANSFER_IMAGE);
-						dos.writeInt(image.length);
-						dos.write(image);
-					};
-				});
-			}
-		});
+
 		while (true) {
-			try {
-				System.out.print("Waiting for connection..");
-				writeQueue.acceptTasks();
-				readQueue.acceptTasks();
-				sock = ssock.accept();
-				dos = new DataOutputStream(sock.getOutputStream());
-				dis = new DataInputStream(sock.getInputStream());
-				System.out.println("connected.");
+			System.out.println("Waiting for connection..");
 
-				// Read intent before doing anything
-				int intent = dis.read();
-				if (intent == -1) {
-					throw new IOException("End of stream");
-				}
+			// Instant reaction and delegation
+			final Socket sock = ssock.accept();
 
-				if (intent == INTENT_REBUILD) {
-					ssock.close();
-					System.exit(0);
-				}
-				else if (intent == INTENT_CHECK || intent == INTENT_CHECK_BULK || intent == INTENT_CONNECT) {
-					dos.writeUTF(getHost());
-					dos.writeUTF(getOS());
-					dos.writeUTF(getVersion());
-					dos.writeShort(robot.getZoom(robot.getBounds().width));
-					dos.writeShort(robot.getZoom(robot.getBounds().height));
-					if (intent == INTENT_CHECK) {
-						// Send preview
-						byte[] previewImage = capture.getSingleFrame();
-						dos.writeInt(previewImage.length);
-						dos.write(previewImage);
+			long start = System.nanoTime();
+			queue.add(new NetTask("handshake_reactor", sock) {
+				@Override
+				public void run(DataInputStream dis, DataOutputStream dos) throws IOException {
+					// Read intent before doing anything
+					int intent = dis.read();
+					if (intent == -1) {
+						throw new IOException("End of stream");
 					}
-					else {
-						readQueue.add(new NetTask("handle_opcode") {
-							@Override
-							public void run() throws IOException {
-								int op;
-								while ((op = dis.read()) != -1) {
-									System.out.println("op: " + op);
-									switch (op) {
-									case INTENT_REBUILD:
-										capture.stop();
-										ssock.close();
-										System.exit(0);
-									break;
-									case OP_DO_COMMAND:
-										String cmd = dis.readUTF();
-										System.out.print("EXEC: " + cmd + "..");
-										String[] args = cmd.split(" ");
-										try {
-											new ProcessBuilder(args).start();
-											System.out.println("success.");
+
+					if (intent == INTENT_REBUILD) {
+						ssock.close();
+						System.exit(0);
+					}
+					else if (intent == INTENT_CHECK || intent == INTENT_CHECK_BULK || intent == INTENT_CONNECT) {
+						dos.writeUTF(getHost());
+						dos.writeUTF(getOS());
+						dos.writeUTF(getVersion());
+						dos.writeShort(robot.getZoom(robot.getBounds().width));
+						dos.writeShort(robot.getZoom(robot.getBounds().height));
+						if (intent == INTENT_CHECK) {
+							// Send preview
+							byte[] previewImage = capture.getSingleFrame();
+							dos.writeInt(previewImage.length);
+							dos.write(previewImage);
+						}
+						else {
+							queue.add(new NetTask("handle_opcode", sock) {
+								@Override
+								public void run(DataInputStream dis, DataOutputStream dos) throws IOException {
+									int op;
+									while ((op = dis.read()) != -1) {
+										System.out.println("op: " + op);
+										switch (op) {
+										case INTENT_REBUILD:
+											ssock.close();
+											System.exit(0);
+										break;
+										case OP_DO_COMMAND:
+											String cmd = dis.readUTF();
+											System.out.print("EXEC: " + cmd + "..");
+											String[] args = cmd.split(" ");
+											try {
+												new ProcessBuilder(args).start();
+												System.out.println("success.");
+											}
+											catch (Throwable t) {
+												System.out.println("fail.");
+											}
+										break;
 										}
-										catch (Throwable t) {
-											System.out.println("fail.");
-										}
-									break;
 									}
+									throw new IOException("End of stream");
 								}
-								throw new IOException("End of stream");
-							}
-						});
-						capture.start();
+							});
+							// TODO remove listener on session end. Start capture if there are active cons
+							// I feel an auxiliary class is needed
+							final ImageConsumer ic = new ImageConsumer() {
+								@Override
+								public void imageProduced(final ImageConsumer consumer, final byte[] image) {
+									queue.add(new NetTask("send_image", sock) {
+										@Override
+										public void run(DataInputStream dis, DataOutputStream dos) throws IOException {
+											dos.write(OP_TRANSFER_IMAGE);
+											dos.writeInt(image.length);
+											dos.write(image);
+										}
+
+										@Override
+										public void onFail() {
+											capture.removeListener(consumer);
+										}
+									});
+								}
+							};
+							capture.addListener(ic);
+						}
 					}
 				}
-
-			}
-			catch (IOException e) {
-				try {
-					sock.close();
-				}
-				catch (IOException e1) {
-				}
-			}
+			});
+			System.out.println("Time after accept: ~" + (System.nanoTime() - start) / 1000000F + "ms");
 		}
 	}
 
@@ -161,21 +159,10 @@ public class LocalSlave extends Slave {
 		@Override
 		public void sessionEnded(String reason) {
 			System.out.println("Session ended: " + reason);
-			if (capture != null) {
-				capture.stop();
-			}
-			if (sock != null) {
-				try {
-					sock.close();
-				}
-				catch (IOException e) {
-				}
-			}
 		}
 	};
 
-	private final NetTaskQueue writeQueue = new NetTaskQueue(sessl);
-	private final NetTaskQueue readQueue = new NetTaskQueue(sessl);
+	private final NetTaskQueue queue = new NetTaskQueue(sessl);
 
 	public static void main(String[] args) throws IOException, AWTException {
 		new LocalSlave();

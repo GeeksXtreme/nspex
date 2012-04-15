@@ -1,6 +1,10 @@
 package org.whired.inspexi.tools;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 
 /**
@@ -14,79 +18,75 @@ public class NetTaskQueue {
 	 */
 	private final LinkedBlockingDeque<NetTask> pendingTasks = new LinkedBlockingDeque<NetTask>();
 	/**
-	 * Whether or not this queue is accepting tasks
-	 */
-	private boolean acceptingTasks = true;
-	/**
 	 * The listener to notify when a task fails
 	 */
 	private final SessionListener listener;
+	/**
+	 * The max number of threads in a thread pool
+	 */
+	private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors() * 10;
+	/**
+	 * Executes tasks
+	 */
+	private static final ExecutorService exec = Executors.newFixedThreadPool(MAX_THREADS);
 
 	/**
-	 * Creates a new queue with the specified listener
+	 * Creates a new queue with the specified listener Automatically handles any connection exceptions and closes the appropriate socket if applicable
 	 * 
 	 * @param listener the listener to notify if a task fails
 	 */
-	public NetTaskQueue(SessionListener listener) {
+	public NetTaskQueue(final SessionListener listener) {
 		this.listener = listener;
-		start();
+		for (int i = 0; i < MAX_THREADS; i++) {
+			exec.submit(task);
+			// start();
+		}
+		System.out.println("Submitted " + MAX_THREADS + " tasks.");
 	}
 
 	/**
-	 * Gets whether or not this queue is accepting tasks
-	 * 
-	 * @return {@code true} if it is, otherwise {@code false}
+	 * Takes and runs tasks in the queue
 	 */
-	public synchronized boolean isAcceptingTasks() {
-		return acceptingTasks;
-	}
-
-	/**
-	 * Notifies this queue that it should accept new tasks
-	 */
-	public synchronized void acceptTasks() {
-		this.acceptingTasks = true;
-	}
-
-	/**
-	 * Prepares the queue and starts executing tasks on a new, self-contained thread
-	 */
-	private void start() {
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				while (true) {
-					try {
-						pendingTasks.take().run();
+	private final Runnable task = new Runnable() {
+		@Override
+		public void run() {
+			while (true) {
+				NetTask t = null;
+				try {
+					t = pendingTasks.take();
+					System.out.println("Executing task " + t.toString());
+					t.run(new DataInputStream(t.socket.getInputStream()), new DataOutputStream(t.socket.getOutputStream()));
+				}
+				catch (IOException e) {
+					if (t != null) {
+						t.onFail();
 					}
-					catch (IOException e) {
-						synchronized (NetTaskQueue.this) {
-							acceptingTasks = false;
+					if (t.socket != null) {
+						try {
+							t.socket.close();
 						}
-						pendingTasks.clear();
-						listener.sessionEnded(e.toString());
+						catch (IOException e1) {
+						} // Not a big deal, just trying to clean up
 					}
-					catch (InterruptedException e) {
-						e.printStackTrace();
-					}
+					listener.sessionEnded(e.toString());
+				}
+				catch (InterruptedException e) {
+					e.printStackTrace();
 				}
 			}
-		}).start();
-	}
+		}
+	};
 
 	/**
 	 * Adds a task to this queue
 	 * 
 	 * @param task the task to execute
-	 * @return {@code true} if the task was added, otherwise {@code false}
 	 */
-	public synchronized boolean add(NetTask task) {
-		if (acceptingTasks) {
-			pendingTasks.offer(task);
-			return true;
-		}
-		else {
-			return false;
-		}
+	public synchronized void add(NetTask task) {
+		pendingTasks.offer(task);
+	}
+
+	public Runnable getTask() {
+		return task;
 	}
 }
