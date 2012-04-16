@@ -9,9 +9,9 @@ public class Log {
 
 	private static final class LoggerFactory {
 		private final static Logger create() {
-			Logger logger = Logger.getLogger(Log.class.getName());
+			final Logger logger = Logger.getLogger(Log.class.getName());
 			logger.setLevel(Level.INFO);
-			ConsoleHandler ch = new ConsoleHandler();
+			final ConsoleHandler ch = new ConsoleHandler();
 			ch.setLevel(Level.INFO);
 			ch.setFormatter(new LogFormatter());
 			logger.addHandler(ch);

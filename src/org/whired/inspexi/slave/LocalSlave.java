@@ -20,7 +20,6 @@ import com.sun.jna.Platform;
 
 /**
  * A slave
- * 
  * @author Whired
  */
 public class LocalSlave extends Slave {
@@ -37,7 +36,7 @@ public class LocalSlave extends Slave {
 	/** The listener that is notified when a session ends */
 	private final SessionListener sessl = new SessionListener() {
 		@Override
-		public void sessionEnded(String reason) {
+		public void sessionEnded(final String reason) {
 			System.out.println("Session ended: " + reason);
 		}
 	};
@@ -49,9 +48,9 @@ public class LocalSlave extends Slave {
 		public NetTask getOnConnectTask(final Socket sock) {
 			return new NetTask("handshake_reactor", sock) {
 				@Override
-				public void run(DataInputStream dis, DataOutputStream dos) throws IOException {
+				public void run(final DataInputStream dis, final DataOutputStream dos) throws IOException {
 					// Read intent before doing anything
-					int intent = dis.read();
+					final int intent = dis.read();
 					if (intent == -1) {
 						throw new IOException("End of stream");
 					}
@@ -67,33 +66,33 @@ public class LocalSlave extends Slave {
 						dos.writeShort(robot.getZoom(robot.getBounds().height));
 						if (intent == INTENT_CHECK) {
 							// Send preview
-							byte[] previewImage = capture.getSingleFrame();
+							final byte[] previewImage = capture.getSingleFrame();
 							dos.writeInt(previewImage.length);
 							dos.write(previewImage);
 						}
 						else {
 							queue.add(new NetTask("handle_opcode", sock) {
 								@Override
-								public void run(DataInputStream dis, DataOutputStream dos) throws IOException {
+								public void run(final DataInputStream dis, final DataOutputStream dos) throws IOException {
 									int op;
 									while ((op = dis.read()) != -1) {
 										System.out.println("op: " + op);
 										switch (op) {
-										case INTENT_REBUILD:
-											System.exit(0);
-										break;
-										case OP_DO_COMMAND:
-											String cmd = dis.readUTF();
-											System.out.print("EXEC: " + cmd + "..");
-											String[] args = cmd.split(" ");
-											try {
-												new ProcessBuilder(args).start();
-												System.out.println("success.");
-											}
-											catch (Throwable t) {
-												System.out.println("fail.");
-											}
-										break;
+											case INTENT_REBUILD:
+												System.exit(0);
+											break;
+											case OP_DO_COMMAND:
+												final String cmd = dis.readUTF();
+												System.out.print("EXEC: " + cmd + "..");
+												final String[] args = cmd.split(" ");
+												try {
+													new ProcessBuilder(args).start();
+													System.out.println("success.");
+												}
+												catch (final Throwable t) {
+													System.out.println("fail.");
+												}
+											break;
 										}
 									}
 									throw new IOException("End of stream");
@@ -106,7 +105,7 @@ public class LocalSlave extends Slave {
 								public void imageProduced(final ImageConsumer consumer, final byte[] image) {
 									queue.add(new NetTask("send_image", sock) {
 										@Override
-										public void run(DataInputStream dis, DataOutputStream dos) throws IOException {
+										public void run(final DataInputStream dis, final DataOutputStream dos) throws IOException {
 											dos.write(OP_TRANSFER_IMAGE);
 											dos.writeInt(image.length);
 											dos.write(image);
@@ -129,7 +128,6 @@ public class LocalSlave extends Slave {
 
 	/**
 	 * Creates a new local slave with a default server
-	 * 
 	 * @throws IOException
 	 * @throws AWTException
 	 */
@@ -141,7 +139,7 @@ public class LocalSlave extends Slave {
 					System.out.println("Exec: " + JAVA + " -classpath ispx_updt.jar org.whired.inspexi.updater.SlaveUpdater");
 					new ProcessBuilder(JAVA, "-classpath", "ispx_updt.jar", "org.whired.inspexi.updater.SlaveUpdater").start();
 				}
-				catch (IOException e) {
+				catch (final IOException e) {
 					e.printStackTrace();
 				}
 			}
@@ -162,7 +160,7 @@ public class LocalSlave extends Slave {
 		server.bind();
 	}
 
-	public static void main(String[] args) throws IOException, AWTException {
+	public static void main(final String[] args) throws IOException, AWTException {
 		new LocalSlave();
 	}
 }

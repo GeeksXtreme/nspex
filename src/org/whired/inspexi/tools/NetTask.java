@@ -7,42 +7,33 @@ import java.net.Socket;
 
 /**
  * A network task
- * 
  * @author Whired
  */
 public abstract class NetTask {
 
-	/**
-	 * The name of this task
-	 */
+	/** The name of this task */
 	private final String name;
 
-	/**
-	 * The socket that this net task will use
-	 */
+	/** The socket that this net task will use */
 	protected final Socket socket;
 
 	/**
 	 * Creates a new task with the specified name
-	 * 
 	 * @param name the name of the task
 	 * @param socket the socket that this net task will use
 	 */
-	public NetTask(String name, Socket socket) {
+	public NetTask(final String name, final Socket socket) {
 		this.name = name;
 		this.socket = socket;
 	}
 
 	/**
 	 * Runs this task
-	 * 
 	 * @throws IOException when a network error occurs
 	 */
 	public abstract void run(DataInputStream dis, DataOutputStream dos) throws IOException;
 
-	/**
-	 * This will be ran if {@link #run(DataInputStream, DataOutputStream)} throws an exception
-	 */
+	/** This will be ran if {@link #run(DataInputStream, DataOutputStream)} throws an exception */
 	public void onFail() {
 		// Overriding is optional
 	}

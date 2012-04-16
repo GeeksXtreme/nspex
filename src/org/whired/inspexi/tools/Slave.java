@@ -10,7 +10,7 @@ public abstract class Slave {
 		return os;
 	}
 
-	public void setOS(String os) {
+	public void setOS(final String os) {
 		this.os = os;
 	}
 
@@ -18,7 +18,7 @@ public abstract class Slave {
 		return host;
 	}
 
-	public void setHost(String host) {
+	public void setHost(final String host) {
 		this.host = host;
 	}
 
@@ -26,7 +26,7 @@ public abstract class Slave {
 		return version;
 	}
 
-	public void setVersion(String version) {
+	public void setVersion(final String version) {
 		this.version = version;
 	}
 }

@@ -15,6 +15,8 @@ import javax.swing.GroupLayout.Alignment;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.WindowConstants;
 
 import org.whired.inspexi.tools.SessionListener;
 
@@ -26,11 +28,11 @@ public class RemoteSlaveFullView extends JFrame implements SessionListener, Imag
 		super(slave.getIp());
 		panel = new JPanel() {
 			@Override
-			public void paint(Graphics g) {
+			public void paint(final Graphics g) {
 				if (image == null) {
 					return;
 				}
-				Graphics2D g2 = (Graphics2D) g;
+				final Graphics2D g2 = (Graphics2D) g;
 				g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
 				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 				g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
@@ -45,22 +47,22 @@ public class RemoteSlaveFullView extends JFrame implements SessionListener, Imag
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
-				setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+				setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
-				JScrollPane scrollPane = new JScrollPane();
-				scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+				final JScrollPane scrollPane = new JScrollPane();
+				scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 				scrollPane.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane.getVerticalScrollBar()));
 				scrollPane.setViewportBorder(null);
 
-				GroupLayout groupLayout = new GroupLayout(getContentPane());
+				final GroupLayout groupLayout = new GroupLayout(getContentPane());
 
 				groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.LEADING).addGroup(groupLayout.createSequentialGroup().addComponent(panel, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)).addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE));
 				groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING).addGroup(groupLayout.createSequentialGroup().addComponent(panel, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE).addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE)));
 
-				JConsole console = new JConsole();
+				final JConsole console = new JConsole();
 				console.addCommandListener(new CommandListener() {
 					@Override
-					public void doCommand(String command) {
+					public void doCommand(final String command) {
 						slave.executeRemoteCommand(command);
 					}
 				});
@@ -74,7 +76,7 @@ public class RemoteSlaveFullView extends JFrame implements SessionListener, Imag
 
 				addWindowListener(new WindowAdapter() {
 					@Override
-					public void windowClosing(WindowEvent e) {
+					public void windowClosing(final WindowEvent e) {
 						slave.endSession("User requested");
 						super.windowClosing(e);
 					}
@@ -88,17 +90,17 @@ public class RemoteSlaveFullView extends JFrame implements SessionListener, Imag
 	}
 
 	@Override
-	public void imageProduced(Image image) {
+	public void imageProduced(final Image image) {
 		this.image = image;
 		panel.repaint();
 	}
 
 	@Override
-	public void sessionEnded(String reason) {
+	public void sessionEnded(final String reason) {
 		this.dispose();
 	}
 
-	private static void runOnEdt(Runnable run) {
+	private static void runOnEdt(final Runnable run) {
 		if (EventQueue.isDispatchThread()) {
 			run.run();
 		}
@@ -106,7 +108,7 @@ public class RemoteSlaveFullView extends JFrame implements SessionListener, Imag
 			try {
 				EventQueue.invokeAndWait(run);
 			}
-			catch (Throwable t) {
+			catch (final Throwable t) {
 			}
 		}
 	}

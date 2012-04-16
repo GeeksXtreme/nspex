@@ -14,8 +14,8 @@ public class LogFormatter extends Formatter {
 	public final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("d/M k:mm");
 
 	@Override
-	public synchronized String format(LogRecord record) {
-		StringBuilder sb = new StringBuilder("[");
+	public synchronized String format(final LogRecord record) {
+		final StringBuilder sb = new StringBuilder("[");
 		date.setTime(record.getMillis());
 		sb.append(DATE_FORMAT.format(date));
 		sb.append("] ");
@@ -43,13 +43,13 @@ public class LogFormatter extends Formatter {
 		sb.append(lineSeparator);
 		if (record.getThrown() != null) {
 			try {
-				StringWriter sw = new StringWriter();
-				PrintWriter pw = new PrintWriter(sw);
+				final StringWriter sw = new StringWriter();
+				final PrintWriter pw = new PrintWriter(sw);
 				record.getThrown().printStackTrace(pw);
 				pw.close();
 				sb.append(sw.toString());
 			}
-			catch (Exception ex) {
+			catch (final Exception ex) {
 			}
 		}
 		return sb.toString();

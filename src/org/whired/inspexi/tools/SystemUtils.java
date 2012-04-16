@@ -22,7 +22,6 @@ package org.whired.inspexi.tools;
  * <p>
  * If a system property cannot be read due to security restrictions, the corresponding field in this class will be set to <code>null</code> and a message will be written to <code>System.err</code>.
  * </p>
- * 
  * @author Based on code from Avalon Excalibur
  * @author Based on code from Lucene
  * @author Stephen Colebourne
@@ -51,11 +50,10 @@ public class SystemUtils {
 	 * <p>
 	 * This value is initialized when the class is loaded. If {@link System#setProperty(String,String)} or {@link System#setProperties(java.util.Properties)} is called after this class is loaded, the value will be out of sync with that System property.
 	 * </p>
-	 * 
 	 * @since 2.0
 	 * @since Java 1.2
 	 */
-	public static final String USER_COUNTRY = (getSystemProperty("user.country") == null ? getSystemProperty("user.region") : getSystemProperty("user.country"));
+	public static final String USER_COUNTRY = getSystemProperty("user.country") == null ? getSystemProperty("user.region") : getSystemProperty("user.country");
 
 	// Operating system checks
 	// -----------------------------------------------------------------------
@@ -72,7 +70,6 @@ public class SystemUtils {
 	 * <p>
 	 * The field will return <code>false</code> if <code>OS_NAME</code> is <code>null</code>.
 	 * </p>
-	 * 
 	 * @since 2.0
 	 */
 	public static final boolean IS_OS_AIX = getOSMatches("AIX");
@@ -84,7 +81,6 @@ public class SystemUtils {
 	 * <p>
 	 * The field will return <code>false</code> if <code>OS_NAME</code> is <code>null</code>.
 	 * </p>
-	 * 
 	 * @since 2.0
 	 */
 	public static final boolean IS_OS_HP_UX = getOSMatches("HP-UX");
@@ -96,7 +92,6 @@ public class SystemUtils {
 	 * <p>
 	 * The field will return <code>false</code> if <code>OS_NAME</code> is <code>null</code>.
 	 * </p>
-	 * 
 	 * @since 2.0
 	 */
 	public static final boolean IS_OS_IRIX = getOSMatches("Irix");
@@ -108,7 +103,6 @@ public class SystemUtils {
 	 * <p>
 	 * The field will return <code>false</code> if <code>OS_NAME</code> is <code>null</code>.
 	 * </p>
-	 * 
 	 * @since 2.0
 	 */
 	public static final boolean IS_OS_LINUX = getOSMatches("Linux") || getOSMatches("LINUX");
@@ -120,7 +114,6 @@ public class SystemUtils {
 	 * <p>
 	 * The field will return <code>false</code> if <code>OS_NAME</code> is <code>null</code>.
 	 * </p>
-	 * 
 	 * @since 2.0
 	 */
 	public static final boolean IS_OS_MAC = getOSMatches("Mac");
@@ -132,7 +125,6 @@ public class SystemUtils {
 	 * <p>
 	 * The field will return <code>false</code> if <code>OS_NAME</code> is <code>null</code>.
 	 * </p>
-	 * 
 	 * @since 2.0
 	 */
 	public static final boolean IS_OS_MAC_OSX = getOSMatches("Mac OS X");
@@ -144,7 +136,6 @@ public class SystemUtils {
 	 * <p>
 	 * The field will return <code>false</code> if <code>OS_NAME</code> is <code>null</code>.
 	 * </p>
-	 * 
 	 * @since 2.0
 	 */
 	public static final boolean IS_OS_OS2 = getOSMatches("OS/2");
@@ -156,7 +147,6 @@ public class SystemUtils {
 	 * <p>
 	 * The field will return <code>false</code> if <code>OS_NAME</code> is <code>null</code>.
 	 * </p>
-	 * 
 	 * @since 2.0
 	 */
 	public static final boolean IS_OS_SOLARIS = getOSMatches("Solaris");
@@ -168,7 +158,6 @@ public class SystemUtils {
 	 * <p>
 	 * The field will return <code>false</code> if <code>OS_NAME</code> is <code>null</code>.
 	 * </p>
-	 * 
 	 * @since 2.0
 	 */
 	public static final boolean IS_OS_SUN_OS = getOSMatches("SunOS");
@@ -180,7 +169,6 @@ public class SystemUtils {
 	 * <p>
 	 * The field will return <code>false</code> if <code>OS_NAME</code> is <code>null</code>.
 	 * </p>
-	 * 
 	 * @since 2.1
 	 */
 	public static final boolean IS_OS_UNIX = IS_OS_AIX || IS_OS_HP_UX || IS_OS_IRIX || IS_OS_LINUX || IS_OS_MAC_OSX || IS_OS_SOLARIS || IS_OS_SUN_OS;
@@ -192,7 +180,6 @@ public class SystemUtils {
 	 * <p>
 	 * The field will return <code>false</code> if <code>OS_NAME</code> is <code>null</code>.
 	 * </p>
-	 * 
 	 * @since 2.0
 	 */
 	public static final boolean IS_OS_WINDOWS = getOSMatches("Windows");
@@ -213,11 +200,10 @@ public class SystemUtils {
 	 * <p>
 	 * Decides if the operating system matches.
 	 * </p>
-	 * 
 	 * @param osNamePrefix the prefix for the os name
 	 * @return true if matches, or false if not or can't determine
 	 */
-	private static boolean getOSMatches(String osNamePrefix) {
+	private static boolean getOSMatches(final String osNamePrefix) {
 		if (OS_NAME == null) {
 			return false;
 		}
@@ -232,15 +218,14 @@ public class SystemUtils {
 	 * <p>
 	 * If a <code>SecurityException</code> is caught, the return value is <code>null</code> and a message is written to <code>System.err</code>.
 	 * </p>
-	 * 
 	 * @param property the system property name
 	 * @return the system property value or <code>null</code> if a security problem occurs
 	 */
-	private static String getSystemProperty(String property) {
+	private static String getSystemProperty(final String property) {
 		try {
 			return System.getProperty(property);
 		}
-		catch (SecurityException ex) {
+		catch (final SecurityException ex) {
 			// we are not allowed to look at this property
 			System.err.println("Caught a SecurityException reading the system property '" + property + "'; the SystemUtils property value will default to null.");
 			return null;

@@ -30,6 +30,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextPane;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
@@ -52,16 +53,14 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 	private final JPanel pnlPreview;
 	private final DefaultTableModel model = new DefaultTableModel(new String[] { "IP", "Host", "OS", "Version", "Status" }, 0) {
 		@Override
-		public boolean isCellEditable(int rowIndex, int mColIndex) {
+		public boolean isCellEditable(final int rowIndex, final int mColIndex) {
 			return false;
 		}
 	};
 	private Image previewImage;
 
-	/**
-	 * Create the frame.
-	 */
-	public MasterFrame(ControllerEventListener listener) {
+	/** Create the frame. */
+	public MasterFrame(final ControllerEventListener listener) {
 		this.listener = listener;
 
 		setTitle("Inspexi");
@@ -70,18 +69,18 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		contentPane = new JPanel();
 		contentPane.setBorder(null);
 		setContentPane(contentPane);
-		GridBagLayout gbl_contentPane = new GridBagLayout();
+		final GridBagLayout gbl_contentPane = new GridBagLayout();
 		gbl_contentPane.columnWidths = new int[] { 494, 80, 27, 27, 0 };
 		gbl_contentPane.rowHeights = new int[] { 245, 1, 75, 0 };
 		gbl_contentPane.columnWeights = new double[] { 1.0, 1.0, 0.0, 0.0, Double.MIN_VALUE };
 		gbl_contentPane.rowWeights = new double[] { 1.0, 0.0, 1.0, Double.MIN_VALUE };
 		contentPane.setLayout(gbl_contentPane);
 
-		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		final JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		scrollPane.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane.getVerticalScrollBar()));
 		scrollPane.setViewportBorder(null);
-		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
+		final GridBagConstraints gbc_scrollPane = new GridBagConstraints();
 		gbc_scrollPane.insets = new Insets(0, 0, -3, 0);
 		gbc_scrollPane.gridwidth = 4;
 		gbc_scrollPane.fill = GridBagConstraints.BOTH;
@@ -93,7 +92,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 
 		table.addMouseListener(new MouseAdapter() {
 			@Override
-			public void mousePressed(MouseEvent e) {
+			public void mousePressed(final MouseEvent e) {
 				if (table.rowAtPoint(e.getPoint()) == -1 || e.getButton() == MouseEvent.BUTTON3) {
 					table.getSelectionModel().clearSelection();
 				}
@@ -114,7 +113,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 
 			@Override
-			public void valueChanged(ListSelectionEvent e) {
+			public void valueChanged(final ListSelectionEvent e) {
 				previewImage = null;
 				pnlPreview.repaint();
 				if (e.getValueIsAdjusting() || table.getSelectionModel().isSelectionEmpty()) {
@@ -124,41 +123,41 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 			}
 		});
 
-		JButton btnConnect = new JButton("Connect");
+		final JButton btnConnect = new JButton("Connect");
 		btnConnect.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent arg0) {
+			public void actionPerformed(final ActionEvent arg0) {
 				connect(getSelectedIps());
 			}
 		});
 		btnConnect.setToolTipText("Connect");
 		btnConnect.setFont(font);
-		GridBagConstraints gbc_btnConnect = new GridBagConstraints();
+		final GridBagConstraints gbc_btnConnect = new GridBagConstraints();
 		gbc_btnConnect.anchor = GridBagConstraints.SOUTHWEST;
 		gbc_btnConnect.gridx = 0;
 		gbc_btnConnect.gridy = 1;
 		contentPane.add(btnConnect, gbc_btnConnect);
 
-		JButton btnRefresh = new JButton("");
+		final JButton btnRefresh = new JButton("");
 		btnRefresh.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent arg0) {
+			public void actionPerformed(final ActionEvent arg0) {
 				refresh(getSelectedIps());
 			}
 		});
 
-		JButton btnBuild = new JButton("");
+		final JButton btnBuild = new JButton("");
 		btnBuild.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				rebuild(getSelectedIps());
 			}
 		});
 
-		JButton btnAdd = new JButton("");
+		final JButton btnAdd = new JButton("");
 		btnAdd.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent arg0) {
+			public void actionPerformed(final ActionEvent arg0) {
 				String ip;
 				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter IP:")) != null && ip.length() > 0) {
 					addSlaves(new String[] { ip });
@@ -166,7 +165,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 			}
 		});
 		btnAdd.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/inspexi/master/resources/plus.gif")));
-		GridBagConstraints gbc_btnAdd = new GridBagConstraints();
+		final GridBagConstraints gbc_btnAdd = new GridBagConstraints();
 		gbc_btnAdd.anchor = GridBagConstraints.EAST;
 		gbc_btnAdd.fill = GridBagConstraints.VERTICAL;
 		gbc_btnAdd.gridx = 1;
@@ -174,21 +173,21 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		contentPane.add(btnAdd, gbc_btnAdd);
 		btnBuild.setToolTipText("Rebuild");
 		btnBuild.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/inspexi/master/resources/rebuild.gif")));
-		GridBagConstraints gbc_btnBuild = new GridBagConstraints();
+		final GridBagConstraints gbc_btnBuild = new GridBagConstraints();
 		gbc_btnBuild.fill = GridBagConstraints.VERTICAL;
 		gbc_btnBuild.gridx = 2;
 		gbc_btnBuild.gridy = 1;
 		contentPane.add(btnBuild, gbc_btnBuild);
 		btnRefresh.setToolTipText("Refresh list");
 		btnRefresh.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/inspexi/master/resources/refresh.png")));
-		GridBagConstraints gbc_btnRefresh = new GridBagConstraints();
+		final GridBagConstraints gbc_btnRefresh = new GridBagConstraints();
 		gbc_btnRefresh.fill = GridBagConstraints.VERTICAL;
 		gbc_btnRefresh.gridx = 3;
 		gbc_btnRefresh.gridy = 1;
 		contentPane.add(btnRefresh, gbc_btnRefresh);
 
-		JScrollPane scrollPane_1 = new JScrollPane();
-		GridBagConstraints gbc_scrollPane_1 = new GridBagConstraints();
+		final JScrollPane scrollPane_1 = new JScrollPane();
+		final GridBagConstraints gbc_scrollPane_1 = new GridBagConstraints();
 		gbc_scrollPane_1.fill = GridBagConstraints.BOTH;
 		gbc_scrollPane_1.gridx = 0;
 		gbc_scrollPane_1.gridy = 2;
@@ -219,37 +218,37 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 			}
 		});
 
-		OutputStream out = new OutputStream() {
+		final OutputStream out = new OutputStream() {
 			@Override
-			public void write(int b) throws IOException {
+			public void write(final int b) throws IOException {
 				updateTextArea(pane, String.valueOf((char) b), false);
 			}
 
 			@Override
-			public void write(byte[] b, int off, int len) throws IOException {
+			public void write(final byte[] b, final int off, final int len) throws IOException {
 				updateTextArea(pane, new String(b, off, len), false);
 			}
 
 			@Override
-			public void write(byte[] b) throws IOException {
+			public void write(final byte[] b) throws IOException {
 				write(b, 0, b.length);
 			}
 		};
-		PrintStream p = new PrintStream(out, true);
+		final PrintStream p = new PrintStream(out, true);
 		System.setOut(p);
 		System.setErr(p);
 
 		scrollPane_1.setViewportView(pane);
-		scrollPane_1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		scrollPane_1.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
 		pnlPreview = new JPanel() {
 			@Override
-			public void paint(Graphics g) {
+			public void paint(final Graphics g) {
 				if (previewImage == null) {
 					super.paint(g);
 					return;
 				}
-				Graphics2D g2 = (Graphics2D) g;
+				final Graphics2D g2 = (Graphics2D) g;
 				g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
 				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 				g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
@@ -264,11 +263,11 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		pnlPreview.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		pnlPreview.addMouseListener(new MouseAdapter() {
 			@Override
-			public void mousePressed(MouseEvent e) {
+			public void mousePressed(final MouseEvent e) {
 				connect(getSelectedIps());
 			}
 		});
-		GridBagConstraints gbc_pnlPreview = new GridBagConstraints();
+		final GridBagConstraints gbc_pnlPreview = new GridBagConstraints();
 		gbc_pnlPreview.insets = new Insets(2, 0, 2, 2);
 		gbc_pnlPreview.gridwidth = 3;
 		gbc_pnlPreview.fill = GridBagConstraints.BOTH;
@@ -282,7 +281,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
-				for (String ip : ips) {
+				for (final String ip : ips) {
 					for (int i = 0; i < model.getRowCount(); i++) {
 						if (model.getValueAt(i, 0).equals(ip)) {
 							break;
@@ -347,18 +346,18 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
-				Document doc = pane.getStyledDocument();
+				final Document doc = pane.getStyledDocument();
 				try {
 					doc.insertString(doc.getLength(), !text.contains(System.getProperty("line.separator")) && !preformatted ? "[" + LogFormatter.DATE_FORMAT.format(Calendar.getInstance().getTime()) + "] System: " + text : text, null);
 					pane.setCaretPosition(doc.getLength());
 				}
-				catch (BadLocationException e) {
+				catch (final BadLocationException e) {
 				}
 			}
 		});
 	}
 
-	private static void runOnEdt(Runnable run) {
+	private static void runOnEdt(final Runnable run) {
 		if (EventQueue.isDispatchThread()) {
 			run.run();
 		}
@@ -366,7 +365,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 			try {
 				EventQueue.invokeAndWait(run);
 			}
-			catch (Throwable t) {
+			catch (final Throwable t) {
 			}
 		}
 	}
@@ -404,28 +403,28 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 	}
 
 	@Override
-	public void connect(String[] ips) {
+	public void connect(final String[] ips) {
 		listener.connect(ips);
 	}
 
 	@Override
-	public void rebuild(String[] ips) {
+	public void rebuild(final String[] ips) {
 		listener.rebuild(ips);
 	}
 
 	@Override
-	public void refresh(String[] ips) {
+	public void refresh(final String[] ips) {
 		listener.refresh(ips);
 	}
 
 	@Override
-	public void imageProduced(Image image) {
+	public void imageProduced(final Image image) {
 		this.previewImage = image;
 		pnlPreview.repaint();
 	}
 
 	@Override
-	public void imageResized(int width, int height) {
+	public void imageResized(final int width, final int height) {
 		// TODO Auto-generated method stub
 
 	}

@@ -22,12 +22,12 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 	private final String ip;
 	private ImageConsumer consumer;
 
-	public RemoteSlaveModel(String ip, int port) throws IOException {
+	public RemoteSlaveModel(final String ip, final int port) throws IOException {
 		this.ip = ip;
 		socket.connect(new InetSocketAddress(ip, port), 250);
 	}
 
-	public void connect(int intent) {
+	public void connect(final int intent) {
 		try {
 			dis = new DataInputStream(socket.getInputStream());
 			dos = new DataOutputStream(socket.getOutputStream());
@@ -41,8 +41,8 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 				if (intent != INTENT_CONNECT) {
 					if (intent == INTENT_CHECK) {
 						// Read preview if this isn't a bulk check
-						int imgLen = dis.readInt();
-						byte[] buf = new byte[imgLen];
+						final int imgLen = dis.readInt();
+						final byte[] buf = new byte[imgLen];
 						int read = 0;
 						while ((read += dis.read(buf, read, imgLen - read)) != imgLen) {
 							;
@@ -69,26 +69,26 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 											int op;
 											while ((op = dis.read()) != -1) {
 												switch (op) {
-												case 0:
-													int imgLen = dis.readInt();
-													byte[] buf = new byte[imgLen];
-													int read = 0;
-													while ((read += dis.read(buf, read, imgLen - read)) != imgLen) {
-														;
-													}
-													imageProduced(ImageIO.read(new ByteArrayInputStream(buf)));
-												break;
+													case 0:
+														final int imgLen = dis.readInt();
+														final byte[] buf = new byte[imgLen];
+														int read = 0;
+														while ((read += dis.read(buf, read, imgLen - read)) != imgLen) {
+															;
+														}
+														imageProduced(ImageIO.read(new ByteArrayInputStream(buf)));
+													break;
 												}
 											}
 											endSession("End of stream");
 										}
-										catch (Throwable t) {
+										catch (final Throwable t) {
 											endSession(t.toString());
 										}
 									}
 								}, "SlavePacketReceiver").start();
 							}
-							catch (Throwable t) {
+							catch (final Throwable t) {
 								endSession(t.toString());
 							}
 						}
@@ -96,29 +96,29 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 				}
 			}
 		}
-		catch (IOException e) {
+		catch (final IOException e) {
 			endSession(e.toString());
 		}
 
 	}
 
-	public void executeRemoteCommand(String command) {
+	public void executeRemoteCommand(final String command) {
 		try {
 			dos.write(OP_DO_COMMAND);
 			dos.writeUTF(command);
 		}
-		catch (Throwable t) {
+		catch (final Throwable t) {
 			endSession(t.toString());
 		}
 	}
 
-	protected void endSession(String reason) {
+	protected void endSession(final String reason) {
 		try {
 			if (socket != null) {
 				socket.close();
 			}
 		}
-		catch (IOException e) {
+		catch (final IOException e) {
 		}
 		sessionEnded(reason);
 	}
@@ -127,16 +127,16 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 		return this.ip;
 	}
 
-	public void setSessionListener(SessionListener listener) {
+	public void setSessionListener(final SessionListener listener) {
 		this.listener = listener;
 	}
 
-	public void setImageConsumer(ImageConsumer consumer) {
+	public void setImageConsumer(final ImageConsumer consumer) {
 		this.consumer = consumer;
 	}
 
 	@Override
-	public void sessionEnded(String reason) {
+	public void sessionEnded(final String reason) {
 		if (listener != null) {
 			listener.sessionEnded(reason);
 		}
@@ -144,14 +144,14 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 	}
 
 	@Override
-	public void imageProduced(Image image) {
+	public void imageProduced(final Image image) {
 		if (consumer != null) {
 			consumer.imageProduced(image);
 		}
 	}
 
 	@Override
-	public void imageResized(int width, int height) {
+	public void imageResized(final int width, final int height) {
 		if (consumer != null) {
 			consumer.imageResized(width, height);
 		}

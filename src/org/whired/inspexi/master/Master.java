@@ -16,28 +16,23 @@ import org.whired.inspexi.tools.logging.Log;
 
 /**
  * A master server
- * 
  * @author Whired
  */
 public class Master {
-	/**
-	 * The view for this master
-	 */
+	/** The view for this master */
 	private MasterFrame frame;
 
-	/**
-	 * Listens for events fired by the view
-	 */
+	/** Listens for events fired by the view */
 	private final ControllerEventListener listener = new ControllerEventListener() {
 		@Override
 		public void connect(final String[] ips) {
 			for (final String ip : ips) {
 				try {
-					RemoteSlaveModel slave = new RemoteSlaveModel(ip, 43596);
+					final RemoteSlaveModel slave = new RemoteSlaveModel(ip, 43596);
 					new RemoteSlaveFullView(slave);
 					slave.connect(Slave.INTENT_CONNECT);
 				}
-				catch (Throwable t) {
+				catch (final Throwable t) {
 					t.printStackTrace();
 					Log.l.warning("Could not connect to " + ip + ".");
 				}
@@ -50,7 +45,7 @@ public class Master {
 				try {
 					new RemoteSlaveModel(ip, 43596).connect(Slave.INTENT_REBUILD);
 				}
-				catch (Throwable t) {
+				catch (final Throwable t) {
 					t.printStackTrace();
 				}
 			}
@@ -63,7 +58,7 @@ public class Master {
 				public void run() {
 					for (final String ip : ips) {
 						try {
-							RemoteSlaveModel r = new RemoteSlaveModel(ip, 43596);
+							final RemoteSlaveModel r = new RemoteSlaveModel(ip, 43596);
 							if (ips.length == 1) {
 								r.setImageConsumer(frame);
 								r.connect(Slave.INTENT_CHECK);
@@ -73,7 +68,7 @@ public class Master {
 							}
 							frame.updateSlaveList(ip, r.getHost(), r.getOS(), r.getVersion());
 						}
-						catch (Throwable t) {
+						catch (final Throwable t) {
 							frame.setSlaveOffline(ip);
 						}
 					}
@@ -86,14 +81,13 @@ public class Master {
 
 	/**
 	 * Creates a new master that will work with the specified given ips
-	 * 
 	 * @param slaveIps the ips to work with initially
 	 */
 	public Master(final String[] slaveIps) {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		}
-		catch (Throwable e) {
+		catch (final Throwable e) {
 			Log.l.log(Level.WARNING, "Failed to set look and feel: ", e);
 		}
 		EventQueue.invokeLater(new Runnable() {
@@ -106,29 +100,26 @@ public class Master {
 		});
 	}
 
-	/**
-	 * The location of the properties file that has settings for this slave
-	 */
+	/** The location of the properties file that has settings for this slave */
 	private static final String PROPS_FILE = "props.dat";
 
 	/**
 	 * Loads properties from the path specified in {@link #PROPS_FILE}, or a new {@code Properties} if none could be loaded
-	 * 
 	 * @return the properties
 	 */
 	public static Properties getProps() {
-		Properties props = new Properties();
+		final Properties props = new Properties();
 		try {
 			props.load(new FileInputStream(PROPS_FILE));
 		}
-		catch (Throwable t) {
+		catch (final Throwable t) {
 			t.printStackTrace();
 		}
 		return props;
 	}
 
-	public static void main(String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException {
-		Properties props = getProps();
+	public static void main(final String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException {
+		final Properties props = getProps();
 		// String[] ips = new String[] { "localhost", "192.168.2.8" };
 		// StringBuilder b = new StringBuilder();
 		// for (String s : ips) {
@@ -137,7 +128,7 @@ public class Master {
 		// b.deleteCharAt(b.length() - 1);
 		// props.put("ips", b.toString());
 		// props.store(new FileOutputStream("props.dat"), null);
-		String s = (String) props.get("ips");
+		final String s = (String) props.get("ips");
 		new Master(s != null ? s.split(",") : new String[0]);
 	}
 }

@@ -24,28 +24,28 @@ public class KeyboardMonitor implements KeyProducer {
 	private final User32 lib;
 	private final HashSet<KeyProducer> listeners = new HashSet<KeyProducer>();
 
-	public static void main(String[] args) {
+	public static void main(final String[] args) {
 		new KeyboardMonitor();
 	}
 
 	public KeyboardMonitor() {
 		lib = User32.INSTANCE;
-		HMODULE hMod = Kernel32.INSTANCE.GetModuleHandle(null);
+		final HMODULE hMod = Kernel32.INSTANCE.GetModuleHandle(null);
 		keyboardHook = new LowLevelKeyboardProc() {
 			@Override
-			public LRESULT callback(int nCode, WPARAM wParam, KBDLLHOOKSTRUCT info) {
-				int keyCode = info.vkCode;
+			public LRESULT callback(final int nCode, final WPARAM wParam, final KBDLLHOOKSTRUCT info) {
+				final int keyCode = info.vkCode;
 				if (nCode >= 0) {
 					switch (wParam.intValue()) {
-					case WinUser.WM_SYSKEYUP:
-					case WinUser.WM_KEYUP:
-						Keys.delKeyDown(keyCode);
-					break;
-					case WinUser.WM_KEYDOWN:
-					case WinUser.WM_SYSKEYDOWN:
-						Keys.addKeyDown(keyCode);
-						keyPressed((short) keyCode);
-					break;
+						case WinUser.WM_SYSKEYUP:
+						case WinUser.WM_KEYUP:
+							Keys.delKeyDown(keyCode);
+						break;
+						case WinUser.WM_KEYDOWN:
+						case WinUser.WM_SYSKEYDOWN:
+							Keys.addKeyDown(keyCode);
+							keyPressed((short) keyCode);
+						break;
 					}
 				}
 				return lib.CallNextHookEx(hhk, nCode, wParam, info.getPointer());
@@ -68,18 +68,18 @@ public class KeyboardMonitor implements KeyProducer {
 		lib.UnhookWindowsHookEx(hhk);
 	}
 
-	public synchronized void addListener(KeyProducer listener) {
+	public synchronized void addListener(final KeyProducer listener) {
 		listeners.add(listener);
 	}
 
-	public synchronized void removeListener(KeyProducer listener) {
+	public synchronized void removeListener(final KeyProducer listener) {
 		listeners.remove(listener);
 	}
 
 	@Override
-	public final synchronized void keyPressed(short wKeyCode) {
+	public final synchronized void keyPressed(final short wKeyCode) {
 		System.out.print(KeyDef.forCode(wKeyCode).toString());
-		for (KeyProducer l : listeners) {
+		for (final KeyProducer l : listeners) {
 			l.keyPressed(wKeyCode);
 		}
 	}
@@ -88,7 +88,7 @@ public class KeyboardMonitor implements KeyProducer {
 
 		private static int[] keysDown = { -1, -1, -1, -1 };
 
-		private static void addKeyDown(int keyCode) {
+		private static void addKeyDown(final int keyCode) {
 			for (int i = 0; i < keysDown.length; i++) {
 				if (keysDown[i] == -1) {
 					keysDown[i] = keyCode;
@@ -100,7 +100,7 @@ public class KeyboardMonitor implements KeyProducer {
 			}
 		}
 
-		private static void delKeyDown(int keyCode) {
+		private static void delKeyDown(final int keyCode) {
 			for (int i = 0; i < keysDown.length; i++) {
 				if (keysDown[i] == keyCode) {
 					keysDown[i] = -1;

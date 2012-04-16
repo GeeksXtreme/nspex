@@ -21,17 +21,17 @@ public class JConsole extends JTextArea {
 		caret = new DefaultCaret() {
 
 			@Override
-			public void setDot(int dot) {
+			public void setDot(final int dot) {
 				super.setDot(getValidPos(dot));
 			}
 
 			@Override
-			public void setDot(int paramInt, Bias paramBias) {
+			public void setDot(final int paramInt, final Bias paramBias) {
 				super.setDot(getValidPos(paramInt), paramBias);
 			}
 
 			private int getValidPos(int orig) {
-				int lastcmd = getText().lastIndexOf(CMDC) + CMDC.length();
+				final int lastcmd = getText().lastIndexOf(CMDC) + CMDC.length();
 				if (orig < lastcmd) {
 					orig = lastcmd;
 				}
@@ -40,9 +40,9 @@ public class JConsole extends JTextArea {
 		};
 		addKeyListener(new KeyAdapter() {
 			@Override
-			public void keyPressed(KeyEvent k) {
-				String st = getSelectedText();
-				int c = k.getKeyCode();
+			public void keyPressed(final KeyEvent k) {
+				final String st = getSelectedText();
+				final int c = k.getKeyCode();
 				if (st != null && c != KeyEvent.VK_LEFT && c != KeyEvent.VK_RIGHT && c != KeyEvent.VK_UP && c != KeyEvent.VK_DOWN && c != KeyEvent.VK_SHIFT) {
 					if (st.contains(CMDC)) {
 						setCaretPosition(getText().lastIndexOf(CMDC) + CMDC.length());
@@ -55,11 +55,11 @@ public class JConsole extends JTextArea {
 							k.consume();
 						}
 					}
-					catch (BadLocationException e) {
+					catch (final BadLocationException e) {
 					}
 				}
 				else if (c == KeyEvent.VK_ENTER) {
-					String command = getText().substring(getText().lastIndexOf(CMDC) + CMDC.length());
+					final String command = getText().substring(getText().lastIndexOf(CMDC) + CMDC.length());
 					append("\n" + CMDC);
 					k.consume();
 					fireCommand(command);
@@ -75,21 +75,21 @@ public class JConsole extends JTextArea {
 		append(CMDC);
 	}
 
-	private void fireCommand(String cmd) {
+	private void fireCommand(final String cmd) {
 		synchronized (this) {
-			for (CommandListener l : listeners) {
+			for (final CommandListener l : listeners) {
 				l.doCommand(cmd);
 			}
 		}
 	}
 
-	public void addCommandListener(CommandListener l) {
+	public void addCommandListener(final CommandListener l) {
 		synchronized (this) {
 			listeners.add(l);
 		}
 	}
 
-	public void removeCommandListener(CommandListener l) {
+	public void removeCommandListener(final CommandListener l) {
 		synchronized (this) {
 			listeners.remove(l);
 		}

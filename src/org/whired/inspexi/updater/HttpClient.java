@@ -17,19 +17,17 @@ import java.net.UnknownHostException;
 
 /**
  * Acts as a client for HTTP
- * 
  * @author Whired
  */
 public class HttpClient {
 
 	/**
 	 * Gets the stream after following redirects
-	 * 
 	 * @param url the url of the document to download
 	 * @return the utf-8 source
 	 * @throws IOException when the source cannot be downloaded
 	 */
-	public static InputStream getStream(String url) throws IOException {
+	public static InputStream getStream(final String url) throws IOException {
 		int failures = 0;
 		int stat = -1;
 		while (failures < 10) {
@@ -43,7 +41,7 @@ public class HttpClient {
 				InputStream in = null;
 				do {
 					if (c instanceof HttpURLConnection) {
-						HttpURLConnection http = (HttpURLConnection) c;
+						final HttpURLConnection http = (HttpURLConnection) c;
 						http.setInstanceFollowRedirects(false);
 						http.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.794.0 Safari/535.1");
 						http.setConnectTimeout(8000);
@@ -53,8 +51,8 @@ public class HttpClient {
 						redir = false;
 						System.out.println(url + ": Stat: " + stat);
 						if (stat >= 300 && stat <= 307 && stat != 306 && stat != HttpURLConnection.HTTP_NOT_MODIFIED) {
-							URL base = http.getURL();
-							String loc = http.getHeaderField("Location");
+							final URL base = http.getURL();
+							final String loc = http.getHeaderField("Location");
 							URL target = null;
 							if (loc != null) {
 								target = new URL(base, loc);
@@ -75,7 +73,7 @@ public class HttpClient {
 				while (redir);
 				return in;
 			}
-			catch (Exception e) {
+			catch (final Exception e) {
 				e.printStackTrace();
 				System.out.println("Stat: " + stat);
 				if (e instanceof UnknownHostException || e instanceof NoRouteToHostException) {
@@ -85,7 +83,7 @@ public class HttpClient {
 						try {
 							Thread.sleep(30000);
 						}
-						catch (InterruptedException ie) {
+						catch (final InterruptedException ie) {
 						}
 						continue;
 					}
@@ -109,11 +107,10 @@ public class HttpClient {
 
 	/**
 	 * Gets the status while following http redirects
-	 * 
 	 * @param url the url of the status to check
 	 * @return the status that was returned
 	 */
-	public static int getStatus(String url) throws IOException {
+	public static int getStatus(final String url) throws IOException {
 		int stat = -1;
 		URLConnection c = new URL(url).openConnection();
 		c.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.794.0 Safari/535.1");
@@ -123,7 +120,7 @@ public class HttpClient {
 		int redirects = 0;
 		do {
 			if (c instanceof HttpURLConnection) {
-				HttpURLConnection http = (HttpURLConnection) c;
+				final HttpURLConnection http = (HttpURLConnection) c;
 				http.setRequestMethod("HEAD");
 				http.setInstanceFollowRedirects(false);
 				http.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.794.0 Safari/535.1");
@@ -132,8 +129,8 @@ public class HttpClient {
 				stat = http.getResponseCode();
 				redir = false;
 				if (stat >= 300 && stat <= 307 && stat != 306 && stat != HttpURLConnection.HTTP_NOT_MODIFIED) {
-					URL base = http.getURL();
-					String loc = http.getHeaderField("Location");
+					final URL base = http.getURL();
+					final String loc = http.getHeaderField("Location");
 					URL target = null;
 					if (loc != null) {
 						target = new URL(base, loc);
@@ -152,11 +149,11 @@ public class HttpClient {
 		return stat;
 	}
 
-	public static File saveToDisk(String path, String url) throws MalformedURLException, FileNotFoundException, IOException {
-		BufferedInputStream in = new BufferedInputStream(new URL(url).openStream());
-		FileOutputStream fos = new java.io.FileOutputStream(path);
-		BufferedOutputStream bout = new BufferedOutputStream(fos, 1024);
-		byte data[] = new byte[1024];
+	public static File saveToDisk(final String path, final String url) throws MalformedURLException, FileNotFoundException, IOException {
+		final BufferedInputStream in = new BufferedInputStream(new URL(url).openStream());
+		final FileOutputStream fos = new java.io.FileOutputStream(path);
+		final BufferedOutputStream bout = new BufferedOutputStream(fos, 1024);
+		final byte data[] = new byte[1024];
 		int read;
 		while ((read = in.read(data)) != -1) {
 			bout.write(data, 0, read);
@@ -166,11 +163,11 @@ public class HttpClient {
 		return new File(path);
 	}
 
-	public static boolean ping(String url) {
+	public static boolean ping(final String url) {
 		int stat = -1;
 		try {
 			HttpURLConnection.setFollowRedirects(false);
-			HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
+			final HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
 			con.setConnectTimeout(5000);
 			con.setReadTimeout(5000);
 			con.setRequestMethod("HEAD");
@@ -179,7 +176,7 @@ public class HttpClient {
 			System.out.println("Ping status: " + stat);
 			return stat != -1;
 		}
-		catch (Exception ee) {
+		catch (final Exception ee) {
 			System.out.println("Ping error: " + ee.toString());
 		}
 		return false;

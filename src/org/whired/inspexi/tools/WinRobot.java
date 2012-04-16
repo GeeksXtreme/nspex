@@ -32,7 +32,6 @@ import com.sun.jna.platform.win32.WinGDI.BITMAPINFO;
 
 /**
  * A native windows implementation of a Robot
- * 
  * @author Whired
  */
 public class WinRobot extends Robot {
@@ -54,11 +53,10 @@ public class WinRobot extends Robot {
 
 	/**
 	 * Creates a new windows robot with the specified bounds and zoom
-	 * 
 	 * @param bounds the bounds to capture pixels from
 	 * @param zoom original bounds will be scaled by this value
 	 */
-	public WinRobot(Rectangle bounds, double zoom) {
+	public WinRobot(final Rectangle bounds, final double zoom) {
 		super(bounds, zoom);
 		hdcWindow = User32.INSTANCE.GetDC(desktop);
 		hdcMemDC = GDI32.INSTANCE.CreateCompatibleDC(hdcWindow);
@@ -82,24 +80,23 @@ public class WinRobot extends Robot {
 		buffer = new Memory(getBounds().width * getBounds().height * 4);
 		iwparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 		iwparam.setCompressionQuality(.8F);
-		Iterator<ImageWriter> iter = ImageIO.getImageWritersByFormatName("jpg");
+		final Iterator<ImageWriter> iter = ImageIO.getImageWritersByFormatName("jpg");
 		if (iter.hasNext()) {
 			writer = iter.next();
 		}
 		try {
 			writer.setOutput(ImageIO.createImageOutputStream(bos));
 		}
-		catch (IOException e1) {
+		catch (final IOException e1) {
 			e1.printStackTrace();
 		}
 	}
 
 	/**
 	 * Creates a new windows robot with the default (screen size) bounds and specified zoom
-	 * 
 	 * @param zoom original bounds will be scaled by this value
 	 */
-	public WinRobot(double zoom) {
+	public WinRobot(final double zoom) {
 		this(null, zoom);
 	}
 
@@ -108,7 +105,7 @@ public class WinRobot extends Robot {
 		GDI32.INSTANCE.BitBlt(hdcMemDC, 0, 0, getBounds().width, getBounds().height, hdcWindow, 0, 0, GDI32.SRCCOPY);
 		GDI32.INSTANCE.GetDIBits(hdcWindow, hBitmap, 0, getBounds().height, buffer, bmi, WinGDI.DIB_RGB_COLORS);
 
-		int[] toCompress = buffer.getIntArray(0, getBounds().width * getBounds().height);
+		final int[] toCompress = buffer.getIntArray(0, getBounds().width * getBounds().height);
 		System.arraycopy(toCompress, 0, unscaledPix, 0, toCompress.length);
 
 		graphics.drawImage(unscaled, 0, 0, scaled.getWidth(), scaled.getHeight(), 0, 0, unscaled.getWidth(), unscaled.getHeight(), null);
@@ -116,26 +113,26 @@ public class WinRobot extends Robot {
 		try {
 			writer.write(null, new IIOImage(scaled, null, null), iwparam);
 		}
-		catch (IOException e) {
+		catch (final IOException e) {
 			e.printStackTrace();
 		}
-		byte[] toReturn = bos.toByteArray();
+		final byte[] toReturn = bos.toByteArray();
 		bos.reset();
 		return toReturn;
 	}
 
-	public static void main(String[] args) throws IOException {
-		WinRobot t = new WinRobot(.7D);
+	public static void main(final String[] args) throws IOException {
+		final WinRobot t = new WinRobot(.7D);
 		for (int i = 0; i < 5; i++) {
-			byte[] compressed = t.getBytePixels();
+			final byte[] compressed = t.getBytePixels();
 			final BufferedImage image = ImageIO.read(new ByteArrayInputStream(compressed));
-			JFrame frame = new JFrame("Inspexi JNA");
+			final JFrame frame = new JFrame("Inspexi JNA");
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.setAlwaysOnTop(true);
-			JPanel panel = new JPanel() {
+			final JPanel panel = new JPanel() {
 				@Override
-				public void paint(Graphics g) {
-					Graphics2D g2 = (Graphics2D) g;
+				public void paint(final Graphics g) {
+					final Graphics2D g2 = (Graphics2D) g;
 					g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
 					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 					g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
@@ -158,7 +155,7 @@ public class WinRobot extends Robot {
 
 	@Override
 	public Rectangle getScreenBounds() {
-		RECT wBounds = new RECT();
+		final RECT wBounds = new RECT();
 		User32.INSTANCE.GetWindowRect(desktop, wBounds);
 		return new Rectangle(wBounds.left, wBounds.top, wBounds.right - wBounds.left, wBounds.bottom - wBounds.top);
 	}

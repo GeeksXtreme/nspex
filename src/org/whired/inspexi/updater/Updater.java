@@ -10,38 +10,30 @@ import java.security.MessageDigest;
 
 /**
  * An updater for packages
- * 
  * @author Whired
  */
 public class Updater implements Runnable {
-	/**
-	 * An OS independent path to the Java executable
-	 */
+	/** An OS independent path to the Java executable */
 	public static final String JAVA_EXE = System.getProperty("java.home") + Package.FS + "bin" + Package.FS + "java";
 
-	/**
-	 * The package this updater is working with
-	 */
+	/** The package this updater is working with */
 	private final Package pkg;
 
 	/**
 	 * Creates a new updater for the specified package
-	 * 
 	 * @param pkg the package to update
 	 */
-	public Updater(Package pkg) {
+	public Updater(final Package pkg) {
 		this.pkg = pkg;
 	}
 
-	/**
-	 * Runs this updater
-	 */
+	/** Runs this updater */
 	@Override
 	public void run() {
 		try {
 			checkAndLaunch();
 		}
-		catch (IOException e1) {
+		catch (final IOException e1) {
 			e1.printStackTrace();
 			launch();
 		}
@@ -49,14 +41,13 @@ public class Updater implements Runnable {
 
 	/**
 	 * Checks for a new version and downloads, ensuring that the download succeeded
-	 * 
 	 * @throws IOException if the file can not be downloaded
 	 * @throws UpdateNotFoundException when no update is found
 	 */
 	private void checkAndLaunch() throws IOException {
-		String destFile = pkg.getLocalCodebase() + pkg.getName();
-		String remoteUrl = pkg.getRemoteCodebase() + pkg.getName();
-		String remoteHash = getRemoteHash(remoteUrl);
+		final String destFile = pkg.getLocalCodebase() + pkg.getName();
+		final String remoteUrl = pkg.getRemoteCodebase() + pkg.getName();
+		final String remoteHash = getRemoteHash(remoteUrl);
 		String localHash = getLocalHash(destFile);
 		boolean match = localHash != null && remoteHash.toLowerCase().equals(localHash.toLowerCase());
 		while (!match) {
@@ -71,14 +62,13 @@ public class Updater implements Runnable {
 
 	/**
 	 * Gets the hash from the file at the specified url
-	 * 
 	 * @param url the url of the file to get the hash of
 	 * @return the hash that was read
 	 */
-	private String getRemoteHash(String url) throws IOException {
+	private String getRemoteHash(final String url) throws IOException {
 		System.out.println(url);
-		BufferedReader br = new BufferedReader(new InputStreamReader(HttpClient.getStream(url + ".MD5")));
-		StringBuilder sb = new StringBuilder();
+		final BufferedReader br = new BufferedReader(new InputStreamReader(HttpClient.getStream(url + ".MD5")));
+		final StringBuilder sb = new StringBuilder();
 		String line;
 		while ((line = br.readLine()) != null) {
 			sb.append(line);
@@ -88,17 +78,16 @@ public class Updater implements Runnable {
 
 	/**
 	 * Gets the hash from the file at the given path
-	 * 
 	 * @param path the path to the file
 	 * @return the hash of the file
 	 */
-	private String getLocalHash(String path) {
+	private String getLocalHash(final String path) {
 		BufferedInputStream bis = null;
 		try {
-			File file = new File(path);
-			MessageDigest md = MessageDigest.getInstance("MD5");
+			final File file = new File(path);
+			final MessageDigest md = MessageDigest.getInstance("MD5");
 			int bytesRead;
-			byte[] buffer = new byte[1024];
+			final byte[] buffer = new byte[1024];
 			bis = new BufferedInputStream(new FileInputStream(file));
 			while ((bytesRead = bis.read(buffer)) != -1) {
 				md.update(buffer, 0, bytesRead);
@@ -106,7 +95,7 @@ public class Updater implements Runnable {
 			bis.close();
 			return toHexString(md.digest());
 		}
-		catch (Exception ex) {
+		catch (final Exception ex) {
 		} // Swallow irrelevant exceptions
 		finally {
 			try {
@@ -114,7 +103,7 @@ public class Updater implements Runnable {
 					bis.close();
 				}
 			}
-			catch (IOException ex) {
+			catch (final IOException ex) {
 			}
 		}
 		return null;
@@ -122,13 +111,12 @@ public class Updater implements Runnable {
 
 	/**
 	 * Converts an array of bytes to a hexadecimal string
-	 * 
 	 * @param bytes the bytes to convert
 	 * @return the resulting string
 	 */
-	private static String toHexString(byte[] bytes) {
-		char[] hexArray = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-		char[] hexChars = new char[bytes.length * 2];
+	private static String toHexString(final byte[] bytes) {
+		final char[] hexArray = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+		final char[] hexChars = new char[bytes.length * 2];
 		int v;
 		for (int j = 0; j < bytes.length; j++) {
 			v = bytes[j] & 0xFF;
@@ -138,15 +126,13 @@ public class Updater implements Runnable {
 		return new String(hexChars);
 	}
 
-	/**
-	 * Launches the package
-	 */
+	/** Launches the package */
 	private void launch() {
 		try {
 			System.out.println("Exec: " + JAVA_EXE + " -classpath " + pkg.getLocalCodebase() + pkg.getName() + " " + pkg.getEntryPoint());
 			new ProcessBuilder(JAVA_EXE, "-classpath", pkg.getLocalCodebase() + pkg.getName(), pkg.getEntryPoint()).start();
 		}
-		catch (IOException e) {
+		catch (final IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

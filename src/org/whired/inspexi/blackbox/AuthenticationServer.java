@@ -12,31 +12,30 @@ import org.whired.inspexi.tools.SessionListener;
 
 /**
  * The authentication server
- * 
  * @author Whired
  */
 public class AuthenticationServer {
 	private final SessionListener listener = new SessionListener() {
 		@Override
-		public void sessionEnded(String reason) {
-			// Ummmm? to be honest there needs to be more to this!!!! the socket is not given!
+		public void sessionEnded(final String reason) {
+			// Turns out, we really don't care
+			// It's best to just assume every connection is from a hacker and drop them without grace
 		}
 	};
 	private final NetTaskQueue queue = new NetTaskQueue(listener);
 
 	/**
 	 * Starts an authentication server on the specified port
-	 * 
 	 * @param port the port to listen for connections on
 	 * @throws IOException
 	 */
-	public AuthenticationServer(int port) throws IOException {
-		ReactServer server = new ReactServer(port, queue) {
+	public AuthenticationServer(final int port) throws IOException {
+		final ReactServer server = new ReactServer(port, queue) {
 			@Override
 			public NetTask getOnConnectTask(final Socket sock) {
 				return new NetTask("auth_connect", sock) {
 					@Override
-					public void run(DataInputStream dis, DataOutputStream dos) throws IOException {
+					public void run(final DataInputStream dis, final DataOutputStream dos) throws IOException {
 						// First things first, these guys need to do their business QUICK
 						sock.setSoTimeout(2000);
 						// We need to send a crypt key here
@@ -60,7 +59,7 @@ public class AuthenticationServer {
 		server.bind();
 	}
 
-	public static void main(String[] args) throws IOException {
+	public static void main(final String[] args) throws IOException {
 		new AuthenticationServer(43597);
 	}
 }

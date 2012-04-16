@@ -14,7 +14,6 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
 
 /**
  * A minimal skin for scrollbars
- * 
  * @author Whired
  */
 public class MinimalScrollBar extends BasicScrollBarUI {
@@ -41,16 +40,16 @@ public class MinimalScrollBar extends BasicScrollBarUI {
 	}
 
 	@Override
-	protected void paintThumb(Graphics g, JComponent c, Rectangle r) {
+	protected void paintThumb(final Graphics g, final JComponent c, final Rectangle r) {
 		paint(g, c, r);
 	}
 
 	@Override
-	protected void paintTrack(Graphics g, JComponent c, Rectangle r) {
+	protected void paintTrack(final Graphics g, final JComponent c, final Rectangle r) {
 		paint(g, c, r);
 	}
 
-	private void paint(Graphics g, JComponent c, Rectangle r) {
+	private void paint(final Graphics g, final JComponent c, final Rectangle r) {
 		g.setColor(((JScrollPane) c.getParent()).getViewport().getView().getBackground());
 		g.fillRect(0, 0, c.getWidth(), c.getHeight());
 		if (this.isThumbRollover() || this.isDragging) {
@@ -64,7 +63,7 @@ public class MinimalScrollBar extends BasicScrollBarUI {
 	}
 
 	@Override
-	public void paint(Graphics g, JComponent c) {
+	public void paint(final Graphics g, final JComponent c) {
 		super.paint(g, c);
 	}
 

@@ -6,7 +6,7 @@ public abstract class Robot {
 	private final Rectangle bounds;
 	private final double zoom;
 
-	protected Robot(Rectangle bounds, double zoom) {
+	protected Robot(Rectangle bounds, final double zoom) {
 		if (bounds == null) {
 			bounds = getScreenBounds();
 		}
@@ -18,7 +18,7 @@ public abstract class Robot {
 
 	public abstract Rectangle getScreenBounds();
 
-	public int getZoom(int orig) {
+	public int getZoom(final int orig) {
 		return (int) (orig * zoom);
 	}
 

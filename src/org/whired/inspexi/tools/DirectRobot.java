@@ -41,33 +41,33 @@ public final class DirectRobot extends Robot {
 	private final BufferedImage scaled;
 	private final Graphics2D graphics;
 
-	public void setDetail(int detail) {
+	public void setDetail(final int detail) {
 		this.detail = detail;
 	}
 
 	@Override
 	public Rectangle getScreenBounds() {
-		DisplayMode dm = device.getDisplayMode();
+		final DisplayMode dm = device.getDisplayMode();
 		return new Rectangle(0, 0, dm.getWidth(), dm.getHeight());
 	}
 
-	public DirectRobot(Rectangle bounds, double zoom) throws AWTException {
+	public DirectRobot(final Rectangle bounds, final double zoom) throws AWTException {
 		super(bounds, zoom);
 		iwparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 		iwparam.setCompressionQuality(.8F);
-		Iterator<ImageWriter> iter = ImageIO.getImageWritersByFormatName("jpg");
+		final Iterator<ImageWriter> iter = ImageIO.getImageWritersByFormatName("jpg");
 		if (iter.hasNext()) {
 			writer = iter.next();
 		}
 		try {
 			writer.setOutput(ImageIO.createImageOutputStream(bos));
 		}
-		catch (IOException e1) {
+		catch (final IOException e1) {
 			e1.printStackTrace();
 		}
-		Toolkit toolkit = Toolkit.getDefaultToolkit();
+		final Toolkit toolkit = Toolkit.getDefaultToolkit();
 		peer = ((ComponentFactory) toolkit).createRobot(null, device);
-		Class<?> peerClass = peer.getClass();
+		final Class<?> peerClass = peer.getClass();
 		System.out.println("Class name: " + peerClass.getName());
 		Method method = null;
 		int methodType = -1;
@@ -76,14 +76,14 @@ public final class DirectRobot extends Robot {
 			method = peerClass.getDeclaredMethod("getRGBPixels", new Class<?>[] { Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE, int[].class });
 			methodType = 0;
 		}
-		catch (Exception ex) {
+		catch (final Exception ex) {
 		}
 		if (methodType < 0) {
 			try {
 				method = peerClass.getDeclaredMethod("getScreenPixels", new Class<?>[] { Rectangle.class, int[].class });
 				methodType = 1;
 			}
-			catch (Exception ex) {
+			catch (final Exception ex) {
 			}
 		}
 
@@ -91,8 +91,8 @@ public final class DirectRobot extends Robot {
 			try {
 				method = peerClass.getDeclaredMethod("getScreenPixels", new Class<?>[] { Integer.TYPE, Rectangle.class, int[].class });
 				methodType = 2;
-				GraphicsDevice[] devices = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
-				int count = devices.length;
+				final GraphicsDevice[] devices = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+				final int count = devices.length;
 				for (int i = 0; i != count; ++i) {
 					if (device.equals(devices[i])) {
 						methodParam = Integer.valueOf(i);
@@ -101,7 +101,7 @@ public final class DirectRobot extends Robot {
 				}
 
 			}
-			catch (Exception ex) {
+			catch (final Exception ex) {
 			}
 		}
 
@@ -109,7 +109,7 @@ public final class DirectRobot extends Robot {
 			try {
 				method = peerClass.getDeclaredMethod("getRGBPixelsImpl", new Class<?>[] { Class.forName("sun.awt.X11GraphicsConfig"), Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE, int[].class });
 				methodType = 3;
-				Field field = peerClass.getDeclaredField("xgc");
+				final Field field = peerClass.getDeclaredField("xgc");
 				try {
 					field.setAccessible(true);
 					methodParam = field.get(peer);
@@ -118,7 +118,7 @@ public final class DirectRobot extends Robot {
 					field.setAccessible(false);
 				}
 			}
-			catch (Exception ex) {
+			catch (final Exception ex) {
 			}
 		}
 
@@ -133,13 +133,13 @@ public final class DirectRobot extends Robot {
 			System.out.println(peer.getClass().getName());
 			System.out.println();
 			try {
-				Method[] methods = peer.getClass().getDeclaredMethods();
-				for (Method method1 : methods) {
+				final Method[] methods = peer.getClass().getDeclaredMethods();
+				for (final Method method1 : methods) {
 					System.out.println(method1);
 				}
 
 			}
-			catch (Exception ex) {
+			catch (final Exception ex) {
 			}
 			System.out.println();
 		}
@@ -151,16 +151,16 @@ public final class DirectRobot extends Robot {
 		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 	}
 
-	public DirectRobot(double zoom) throws AWTException {
+	public DirectRobot(final double zoom) throws AWTException {
 		this(null, zoom);
 	}
 
-	public static GraphicsDevice getMouseInfo(Point point) {
+	public static GraphicsDevice getMouseInfo(final Point point) {
 		if (!hasMouseInfoPeer) {
 			hasMouseInfoPeer = true;
 			try {
-				Toolkit toolkit = Toolkit.getDefaultToolkit();
-				Method method = toolkit.getClass().getDeclaredMethod("getMouseInfoPeer", new Class<?>[0]);
+				final Toolkit toolkit = Toolkit.getDefaultToolkit();
+				final Method method = toolkit.getClass().getDeclaredMethod("getMouseInfoPeer", new Class<?>[0]);
 				try {
 					method.setAccessible(true);
 					mouseInfoPeer = (MouseInfoPeer) method.invoke(toolkit, new Object[0]);
@@ -169,17 +169,17 @@ public final class DirectRobot extends Robot {
 					method.setAccessible(false);
 				}
 			}
-			catch (Exception ex) {
+			catch (final Exception ex) {
 			}
 		}
 		if (mouseInfoPeer != null) {
-			int device = mouseInfoPeer.fillPointWithCoords(point != null ? point : new Point());
-			GraphicsDevice[] devices = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+			final int device = mouseInfoPeer.fillPointWithCoords(point != null ? point : new Point());
+			final GraphicsDevice[] devices = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
 			return devices[device];
 		}
-		PointerInfo info = MouseInfo.getPointerInfo();
+		final PointerInfo info = MouseInfo.getPointerInfo();
 		if (point != null) {
-			Point location = info.getLocation();
+			final Point location = info.getLocation();
 			point.x = location.x;
 			point.y = location.y;
 		}
@@ -198,97 +198,97 @@ public final class DirectRobot extends Robot {
 		return getMouseInfo(null);
 	}
 
-	public void mouseMove(int x, int y) {
+	public void mouseMove(final int x, final int y) {
 		peer.mouseMove(x, y);
 	}
 
-	public void mousePress(int buttons) {
+	public void mousePress(final int buttons) {
 		peer.mousePress(buttons);
 	}
 
-	public void mouseRelease(int buttons) {
+	public void mouseRelease(final int buttons) {
 		peer.mouseRelease(buttons);
 	}
 
-	public void mouseWheel(int wheelAmt) {
+	public void mouseWheel(final int wheelAmt) {
 		peer.mouseWheel(wheelAmt);
 	}
 
-	public void keyPress(int keycode) {
+	public void keyPress(final int keycode) {
 		peer.keyPress(keycode);
 	}
 
-	public void keyRelease(int keycode) {
+	public void keyRelease(final int keycode) {
 		peer.keyRelease(keycode);
 	}
 
-	public int getRGBPixel(int x, int y) {
+	public int getRGBPixel(final int x, final int y) {
 		return peer.getRGBPixel(x, y);
 	}
 
-	public int[] getRGBPixels(Rectangle bounds) {
+	public int[] getRGBPixels(final Rectangle bounds) {
 		return peer.getRGBPixels(bounds);
 	}
 
 	@Override
 	public byte[] getBytePixels() {
-		int[] pix = peer.getRGBPixels(getBounds());
-		byte[] pixels = new byte[pix.length];
+		final int[] pix = peer.getRGBPixels(getBounds());
+		final byte[] pixels = new byte[pix.length];
 		switch (getDetail()) {
-		case LOWEST:
-			for (int i = 0; i < pix.length; i++/* i += 2 */) {
-				pixels[i] = (byte) -110;
-				if ((i - 1) % getBounds().width == 0 || i % getBounds().width == 0) {
+			case LOWEST:
+				for (int i = 0; i < pix.length; i++/* i += 2 */) {
+					pixels[i] = (byte) -110;
+					if ((i - 1) % getBounds().width == 0 || i % getBounds().width == 0) {
+						i++;
+					}
+					if (i > pix.length - 1) {
+						i = pix.length - 1;
+					}
 					i++;
+					final int c = pix[i];
+					final int r = (c >> 16 & 0xFF) / 36;
+					final int g = (c >> 8 & 0xFF) / 36;
+					final int b = (c & 0xFF) / 85;
+					pixels[i] = (byte) ((r << 5) + (g << 2) + b);
 				}
-				if (i > pix.length - 1) {
-					i = pix.length - 1;
-				}
-				i++;
-				int c = pix[i];
-				int r = (c >> 16 & 0xFF) / 36;
-				int g = (c >> 8 & 0xFF) / 36;
-				int b = (c & 0xFF) / 85;
-				pixels[i] = (byte) ((r << 5) + (g << 2) + b);
-			}
-			return pixels;
-		case LOWER:
-			for (int i = 0; i < pix.length; i++) {
-				int c = pix[i];
-				int r = (c >> 16 & 0xFF) / 36;
-				int g = (c >> 8 & 0xFF) / 36;
-				int b = (c & 0xFF) / 85;
-				byte col = (byte) ((r << 5) + (g << 2) + b);
-				if (pix.length - i > 2) {
-					pixels[i] = col;
-					pixels[++i] = col;
-				}
+				return pixels;
+			case LOWER:
+				for (int i = 0; i < pix.length; i++) {
+					final int c = pix[i];
+					final int r = (c >> 16 & 0xFF) / 36;
+					final int g = (c >> 8 & 0xFF) / 36;
+					final int b = (c & 0xFF) / 85;
+					final byte col = (byte) ((r << 5) + (g << 2) + b);
+					if (pix.length - i > 2) {
+						pixels[i] = col;
+						pixels[++i] = col;
+					}
 
-			}
-		break;
-		case LOW:
-			System.arraycopy(pix, 0, unscaledPix, 0, unscaledPix.length);
-			graphics.drawImage(unscaled, 0, 0, scaled.getWidth(), scaled.getHeight(), 0, 0, unscaled.getWidth(), unscaled.getHeight(), null);
+				}
+			break;
+			case LOW:
+				System.arraycopy(pix, 0, unscaledPix, 0, unscaledPix.length);
+				graphics.drawImage(unscaled, 0, 0, scaled.getWidth(), scaled.getHeight(), 0, 0, unscaled.getWidth(), unscaled.getHeight(), null);
 
-			try {
-				writer.write(null, new IIOImage(scaled, null, null), iwparam);
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-			byte[] toReturn = bos.toByteArray();
-			bos.reset();
-			return toReturn;
-		case GREYSCALE:
-			for (int i = 0; i < pix.length; i++) {
-				pixels[i] = (byte) pix[i];
-			}
-		break;
+				try {
+					writer.write(null, new IIOImage(scaled, null, null), iwparam);
+				}
+				catch (final IOException e) {
+					e.printStackTrace();
+				}
+				final byte[] toReturn = bos.toByteArray();
+				bos.reset();
+				return toReturn;
+			case GREYSCALE:
+				for (int i = 0; i < pix.length; i++) {
+					pixels[i] = (byte) pix[i];
+				}
+			break;
 		}
 		return new byte[0];
 	}
 
-	public boolean getRGBPixels(int x, int y, int width, int height, int[] pixels) {
+	public boolean getRGBPixels(final int x, final int y, final int width, final int height, final int[] pixels) {
 		if (getRGBPixelsMethod != null) {
 			try {
 				if (getRGBPixelsMethodType == 0) {
@@ -306,31 +306,31 @@ public final class DirectRobot extends Robot {
 
 				return true;
 			}
-			catch (Exception ex) {
+			catch (final Exception ex) {
 			}
 		}
 
-		int[] tmp = getRGBPixels(new Rectangle(x, y, width, height));
+		final int[] tmp = getRGBPixels(new Rectangle(x, y, width, height));
 		System.arraycopy(tmp, 0, pixels, 0, width * height);
 		return false;
 	}
 
 	public void dispose() {
 		getRGBPixelsMethodParam = null;
-		Method method = getRGBPixelsMethod;
+		final Method method = getRGBPixelsMethod;
 		if (method != null) {
 			getRGBPixelsMethod = null;
 			try {
 				method.setAccessible(false);
 			}
-			catch (Exception ex) {
+			catch (final Exception ex) {
 			}
 		}
 		// Using reflection now because of some peers not having ANY support at all (1.5)
 		try {
 			peer.getClass().getDeclaredMethod("dispose", new Class<?>[0]).invoke(peer, new Class<?>[0]);
 		}
-		catch (Exception ex) {
+		catch (final Exception ex) {
 		}
 	}
 

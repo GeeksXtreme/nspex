@@ -10,7 +10,7 @@ public class Package {
 	private final String localCodebase;
 	private final String entryPoint;
 
-	public Package(String name, String remoteCodebase, String localCodebase, String entryPoint) {
+	public Package(final String name, final String remoteCodebase, final String localCodebase, final String entryPoint) {
 		this.name = name;
 		this.remoteCodebase = remoteCodebase;
 		this.localCodebase = localCodebase;
@@ -26,7 +26,7 @@ public class Package {
 	}
 
 	public final String getLocalCodebase() {
-		File f = new File(localCodebase);
+		final File f = new File(localCodebase);
 		if (!f.exists()) {
 			f.mkdirs();
 		}
