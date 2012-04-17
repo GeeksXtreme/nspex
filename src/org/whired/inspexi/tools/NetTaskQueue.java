@@ -45,7 +45,7 @@ public class NetTaskQueue {
 					System.out.println("Executing task " + t.toString());
 					t.run(new DataInputStream(t.socket.getInputStream()), new DataOutputStream(t.socket.getOutputStream()));
 				}
-				catch (final IOException e) {
+				catch (final Throwable e) {
 					if (t != null) {
 						t.onFail();
 					}
@@ -56,10 +56,7 @@ public class NetTaskQueue {
 						catch (final IOException e1) {
 						} // Not a big deal, just trying to clean up
 					}
-					listener.sessionEnded(e.toString());
-				}
-				catch (final InterruptedException e) {
-					e.printStackTrace();
+					listener.sessionEnded(e.toString(), e);
 				}
 			}
 		}

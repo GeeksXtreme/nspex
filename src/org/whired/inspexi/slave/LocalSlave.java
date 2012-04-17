@@ -4,6 +4,7 @@ import java.awt.AWTException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 
 import org.whired.inspexi.tools.DirectRobot;
@@ -36,14 +37,14 @@ public class LocalSlave extends Slave {
 	/** The listener that is notified when a session ends */
 	private final SessionListener sessl = new SessionListener() {
 		@Override
-		public void sessionEnded(final String reason) {
+		public void sessionEnded(final String reason, final Throwable t) {
 			System.out.println("Session ended: " + reason);
 		}
 	};
 	/** The queue that will accept net tasks */
 	private final NetTaskQueue queue = new NetTaskQueue(sessl);
 	/** The server that will accept connections */
-	private final ReactServer server = new ReactServer(PORT, queue) {
+	private final ReactServer server = new ReactServer(new ServerSocket(PORT), queue) {
 		@Override
 		public NetTask getOnConnectTask(final Socket sock) {
 			return new NetTask("handshake_reactor", sock) {
@@ -157,7 +158,7 @@ public class LocalSlave extends Slave {
 
 		// Start the server
 		System.out.print("Starting server..");
-		server.bind();
+		server.startAccepting();
 	}
 
 	public static void main(final String[] args) throws IOException, AWTException {

@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
 
 /**
  * A network task
@@ -30,8 +31,9 @@ public abstract class NetTask {
 	/**
 	 * Runs this task
 	 * @throws IOException when a network error occurs
+	 * @throws GeneralSecurityException when an cryption error occurs
 	 */
-	public abstract void run(DataInputStream dis, DataOutputStream dos) throws IOException;
+	public abstract void run(DataInputStream dis, DataOutputStream dos) throws IOException, GeneralSecurityException;
 
 	/** This will be ran if {@link #run(DataInputStream, DataOutputStream)} throws an exception */
 	public void onFail() {

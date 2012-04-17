@@ -120,7 +120,7 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 		}
 		catch (final IOException e) {
 		}
-		sessionEnded(reason);
+		sessionEnded(reason, null);
 	}
 
 	public String getIp() {
@@ -136,9 +136,9 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 	}
 
 	@Override
-	public void sessionEnded(final String reason) {
+	public void sessionEnded(final String reason, final Throwable t) {
 		if (listener != null) {
-			listener.sessionEnded(reason);
+			listener.sessionEnded(reason, t);
 		}
 		Log.l.info("Session with " + ip + " ended: " + reason);
 	}
