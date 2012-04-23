@@ -14,7 +14,7 @@ import java.security.MessageDigest;
  */
 public class Updater implements Runnable {
 	/** An OS independent path to the Java executable */
-	public static final String JAVA_EXE = System.getProperty("java.home") + Package.FS + "bin" + Package.FS + "java";
+	private static final String JAVA_EXE = System.getProperty("java.home") + Package.FS + "bin" + Package.FS + "java";
 
 	/** The package this updater is working with */
 	private final Package pkg;
@@ -126,14 +126,15 @@ public class Updater implements Runnable {
 		return new String(hexChars);
 	}
 
-	/** Launches the package */
+	/**
+	 * Launches the package for this updater and exits the current program
+	 */
 	private void launch() {
 		try {
-			System.out.println("Exec: " + JAVA_EXE + " -classpath " + pkg.getLocalCodebase() + pkg.getName() + " " + pkg.getEntryPoint());
-			new ProcessBuilder(JAVA_EXE, "-classpath", pkg.getLocalCodebase() + pkg.getName(), pkg.getEntryPoint()).start();
+			System.out.println("Exec: " + JAVA_EXE + " -classpath " + pkg.getLocalCodebase() + pkg.getName() + " " + pkg.getMainClass());
+			new ProcessBuilder(JAVA_EXE, "-classpath", pkg.getLocalCodebase() + pkg.getName(), pkg.getMainClass()).start();
 		}
 		catch (final IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

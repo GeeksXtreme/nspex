@@ -22,7 +22,14 @@ public class NetTaskQueue {
 	private static final ExecutorService exec = Executors.newFixedThreadPool(MAX_THREADS);
 
 	/**
-	 * Creates a new queue with the specified listener Automatically handles any connection exceptions and closes the appropriate socket if applicable
+	 * Creates a new queue with no listener. Automatically handles any connection exceptions and closes the appropriate socket if applicable
+	 */
+	public NetTaskQueue() {
+		this(null);
+	}
+
+	/**
+	 * Creates a new queue with the specified listener. Automatically handles any connection exceptions and closes the appropriate socket if applicable
 	 * @param listener the listener to notify if a task fails
 	 */
 	public NetTaskQueue(final SessionListener listener) {
@@ -30,7 +37,6 @@ public class NetTaskQueue {
 		for (int i = 0; i < MAX_THREADS; i++) {
 			exec.submit(task);
 		}
-		// start();
 		System.out.println("Submitted " + MAX_THREADS + " tasks.");
 	}
 
@@ -56,7 +62,9 @@ public class NetTaskQueue {
 						catch (final IOException e1) {
 						} // Not a big deal, just trying to clean up
 					}
-					listener.sessionEnded(e.toString(), e);
+					if (listener != null) {
+						listener.sessionEnded(e.toString(), e);
+					}
 				}
 			}
 		}

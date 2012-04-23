@@ -99,8 +99,6 @@ public class LocalSlave extends Slave {
 									throw new IOException("End of stream");
 								}
 							});
-							// TODO remove listener on session end. Start capture if there are active cons
-							// I feel an auxiliary class is needed
 							final ImageConsumer ic = new ImageConsumer() {
 								@Override
 								public void imageProduced(final ImageConsumer consumer, final byte[] image) {

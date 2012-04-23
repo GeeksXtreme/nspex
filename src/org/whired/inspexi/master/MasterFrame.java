@@ -425,8 +425,6 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 
 	@Override
 	public void imageResized(final int width, final int height) {
-		// TODO Auto-generated method stub
-
 	}
 
 }

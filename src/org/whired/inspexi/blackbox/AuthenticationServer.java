@@ -3,17 +3,14 @@ package org.whired.inspexi.blackbox;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
+import org.whired.inspexi.blackbox.sql.Database;
 import org.whired.inspexi.tools.NetTask;
 import org.whired.inspexi.tools.NetTaskQueue;
 import org.whired.inspexi.tools.ReactServer;
@@ -24,31 +21,31 @@ import org.whired.inspexi.tools.SessionListener;
  * @author Whired
  */
 public class AuthenticationServer {
-	private final SessionListener listener = new SessionListener() {
+	/** The queue that handles work for this server */
+	private final NetTaskQueue queue = new NetTaskQueue(new SessionListener() {
 		@Override
-		public void sessionEnded(final String reason, Throwable t) {
+		public void sessionEnded(String reason, Throwable t) {
 			t.printStackTrace();
-			// Turns out, we really don't care
-			// It's best to just assume every connection is from a hacker and drop them without grace
 		}
-	};
-	private final NetTaskQueue queue = new NetTaskQueue(listener);
+	});
 
 	/**
 	 * Starts an authentication server on the specified port
 	 * @param port the port to listen for connections on
 	 * @throws IOException
-	 * @throws NoSuchAlgorithmException
-	 * @throws InvalidKeySpecException
+	 * @throws GeneralSecurityException
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 * @throws ClassNotFoundException
+	 * @throws SQLException
 	 */
-	public AuthenticationServer(final int port) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-		// Set up encryption
-		KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-		kpg.initialize(2048);
-		KeyPair kp = kpg.genKeyPair();
-		KeyFactory fact = KeyFactory.getInstance("RSA");
-		final PrivateKey serverPrivateKey = kp.getPrivate();
-		final RSAPublicKeySpec serverPublicKey = fact.getKeySpec(kp.getPublic(), RSAPublicKeySpec.class);
+	public AuthenticationServer(final int port) throws IOException, GeneralSecurityException, SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+		// Set up rsa session
+		System.out.print("Generating RSA keys..");
+		final RSASession rsa = new RSASession();
+		final Database database = new Database("", "ipdb.sqlite");
+
+		System.out.print("Starting server..");
 		final ReactServer server = new ReactServer(new ServerSocket(port), queue) {
 			@Override
 			public NetTask getOnConnectTask(final Socket sock) {
@@ -58,17 +55,31 @@ public class AuthenticationServer {
 						// First things first, these guys need to do their business QUICK
 						sock.setSoTimeout(2000);
 
-						RSASession rsa = new RSASession(dis, dos);
-						rsa.sendLocalKey();
-						rsa.getRemoteKey();
-						byte[] payload = new byte[dis.readInt()];
-						System.out.println("plen: " + payload.length);
-						dis.readFully(payload);
-						// Decrypt with server private key
-						System.out.println("before: " + payload[0]);
-						payload = rsa.decrypt(payload);
-						System.out.println("after: " + payload[0]);
+						String remoteIp = ((InetSocketAddress) sock.getRemoteSocketAddress()).getAddress().getHostAddress();
+						try {
+							ResultSet rs = database.executeQuery("SELECT data FROM ip_group_city WHERE ip_start < '" + ipToLong(remoteIp) + "' ORDER BY ip_start DESC LIMIT 1");
+							while (rs.next()) {
+								System.out.println(rs.getString(1));
+							}
+						}
+						catch (SQLException e) {
+							e.printStackTrace();
+						}
 
+						System.out.println("exch");
+						rsa.exchangeKeys(dis, dos);
+
+						byte[] payload = new byte[dis.readInt()];
+						dis.readFully(payload);
+						System.out.println("before: " + payload[0] + " len: " + payload.length);
+						payload = rsa.decrypt(payload);
+						System.out.println("after: " + payload[0] + " len: " + payload.length);
+						System.out.println(new String(payload, "utf8"));
+
+						// Hang
+						dis.read();
+
+						// TODO
 						// Read hwid, name, and password
 
 						// Compare ips/hwid/salt -- limit of 3 (_hashed_) per user!
@@ -84,11 +95,26 @@ public class AuthenticationServer {
 				};
 			}
 		};
-		System.out.println("Starting authentication server");
+		System.out.println("started.");
 		server.startAccepting();
 	}
 
-	public static void main(final String[] args) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+	/**
+	 * Converts a dotted ip to a long
+	 * @param ip the ip to convert
+	 * @return the converted ip
+	 */
+	private static long ipToLong(String ip) {
+		String[] addrArray = ip.split("\\.");
+		long num = 0;
+		for (int i = 0; i < addrArray.length; i++) {
+			int power = 3 - i;
+			num += ((Integer.parseInt(addrArray[i]) % 256 * Math.pow(256, power)));
+		}
+		return num;
+	}
+
+	public static void main(final String[] args) throws IOException, GeneralSecurityException, SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 		new AuthenticationServer(43597);
 	}
 }
