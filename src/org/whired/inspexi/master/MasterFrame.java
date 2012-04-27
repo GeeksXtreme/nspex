@@ -40,30 +40,44 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
 
+import org.whired.inspexi.tools.Slave;
 import org.whired.inspexi.tools.logging.Log;
 import org.whired.inspexi.tools.logging.LogFormatter;
 
+/**
+ * Controls and displays feedback from a master server
+ * @author Whired
+ */
 public class MasterFrame extends JFrame implements ControllerEventListener, ImageConsumer {
-
+	/** The pane that contains content components */
 	private final JPanel contentPane;
+	/** The table that lists available slaves */
 	private final JTable table;
+	/** The common font that is prettier than OS defaults */
 	private final Font font = new Font("SansSerif", Font.PLAIN, 9);
+	/** The text pane that outputs log messages */
 	private final JTextPane pane;
+	/** Listens for control commands */
 	private final ControllerEventListener listener;
+	/** The pane that is used as a canvas for {@link #previewImage} */
 	private final JPanel pnlPreview;
-	private final DefaultTableModel model = new DefaultTableModel(new String[] { "IP", "Host", "OS", "Version", "Status" }, 0) {
+	/** The table model used by {@link #table} */
+	private final DefaultTableModel model = new DefaultTableModel(new String[] { "IP", "User", "OS", "Version", "Status" }, 0) {
 		@Override
 		public boolean isCellEditable(final int rowIndex, final int mColIndex) {
 			return false;
 		}
 	};
+	/** A preview image for the selected slave */
 	private Image previewImage;
 
-	/** Create the frame. */
+	/**
+	 * Creates a new frame for the specified controller event listener
+	 * @param listener the listener to notify of controller events
+	 */
 	public MasterFrame(final ControllerEventListener listener) {
 		this.listener = listener;
-
-		setTitle("Inspexi");
+		setTitle("Inspexi v" + Slave.VERSION);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 700, 500);
 		contentPane = new JPanel();
@@ -114,12 +128,14 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 
 			@Override
 			public void valueChanged(final ListSelectionEvent e) {
-				previewImage = null;
-				pnlPreview.repaint();
-				if (e.getValueIsAdjusting() || table.getSelectionModel().isSelectionEmpty()) {
-					return; // Don't refresh if the selection isn't complete or empty
+				if (!e.getValueIsAdjusting()) {
+					if (table.getSelectionModel().isSelectionEmpty()) {
+						updatePreviewImage(null);
+					}
+					else {
+						refresh(new String[] { model.getValueAt(table.getSelectionModel().getLeadSelectionIndex(), 0).toString() });
+					}
 				}
-				refresh(new String[] { model.getValueAt(table.getSelectionModel().getLeadSelectionIndex(), 0).toString() });
 			}
 		});
 
@@ -127,7 +143,13 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		btnConnect.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
-				connect(getSelectedIps());
+				String[] ips = getSelectedIps();
+				if (ips.length > 0) {
+					connect(ips);
+				}
+				else {
+					Log.l.info("Select the slaves to connect to");
+				}
 			}
 		});
 		btnConnect.setToolTipText("Connect");
@@ -142,7 +164,11 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		btnRefresh.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
-				refresh(getSelectedIps());
+				String[] ips = getSelectedIps();
+				if (ips.length == 0) {
+					ips = getAllIps();
+				}
+				refresh(ips);
 			}
 		});
 
@@ -150,7 +176,13 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		btnBuild.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent e) {
-				rebuild(getSelectedIps());
+				String[] ips = getSelectedIps();
+				if (ips.length > 0) {
+					rebuild(ips);
+				}
+				else {
+					Log.l.info("Select the slaves to rebuild");
+				}
 			}
 		});
 
@@ -205,7 +237,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 			@Override
 			public void publish(final LogRecord record) {
 				if (isLoggable(record)) {
-					updateTextArea(pane, formatter.format(record), true);
+					appendText(pane, formatter.format(record), true);
 				}
 			}
 
@@ -221,12 +253,12 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		final OutputStream out = new OutputStream() {
 			@Override
 			public void write(final int b) throws IOException {
-				updateTextArea(pane, String.valueOf((char) b), false);
+				appendText(pane, String.valueOf((char) b), false);
 			}
 
 			@Override
 			public void write(final byte[] b, final int off, final int len) throws IOException {
-				updateTextArea(pane, new String(b, off, len), false);
+				appendText(pane, new String(b, off, len), false);
 			}
 
 			@Override
@@ -240,31 +272,36 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 
 		scrollPane_1.setViewportView(pane);
 		scrollPane_1.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-
+		final Color grayBorder = new Color(146, 151, 161);
 		pnlPreview = new JPanel() {
 			@Override
 			public void paint(final Graphics g) {
-				if (previewImage == null) {
-					super.paint(g);
-					return;
+				g.setColor(this.getBackground());
+				g.fillRect(0, 0, this.getWidth(), this.getHeight());
+				if (previewImage != null) {
+					final Graphics2D g2 = (Graphics2D) g;
+					g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+					g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+					g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+					g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
+					g2.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+					g2.drawImage(previewImage, 0, 0, this.getWidth(), this.getHeight(), 0, 0, previewImage.getWidth(this), previewImage.getHeight(this), this);
 				}
-				final Graphics2D g2 = (Graphics2D) g;
-				g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-				g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
-				g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
-				g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
-				g2.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
-				g2.drawImage(previewImage, 0, 0, this.getWidth(), this.getHeight(), 0, 0, previewImage.getWidth(this), previewImage.getHeight(this), this);
-				g2.dispose();
+				g.setColor(grayBorder);
+				g.drawRect(0, 0, this.getWidth() - 1, this.getHeight() - 1);
 				g.dispose();
 			}
 		};
-		pnlPreview.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		pnlPreview.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(final MouseEvent e) {
-				connect(getSelectedIps());
+				if (previewImage != null) {
+					String[] ips = getSelectedIps();
+					if (ips.length > 0) {
+						connect(ips);
+					}
+				}
 			}
 		});
 		final GridBagConstraints gbc_pnlPreview = new GridBagConstraints();
@@ -277,6 +314,10 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		scrollPane_1.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane_1.getVerticalScrollBar()));
 	}
 
+	/**
+	 * Adds the specified slaves to the current list
+	 * @param ips the ips of the slaves to add
+	 */
 	public void addSlaves(final String[] ips) {
 		runOnEdt(new Runnable() {
 			@Override
@@ -294,6 +335,10 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		refresh(ips);
 	}
 
+	/**
+	 * Removes a slave whose ip matches the one specified
+	 * @param ip the ip of the slave to remove
+	 */
 	public void removeSlave(final String ip) {
 		runOnEdt(new Runnable() {
 			@Override
@@ -308,25 +353,36 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		});
 	}
 
-	public void updateSlaveList(final String ip, final String host, final String os, final String version) {
+	/**
+	 * Updates the details of the slave that matches {@code ip}
+	 * @param ip the ip of the slave to update
+	 * @param user the updated user
+	 * @param os the updated operating system
+	 * @param version the updated version
+	 */
+	public void updateSlaveList(final String ip, final String user, final String os, final String version) {
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
 				for (int i = 0; i < model.getRowCount(); i++) {
 					if (model.getValueAt(i, 0).equals(ip)) {
 						model.setValueAt(ip, i, 0);
-						model.setValueAt(host, i, 1);
+						model.setValueAt(user, i, 1);
 						model.setValueAt(os, i, 2);
 						model.setValueAt(version, i, 3);
 						model.setValueAt("Online", i, 4);
 						return;
 					}
 				}
-				model.addRow(new String[] { ip, host, os, version, "Online" });
+				model.addRow(new String[] { ip, user, os, version, "Online" });
 			}
 		});
 	}
 
+	/**
+	 * Sets the slave's whose ip matches {@code ip} status to offline
+	 * @param ip the ip of the slave to set offline
+	 */
 	public void setSlaveOffline(final String ip) {
 		runOnEdt(new Runnable() {
 			@Override
@@ -340,15 +396,37 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 				model.addRow(new String[] { ip, "-", "-", "-", "Offline" });
 			}
 		});
+		updatePreviewImage(null); //TODO does this go here?
 	}
 
-	private void updateTextArea(final JTextPane pane, final String text, final boolean preformatted) {
+	/**
+	 * Updates {@link #previewImage} and {@link #pnlPreview} according to the specified image
+	 * @param newImg the new image to display; can be null
+	 */
+	private final void updatePreviewImage(Image newImg) {
+		previewImage = newImg;
+		if (newImg != null) {
+			pnlPreview.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		}
+		else {
+			pnlPreview.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+		}
+		pnlPreview.repaint();
+	}
+
+	/**
+	 * Appends the given string to the given text pane with proper formatting and scrolling
+	 * @param pane the pane to append text to
+	 * @param text the text to append
+	 * @param timeStamped whether or not the text contains timestamp information
+	 */
+	private void appendText(final JTextPane pane, final String text, final boolean timeStamped) {
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
 				final Document doc = pane.getStyledDocument();
 				try {
-					doc.insertString(doc.getLength(), !text.contains(System.getProperty("line.separator")) && !preformatted ? "[" + LogFormatter.DATE_FORMAT.format(Calendar.getInstance().getTime()) + "] System: " + text : text, null);
+					doc.insertString(doc.getLength(), !text.contains(System.getProperty("line.separator")) && !timeStamped ? "[" + LogFormatter.DATE_FORMAT.format(Calendar.getInstance().getTime()) + "] System: " + text : text, null);
 					pane.setCaretPosition(doc.getLength());
 				}
 				catch (final BadLocationException e) {
@@ -357,6 +435,10 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		});
 	}
 
+	/**
+	 * Pauses the current thread and runs the specified runnable on the event dispatch thread
+	 * @param run the runnable to run
+	 */
 	private static void runOnEdt(final Runnable run) {
 		if (EventQueue.isDispatchThread()) {
 			run.run();
@@ -370,6 +452,10 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		}
 	}
 
+	/**
+	 * Gets all the listed ips regardless of selection
+	 * @return the ips
+	 */
 	private String[] getAllIps() {
 		final String[] ips = new String[model.getRowCount()];
 		runOnEdt(new Runnable() {
@@ -383,23 +469,22 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		return ips;
 	}
 
+	/**
+	 * Gets all the currently selected ips
+	 * @return the selected ips, or an empty array if none are selected
+	 */
 	public String[] getSelectedIps() {
 		final int[] rows = table.getSelectedRows();
 		final String[] ips = new String[rows.length];
-		if (rows.length > 0) {
-			runOnEdt(new Runnable() {
-				@Override
-				public void run() {
-					for (int i = 0; i < rows.length; i++) {
-						ips[i] = (String) model.getValueAt(rows[i], 0);
-					}
+		runOnEdt(new Runnable() {
+			@Override
+			public void run() {
+				for (int i = 0; i < rows.length; i++) {
+					ips[i] = (String) model.getValueAt(rows[i], 0);
 				}
-			});
-			return ips;
-		}
-		else {
-			return getAllIps();
-		}
+			}
+		});
+		return ips;
 	}
 
 	@Override
@@ -419,12 +504,12 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 
 	@Override
 	public void imageProduced(final Image image) {
-		this.previewImage = image;
-		pnlPreview.repaint();
+		updatePreviewImage(image);
 	}
 
 	@Override
 	public void imageResized(final int width, final int height) {
+		// We don't care about this one
 	}
 
 }

@@ -34,7 +34,7 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 			dos.write(intent);
 			if (intent == INTENT_CHECK || intent == INTENT_CHECK_BULK || intent == INTENT_CONNECT) {
 				socket.setSoTimeout(2500);
-				setHost(dis.readUTF());
+				setUser(dis.readUTF());
 				setOS(dis.readUTF());
 				setVersion(dis.readUTF());
 				imageResized(dis.readShort(), dis.readShort());

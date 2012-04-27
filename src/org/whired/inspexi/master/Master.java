@@ -66,7 +66,7 @@ public class Master {
 							else {
 								r.connect(Slave.INTENT_CHECK_BULK);
 							}
-							frame.updateSlaveList(ip, r.getHost(), r.getOS(), r.getVersion());
+							frame.updateSlaveList(ip, r.getUser(), r.getOS(), r.getVersion());
 						}
 						catch (final Throwable t) {
 							frame.setSlaveOffline(ip);

@@ -60,7 +60,7 @@ public class LocalSlave extends Slave {
 						System.exit(0);
 					}
 					else if (intent == INTENT_CHECK || intent == INTENT_CHECK_BULK || intent == INTENT_CONNECT) {
-						dos.writeUTF(getHost());
+						dos.writeUTF(getUser());
 						dos.writeUTF(getOS());
 						dos.writeUTF(getVersion());
 						dos.writeShort(robot.getZoom(robot.getBounds().width));
@@ -146,7 +146,7 @@ public class LocalSlave extends Slave {
 		}));
 
 		// Set this slave's properties
-		setHost(System.getProperty("user.name"));
+		setUser(System.getProperty("user.name"));
 		setOS(System.getProperty("os.name") + "_" + System.getProperty("os.arch"));
 		setVersion(VERSION);
 

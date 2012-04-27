@@ -3,7 +3,7 @@ package org.whired.inspexi.updater;
 import java.io.File;
 
 /**
- * A JAR package that can be updated and downloaded if necessary
+ * Represents a JAR package that can be updated and downloaded if necessary
  * @author Whired
  */
 public class Package {

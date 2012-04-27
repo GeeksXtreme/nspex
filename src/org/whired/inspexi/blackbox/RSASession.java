@@ -15,6 +15,10 @@ import java.security.spec.RSAPublicKeySpec;
 
 import javax.crypto.Cipher;
 
+/**
+ * Maintains a RSA-encrypted session
+ * @author Whired
+ */
 public class RSASession {
 	private PublicKey remotePublicKey;
 	private final PrivateKey localPrivateKey;

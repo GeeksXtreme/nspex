@@ -9,7 +9,7 @@ import java.io.InputStreamReader;
 import java.security.MessageDigest;
 
 /**
- * An updater for packages
+ * Updates packages
  * @author Whired
  */
 public class Updater implements Runnable {
