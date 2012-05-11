@@ -14,7 +14,7 @@ public class LogFormatter extends Formatter {
 	public final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("d/M k:mm");
 
 	@Override
-	public synchronized String format(final LogRecord record) {
+	public String format(final LogRecord record) {
 		final StringBuilder sb = new StringBuilder("[");
 		date.setTime(record.getMillis());
 		sb.append(DATE_FORMAT.format(date));

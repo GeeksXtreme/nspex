@@ -40,6 +40,13 @@ public class RSASession {
 		System.out.println("RSA keys generated (" + (System.currentTimeMillis() - start) + "ms)");
 	}
 
+	public String readEncryptedUTF(DataInputStream dis) throws IOException, GeneralSecurityException {
+		byte[] payload = new byte[dis.readInt()];
+		dis.readFully(payload);
+		payload = decrypt(payload);
+		return new String(payload, "utf8");
+	}
+
 	public void exchangeKeys(DataInputStream dis, DataOutputStream dos) throws IOException, InvalidKeySpecException {
 		writeLocalKeySpec(dos);
 		readRemoteKeySpec(dis);

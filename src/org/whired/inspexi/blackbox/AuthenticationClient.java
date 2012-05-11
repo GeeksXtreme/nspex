@@ -17,15 +17,19 @@ public class AuthenticationClient {
 		final Socket s = new Socket("inspexi.hopto.org", 43597);
 		final DataInputStream dis = new DataInputStream(s.getInputStream());
 		final DataOutputStream dos = new DataOutputStream(s.getOutputStream());
-		System.out.println("exch");
+
+		// Exchange the keys for RSA
 		rsa.exchangeKeys(dis, dos);
-		// Encrypt with server public key
-		final byte[] encrypted = rsa.encrpyt(new String("ok").getBytes("utf8"));
-		System.out.println("Writing: " + encrypted[0]);
-		dos.writeInt(encrypted.length);
-		dos.write(encrypted);
+
+		// Set up a secure output stream
+		RSAOutputStream ros = new RSAOutputStream(dos, rsa);
+
+		// Send our details
+		ros.writeUTF("Whired");
+		ros.writeUTF("mypassword");
 
 		// Hang so server can catch up
+		dos.close();
 		dis.read();
 	}
 }

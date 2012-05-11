@@ -133,7 +133,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 						updatePreviewImage(null);
 					}
 					else {
-						refresh(new String[] { model.getValueAt(table.getSelectionModel().getLeadSelectionIndex(), 0).toString() });
+						refresh(new Slave[] { (Slave) model.getValueAt(table.getSelectionModel().getLeadSelectionIndex(), 0) });
 					}
 				}
 			}
@@ -143,9 +143,9 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		btnConnect.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
-				String[] ips = getSelectedIps();
-				if (ips.length > 0) {
-					connect(ips);
+				Slave[] slaves = getSelectedSlaves();
+				if (slaves.length > 0) {
+					connect(slaves);
 				}
 				else {
 					Log.l.info("Select the slaves to connect to");
@@ -164,11 +164,11 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		btnRefresh.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
-				String[] ips = getSelectedIps();
-				if (ips.length == 0) {
-					ips = getAllIps();
+				Slave[] slaves = getSelectedSlaves();
+				if (slaves.length == 0) {
+					slaves = getAllSlaves();
 				}
-				refresh(ips);
+				refresh(slaves);
 			}
 		});
 
@@ -176,9 +176,9 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		btnBuild.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent e) {
-				String[] ips = getSelectedIps();
-				if (ips.length > 0) {
-					rebuild(ips);
+				Slave[] slaves = getSelectedSlaves();
+				if (slaves.length > 0) {
+					rebuild(slaves);
 				}
 				else {
 					Log.l.info("Select the slaves to rebuild");
@@ -192,7 +192,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 			public void actionPerformed(final ActionEvent arg0) {
 				String ip;
 				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter IP:")) != null && ip.length() > 0) {
-					addSlaves(new String[] { ip });
+					addSlaves(new Slave[] { new Slave(ip) });
 				}
 			}
 		});
@@ -297,7 +297,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 			@Override
 			public void mousePressed(final MouseEvent e) {
 				if (previewImage != null) {
-					String[] ips = getSelectedIps();
+					Slave[] ips = getSelectedSlaves();
 					if (ips.length > 0) {
 						connect(ips);
 					}
@@ -316,35 +316,35 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 
 	/**
 	 * Adds the specified slaves to the current list
-	 * @param ips the ips of the slaves to add
+	 * @param slaves the slaves to add
 	 */
-	public void addSlaves(final String[] ips) {
+	public void addSlaves(final Slave[] slaves) {
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
-				for (final String ip : ips) {
+				for (final Slave slv : slaves) {
 					for (int i = 0; i < model.getRowCount(); i++) {
-						if (model.getValueAt(i, 0).equals(ip)) {
+						if (model.getValueAt(i, 0).equals(slv)) {
 							break;
 						}
 					}
-					model.addRow(new Object[] { ip, "-", "-", "-", "Offline" });
+					model.addRow(new Object[] { slv, slv.getUser(), slv.getOS(), slv.getVersion(), "Offline" });
 				}
 			}
 		});
-		refresh(ips);
+		refresh(slaves);
 	}
 
 	/**
-	 * Removes a slave whose ip matches the one specified
-	 * @param ip the ip of the slave to remove
+	 * Removes the specified slave
+	 * @param slave the slave to remove
 	 */
-	public void removeSlave(final String ip) {
+	public void removeSlave(final Slave slv) {
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
 				for (int i = 0; i < model.getRowCount(); i++) {
-					if (model.getValueAt(i, 0).equals(ip)) {
+					if (model.getValueAt(i, 0).equals(slv)) {
 						model.removeRow(i);
 						break;
 					}
@@ -353,6 +353,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		});
 	}
 
+	// TODO with new system this is not so necessary
 	/**
 	 * Updates the details of the slave that matches {@code ip}
 	 * @param ip the ip of the slave to update
@@ -379,6 +380,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		});
 	}
 
+	// TODO not so necessary either
 	/**
 	 * Sets the slave's whose ip matches {@code ip} status to offline
 	 * @param ip the ip of the slave to set offline
@@ -456,13 +458,13 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 	 * Gets all the listed ips regardless of selection
 	 * @return the ips
 	 */
-	private String[] getAllIps() {
-		final String[] ips = new String[model.getRowCount()];
+	private Slave[] getAllSlaves() {
+		final Slave[] ips = new Slave[model.getRowCount()];
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
 				for (int i = 0; i < model.getRowCount(); i++) {
-					ips[i] = (String) model.getValueAt(i, 0);
+					ips[i] = (Slave) model.getValueAt(i, 0);
 				}
 			}
 		});
@@ -473,14 +475,14 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 	 * Gets all the currently selected ips
 	 * @return the selected ips, or an empty array if none are selected
 	 */
-	public String[] getSelectedIps() {
+	public Slave[] getSelectedSlaves() {
 		final int[] rows = table.getSelectedRows();
-		final String[] ips = new String[rows.length];
+		final Slave[] ips = new Slave[rows.length];
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
 				for (int i = 0; i < rows.length; i++) {
-					ips[i] = (String) model.getValueAt(rows[i], 0);
+					ips[i] = (Slave) model.getValueAt(rows[i], 0);
 				}
 			}
 		});
@@ -488,18 +490,18 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 	}
 
 	@Override
-	public void connect(final String[] ips) {
-		listener.connect(ips);
+	public void connect(final Slave[] slaves) {
+		listener.connect(slaves);
 	}
 
 	@Override
-	public void rebuild(final String[] ips) {
-		listener.rebuild(ips);
+	public void rebuild(final Slave[] slaves) {
+		listener.rebuild(slaves);
 	}
 
 	@Override
-	public void refresh(final String[] ips) {
-		listener.refresh(ips);
+	public void refresh(final Slave[] slaves) {
+		listener.refresh(slaves);
 	}
 
 	@Override

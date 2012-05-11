@@ -25,25 +25,25 @@ public class Master {
 	/** Listens for events fired by the view */
 	private final ControllerEventListener listener = new ControllerEventListener() {
 		@Override
-		public void connect(final String[] ips) {
-			for (final String ip : ips) {
+		public void connect(final Slave[] slaves) {
+			for (final Slave slv : slaves) {
 				try {
-					final RemoteSlaveModel slave = new RemoteSlaveModel(ip, 43596);
+					final RemoteSlaveModel slave = new RemoteSlaveModel(slv.getIp(), 43596);
 					new RemoteSlaveFullView(slave);
 					slave.connect(Slave.INTENT_CONNECT);
 				}
 				catch (final Throwable t) {
 					t.printStackTrace();
-					Log.l.warning("Could not connect to " + ip + ".");
+					Log.l.warning("Could not connect to " + slv.getIp() + ".");
 				}
 			}
 		}
 
 		@Override
-		public void rebuild(final String[] ips) {
-			for (final String ip : ips) {
+		public void rebuild(final Slave[] slaves) {
+			for (final Slave slv : slaves) {
 				try {
-					new RemoteSlaveModel(ip, 43596).connect(Slave.INTENT_REBUILD);
+					new RemoteSlaveModel(slv.getIp(), 43596).connect(Slave.INTENT_REBUILD);
 				}
 				catch (final Throwable t) {
 					t.printStackTrace();
@@ -52,38 +52,40 @@ public class Master {
 		}
 
 		@Override
-		public void refresh(final String[] ips) {
+		public void refresh(final Slave[] slaves) {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (final String ip : ips) {
+					for (final Slave slv : slaves) {
 						try {
-							final RemoteSlaveModel r = new RemoteSlaveModel(ip, 43596);
-							if (ips.length == 1) {
+							final RemoteSlaveModel r = new RemoteSlaveModel(slv.getIp(), 43596);
+							if (slaves.length == 1) {
 								r.setImageConsumer(frame);
 								r.connect(Slave.INTENT_CHECK);
 							}
 							else {
 								r.connect(Slave.INTENT_CHECK_BULK);
 							}
-							frame.updateSlaveList(ip, r.getUser(), r.getOS(), r.getVersion());
+							// TODO ??
+							//frame.updateSlaveList(slv, r.getUser(), r.getOS(), r.getVersion());
 						}
 						catch (final Throwable t) {
-							frame.setSlaveOffline(ip);
+							// TODO ??
+							//frame.setSlaveOffline(slv);
 						}
 					}
 
-					Log.l.info("Queried " + ips.length + " slave(s)");
+					Log.l.info("Queried " + slaves.length + " slave(s)");
 				}
 			}).start();
 		}
 	};
 
 	/**
-	 * Creates a new master that will work with the specified given ips
-	 * @param slaveIps the ips to work with initially
+	 * Creates a new master that will work with the specified slaves
+	 * @param slaves the slaves to work with initially
 	 */
-	public Master(final String[] slaveIps) {
+	public Master(final Slave[] slaves) {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		}
@@ -94,7 +96,7 @@ public class Master {
 			@Override
 			public void run() {
 				frame = new MasterFrame(listener);
-				frame.addSlaves(slaveIps);
+				frame.addSlaves(slaves);
 				frame.setVisible(true);
 			}
 		});
@@ -129,6 +131,11 @@ public class Master {
 		// props.put("ips", b.toString());
 		// props.store(new FileOutputStream("props.dat"), null);
 		final String s = (String) props.get("ips");
-		new Master(s != null ? s.split(",") : new String[0]);
+		String[] ips = s != null ? s.split(",") : new String[0];
+		Slave[] slaves = new Slave[ips.length];
+		for (int i = 0; i < slaves.length; i++) {
+			slaves[i] = new Slave(ips[i]);
+		}
+		new Master(slaves);
 	}
 }

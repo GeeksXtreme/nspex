@@ -5,18 +5,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Log {
-	public static final Logger l = LoggerFactory.create();
+	public static final Logger l = createLogger();
 
-	private static final class LoggerFactory {
-		private final static Logger create() {
-			final Logger logger = Logger.getLogger(Log.class.getName());
-			logger.setLevel(Level.INFO);
-			final ConsoleHandler ch = new ConsoleHandler();
-			ch.setLevel(Level.INFO);
-			ch.setFormatter(new LogFormatter());
-			logger.addHandler(ch);
-			logger.setUseParentHandlers(false);
-			return logger;
-		}
+	private final static Logger createLogger() {
+		final Logger logger = Logger.getLogger(Log.class.getName());
+		logger.setLevel(Level.INFO);
+		final ConsoleHandler ch = new ConsoleHandler();
+		ch.setLevel(Level.INFO);
+		ch.setFormatter(new LogFormatter());
+		logger.addHandler(ch);
+		logger.setUseParentHandlers(false);
+		return logger;
 	}
 }
