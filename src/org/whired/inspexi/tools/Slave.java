@@ -6,6 +6,7 @@ public class Slave {
 	public static final int OP_TRANSFER_IMAGE = 0, OP_DO_COMMAND = 1;
 	private String user, os, version;
 	private String ip;
+	private boolean online;
 
 	public Slave() {
 	}
@@ -45,5 +46,13 @@ public class Slave {
 	@Override
 	public String toString() {
 		return this.ip;
+	}
+
+	public boolean isOnline() {
+		return online;
+	}
+
+	public void setOnline(boolean online) {
+		this.online = online;
 	}
 }

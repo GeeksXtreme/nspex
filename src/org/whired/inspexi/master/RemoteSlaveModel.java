@@ -19,12 +19,12 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 	private DataInputStream dis;
 	private DataOutputStream dos;
 	private SessionListener listener;
-	private final String ip;
 	private ImageConsumer consumer;
 
 	public RemoteSlaveModel(final String ip, final int port) throws IOException {
-		this.ip = ip;
+		super(ip);
 		socket.connect(new InetSocketAddress(ip, port), 250);
+		setOnline(true);
 	}
 
 	public void connect(final int intent) {
@@ -123,10 +123,6 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 		sessionEnded(reason, null);
 	}
 
-	public String getIp() {
-		return this.ip;
-	}
-
 	public void setSessionListener(final SessionListener listener) {
 		this.listener = listener;
 	}
@@ -140,7 +136,7 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 		if (listener != null) {
 			listener.sessionEnded(reason, t);
 		}
-		Log.l.info("Session with " + ip + " ended: " + reason);
+		Log.l.info("Session with " + getIp() + " ended: " + reason);
 	}
 
 	@Override
@@ -155,5 +151,10 @@ public class RemoteSlaveModel extends Slave implements SessionListener, ImageCon
 		if (consumer != null) {
 			consumer.imageResized(width, height);
 		}
+	}
+
+	@Override
+	public String toString() {
+		return getIp();
 	}
 }

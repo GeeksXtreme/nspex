@@ -192,7 +192,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 			public void actionPerformed(final ActionEvent arg0) {
 				String ip;
 				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter IP:")) != null && ip.length() > 0) {
-					addSlaves(new Slave[] { new Slave(ip) });
+					updateSlaves(new Slave[] { new Slave(ip) });
 				}
 			}
 		});
@@ -314,25 +314,32 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		scrollPane_1.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane_1.getVerticalScrollBar()));
 	}
 
+	public void updateSlave(Slave slv) {
+		updateSlaves(new Slave[] { slv });
+	}
+
 	/**
 	 * Adds the specified slaves to the current list
 	 * @param slaves the slaves to add
 	 */
-	public void addSlaves(final Slave[] slaves) {
+	public void updateSlaves(final Slave[] slaves) {
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
 				for (final Slave slv : slaves) {
 					for (int i = 0; i < model.getRowCount(); i++) {
-						if (model.getValueAt(i, 0).equals(slv)) {
-							break;
+						if (model.getValueAt(i, 0).toString().equals(slv.toString())) {
+							model.setValueAt(slv.getUser(), i, 1);
+							model.setValueAt(slv.getOS(), i, 2);
+							model.setValueAt(slv.getVersion(), i, 3);
+							model.setValueAt(slv.isOnline() ? "Online" : "Offline", i, 4);
+							return;
 						}
 					}
-					model.addRow(new Object[] { slv, slv.getUser(), slv.getOS(), slv.getVersion(), "Offline" });
+					model.addRow(new Object[] { slv, slv.getUser(), slv.getOS(), slv.getVersion(), slv.isOnline() ? "Online" : "Offline" });
 				}
 			}
 		});
-		refresh(slaves);
 	}
 
 	/**
@@ -351,54 +358,6 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 				}
 			}
 		});
-	}
-
-	// TODO with new system this is not so necessary
-	/**
-	 * Updates the details of the slave that matches {@code ip}
-	 * @param ip the ip of the slave to update
-	 * @param user the updated user
-	 * @param os the updated operating system
-	 * @param version the updated version
-	 */
-	public void updateSlaveList(final String ip, final String user, final String os, final String version) {
-		runOnEdt(new Runnable() {
-			@Override
-			public void run() {
-				for (int i = 0; i < model.getRowCount(); i++) {
-					if (model.getValueAt(i, 0).equals(ip)) {
-						model.setValueAt(ip, i, 0);
-						model.setValueAt(user, i, 1);
-						model.setValueAt(os, i, 2);
-						model.setValueAt(version, i, 3);
-						model.setValueAt("Online", i, 4);
-						return;
-					}
-				}
-				model.addRow(new String[] { ip, user, os, version, "Online" });
-			}
-		});
-	}
-
-	// TODO not so necessary either
-	/**
-	 * Sets the slave's whose ip matches {@code ip} status to offline
-	 * @param ip the ip of the slave to set offline
-	 */
-	public void setSlaveOffline(final String ip) {
-		runOnEdt(new Runnable() {
-			@Override
-			public void run() {
-				for (int i = 0; i < model.getRowCount(); i++) {
-					if (model.getValueAt(i, 0).equals(ip)) {
-						model.setValueAt("Offline", i, 4);
-						return;
-					}
-				}
-				model.addRow(new String[] { ip, "-", "-", "-", "Offline" });
-			}
-		});
-		updatePreviewImage(null); //TODO does this go here?
 	}
 
 	/**
