@@ -95,7 +95,9 @@ public class AuthenticationServer {
 						try {
 							ResultSet rs = database.executeQuery("SELECT user_password,user_ip,last_ip_change FROM user WHERE user_id = '" + userid + "'");
 							if (rs.next() && rs.getString(1).equals(pass)) {
-								// Password is right, let's compare the ip
+								// Password is right, make sure this user hasn't expired
+
+								// Not expired, let's compare the ip
 								if (!isSameIsp(rs.getString(2), remoteIp)) {
 									System.out.println("IP has changed too drastically");
 									long lastChange = rs.getLong(3);
