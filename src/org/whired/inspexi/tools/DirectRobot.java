@@ -15,27 +15,15 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.peer.MouseInfoPeer;
 import java.awt.peer.RobotPeer;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.Locale;
-
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
 
 import sun.awt.ComponentFactory;
 
 public final class DirectRobot extends Robot {
 	private int detail = LOW;
 	public static final int LOWEST = 0, LOWER = 1, LOW = 2, GREYSCALE = 3;
-	private final JPEGImageWriteParam iwparam = new JPEGImageWriteParam(new Locale("en"));
-	private ImageWriter writer;
-	private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 	private final BufferedImage unscaled;
 	private final int[] unscaledPix;
 	private final BufferedImage scaled;
@@ -53,18 +41,6 @@ public final class DirectRobot extends Robot {
 
 	public DirectRobot(final Rectangle bounds, final double zoom) throws AWTException {
 		super(bounds, zoom);
-		iwparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-		iwparam.setCompressionQuality(.8F);
-		final Iterator<ImageWriter> iter = ImageIO.getImageWritersByFormatName("jpg");
-		if (iter.hasNext()) {
-			writer = iter.next();
-		}
-		try {
-			writer.setOutput(ImageIO.createImageOutputStream(bos));
-		}
-		catch (final IOException e1) {
-			e1.printStackTrace();
-		}
 		final Toolkit toolkit = Toolkit.getDefaultToolkit();
 		peer = ((ComponentFactory) toolkit).createRobot(null, device);
 		final Class<?> peerClass = peer.getClass();
@@ -271,14 +247,12 @@ public final class DirectRobot extends Robot {
 				graphics.drawImage(unscaled, 0, 0, scaled.getWidth(), scaled.getHeight(), 0, 0, unscaled.getWidth(), unscaled.getHeight(), null);
 
 				try {
-					writer.write(null, new IIOImage(scaled, null, null), iwparam);
+					return JPEGImageWriter.getImageBytes(scaled);
 				}
-				catch (final IOException e) {
+				catch (IOException e) {
 					e.printStackTrace();
 				}
-				final byte[] toReturn = bos.toByteArray();
-				bos.reset();
-				return toReturn;
+			break;
 			case GREYSCALE:
 				for (int i = 0; i < pix.length; i++) {
 					pixels[i] = (byte) pix[i];
