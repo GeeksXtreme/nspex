@@ -1,13 +1,19 @@
 package org.whired.inspexi.slave;
 
 import java.awt.AWTException;
+import java.awt.Image;
+import java.awt.image.RenderedImage;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import javax.imageio.ImageIO;
+
 import org.whired.inspexi.tools.DirectRobot;
+import org.whired.inspexi.tools.JPEGImageWriter;
 import org.whired.inspexi.tools.NetTask;
 import org.whired.inspexi.tools.NetTaskQueue;
 import org.whired.inspexi.tools.ReactServer;
@@ -41,16 +47,16 @@ public class LocalSlave extends Slave {
 			System.out.println("Session ended: " + reason);
 		}
 	};
-	/** The queue that will accept net tasks */
-	private final NetTaskQueue queue = new NetTaskQueue(sessl);
 	/** The server that will accept connections */
-	private final ReactServer server = new ReactServer(new ServerSocket(PORT), queue) {
+	private final ReactServer server = new ReactServer(new ServerSocket(PORT)) {
 		@Override
 		public NetTask getOnConnectTask(final Socket sock) {
-			return new NetTask("handshake_reactor", sock) {
+			return new NetTask(sessl, sock) {
 				@Override
 				public void run(final DataInputStream dis, final DataOutputStream dos) throws IOException {
 					// Read intent before doing anything
+					// Beware of timeout, malicious clients could hold us open
+					System.out.println("Exec_task_handshake");
 					final int intent = dis.read();
 					if (intent == -1) {
 						throw new IOException("End of stream");
@@ -72,11 +78,17 @@ public class LocalSlave extends Slave {
 							dos.write(previewImage);
 						}
 						else {
-							queue.add(new NetTask("handle_opcode", sock) {
+							NetTaskQueue.add(new NetTask(sessl, sock) {
 								@Override
 								public void run(final DataInputStream dis, final DataOutputStream dos) throws IOException {
+									System.out.println("Exec_task_read_opcode");
+									String fs = System.getProperty("file.separator");
 									int op;
+									sock.setSoTimeout(10);
+									timeoutFatal = false;
 									while ((op = dis.read()) != -1) {
+										socket.setSoTimeout(25000);
+										timeoutFatal = true;
 										System.out.println("op: " + op);
 										switch (op) {
 											case INTENT_REBUILD:
@@ -94,7 +106,51 @@ public class LocalSlave extends Slave {
 													System.out.println("fail.");
 												}
 											break;
+											case OP_GET_FILE_THUMB://TODO
+												Image img = ImageIO.read(new File(dis.readUTF().replace("|", fs)));
+												byte[] imgBytes = JPEGImageWriter.getImageBytes((RenderedImage) img);
+												dos.write(OP_GET_FILE_THUMB);
+												dos.writeInt(imgBytes.length);
+												dos.write(imgBytes);
+											break;
+											case OP_GET_FILES:
+												final String parentPath = dis.readUTF();
+												dos.write(OP_GET_FILES);
+												dos.writeUTF(parentPath);
+												File[] files;
+												// Top
+												if (parentPath.length() == 0) {
+													files = File.listRoots();
+													dos.writeInt(files.length);
+													for (File f : files) {
+														dos.writeUTF(f.getPath().replace(fs, ""));
+														dos.writeBoolean(true);
+													}
+												}
+												else {
+													String rp = parentPath.replace("|", fs);
+													File top = new File(rp);
+													files = top.listFiles();
+													if (files != null) {
+														dos.writeInt(files.length);
+														for (File f : files) {
+															if (f != null) {
+																System.out.println("found: " + f.getName());
+																dos.writeUTF(f.getName());
+																dos.writeBoolean(f.isDirectory());
+															}
+														}
+													}
+													else {
+														dos.writeInt(0);
+													}
+												}
+											break;
+											default:
+												throw new IOException("Unhandled operation: " + op);
 										}
+										sock.setSoTimeout(10);
+										timeoutFatal = false;
 									}
 									throw new IOException("End of stream");
 								}
@@ -102,9 +158,10 @@ public class LocalSlave extends Slave {
 							final ImageConsumer ic = new ImageConsumer() {
 								@Override
 								public void imageProduced(final ImageConsumer consumer, final byte[] image) {
-									queue.add(new NetTask("send_image", sock) {
+									NetTaskQueue.add(new NetTask(sessl, sock) {
 										@Override
 										public void run(final DataInputStream dis, final DataOutputStream dos) throws IOException {
+											System.out.println("Exec_task_transfer_image");
 											dos.write(OP_TRANSFER_IMAGE);
 											dos.writeInt(image.length);
 											dos.write(image);
@@ -115,6 +172,7 @@ public class LocalSlave extends Slave {
 											capture.removeListener(consumer);
 										}
 									});
+
 								}
 							};
 							capture.addListener(ic);

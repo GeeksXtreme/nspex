@@ -12,19 +12,21 @@ import java.security.GeneralSecurityException;
  */
 public abstract class NetTask {
 
-	/** The name of this task */
-	private final String name;
-
 	/** The socket that this net task will use */
 	protected final Socket socket;
+
+	/** The session listener to notify when something goes wrong */
+	protected final SessionListener listener;
+
+	protected boolean timeoutFatal;
 
 	/**
 	 * Creates a new task with the specified name
 	 * @param name the name of the task
 	 * @param socket the socket that this net task will use
 	 */
-	public NetTask(final String name, final Socket socket) {
-		this.name = name;
+	public NetTask(final SessionListener listener, final Socket socket) {
+		this.listener = listener;
 		this.socket = socket;
 	}
 
@@ -38,10 +40,5 @@ public abstract class NetTask {
 	/** This will be ran if {@link #run(DataInputStream, DataOutputStream)} throws an exception */
 	public void onFail() {
 		// Overriding is optional
-	}
-
-	@Override
-	public String toString() {
-		return name;
 	}
 }

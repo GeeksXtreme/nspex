@@ -11,17 +11,14 @@ import java.net.Socket;
 public abstract class ReactServer {
 	/** The server socket that will accept connections */
 	private final ServerSocket ssock;
-	/** The queue that will accept net tasks */
-	private final NetTaskQueue queue;
 
 	/**
 	 * Creates a new react server on the specified port with the specified queue
 	 * @param port the port to listen for incoming connections on
 	 * @param queue the queue that will accept net tasks
 	 */
-	public ReactServer(final ServerSocket ssock, final NetTaskQueue queue) {
+	public ReactServer(final ServerSocket ssock) {
 		this.ssock = ssock;
-		this.queue = queue;
 	}
 
 	/**
@@ -30,7 +27,7 @@ public abstract class ReactServer {
 	 */
 	public void startAccepting() throws IOException {
 		while (true) {
-			queue.add(getOnConnectTask(ssock.accept()));
+			NetTaskQueue.add(getOnConnectTask(ssock.accept()));
 		}
 	}
 

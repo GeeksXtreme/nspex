@@ -14,7 +14,6 @@ import java.text.DecimalFormat;
 
 import org.whired.inspexi.blackbox.sql.SQLiteDatabase;
 import org.whired.inspexi.tools.NetTask;
-import org.whired.inspexi.tools.NetTaskQueue;
 import org.whired.inspexi.tools.ReactServer;
 import org.whired.inspexi.tools.SessionListener;
 
@@ -25,13 +24,12 @@ import org.whired.inspexi.tools.SessionListener;
 public class AuthenticationServer {
 	private final static long IP_CHANGE_TIMEOUT = 864000000; // 10 days
 	private final DecimalFormat decFormat = new DecimalFormat("#.#");
-	/** The queue that handles work for this server */
-	private final NetTaskQueue queue = new NetTaskQueue(new SessionListener() {
+	private final SessionListener sessl = new SessionListener() {
 		@Override
 		public void sessionEnded(String reason, Throwable t) {
 			t.printStackTrace();
 		}
-	});
+	};
 
 	/**
 	 * Starts an authentication server on the specified port
@@ -52,10 +50,10 @@ public class AuthenticationServer {
 		final SQLiteDatabase database = new SQLiteDatabase("", "ispx_db");
 
 		System.out.print("Starting server..");
-		final ReactServer server = new ReactServer(new ServerSocket(port), queue) {
+		final ReactServer server = new ReactServer(new ServerSocket(port)) {
 			@Override
 			public NetTask getOnConnectTask(final Socket sock) {
-				return new NetTask("auth_connect", sock) {
+				return new NetTask(sessl, sock) {
 					@Override
 					public void run(final DataInputStream dis, final DataOutputStream dos) throws IOException, GeneralSecurityException {
 						// First things first, these guys need to do their business QUICK, we're not going to wait
