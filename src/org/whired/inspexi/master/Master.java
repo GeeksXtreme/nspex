@@ -26,29 +26,40 @@ public class Master {
 	private final ControllerEventListener listener = new ControllerEventListener() {
 		@Override
 		public void connect(final Slave[] slaves) {
-			for (final Slave slv : slaves) {
+			for (int i = 0; i < slaves.length; i++) {
 				try {
-					final RemoteSlaveModel slave = new RemoteSlaveModel(slv.getIp(), 43596);
-					new RemoteSlaveFullView(slave);
-					slave.connect(Slave.INTENT_CONNECT);
+					RemoteSlave rsm;
+					slaves[i] = rsm = new RemoteSlave(slaves[i].getIp(), 43596);
+					new RemoteSlaveFullView(rsm);
+					rsm.connect(Slave.INTENT_CONNECT);
+					rsm.setOnline(true);
 				}
-				catch (final Throwable t) {
-					t.printStackTrace();
-					Log.l.warning("Could not connect to " + slv.getIp() + ".");
+				catch (final IOException t) {
+					Log.l.warning("Could not connect to " + slaves[i].getIp() + ".");
+					slaves[i].setOnline(false);
 				}
 			}
 		}
 
 		@Override
 		public void rebuild(final Slave[] slaves) {
-			for (final Slave slv : slaves) {
-				try {
-					new RemoteSlaveModel(slv.getIp(), 43596).connect(Slave.INTENT_REBUILD);
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					for (int i = 0; i < slaves.length; i++) {
+						try {
+							final RemoteSlave r;
+							slaves[i] = r = new RemoteSlave(slaves[i].getIp(), 43596);
+							r.setOnline(false);
+							r.connect(Slave.INTENT_REBUILD);
+						}
+						catch (final Throwable t) {
+							slaves[i].setOnline(false);
+						}
+					}
+					frame.updateSlaves(slaves);
 				}
-				catch (final Throwable t) {
-					t.printStackTrace();
-				}
-			}
+			}).start();
 		}
 
 		@Override
@@ -56,9 +67,10 @@ public class Master {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (final Slave slv : slaves) {
+					for (int i = 0; i < slaves.length; i++) {
 						try {
-							final RemoteSlaveModel r = new RemoteSlaveModel(slv.getIp(), 43596);
+							final RemoteSlave r;
+							slaves[i] = r = new RemoteSlave(slaves[i].getIp(), 43596);
 							if (slaves.length == 1) {
 								r.setImageConsumer(frame);
 								r.connect(Slave.INTENT_CHECK);
@@ -66,15 +78,12 @@ public class Master {
 							else {
 								r.connect(Slave.INTENT_CHECK_BULK);
 							}
-							// TODO ??
-							//frame.updateSlaveList(slv, r.getUser(), r.getOS(), r.getVersion());
 						}
 						catch (final Throwable t) {
-							// TODO ??
-							//frame.setSlaveOffline(slv);
+							slaves[i].setOnline(false);
 						}
 					}
-
+					frame.updateSlaves(slaves);
 					Log.l.info("Queried " + slaves.length + " slave(s)");
 				}
 			}).start();
@@ -96,7 +105,7 @@ public class Master {
 			@Override
 			public void run() {
 				frame = new MasterFrame(listener);
-				frame.addSlaves(slaves);
+				frame.refresh(slaves);
 				frame.setVisible(true);
 			}
 		});
@@ -122,6 +131,8 @@ public class Master {
 
 	public static void main(final String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException {
 		final Properties props = getProps();
+
+		// TODO save on exit:
 		// String[] ips = new String[] { "localhost", "192.168.2.8" };
 		// StringBuilder b = new StringBuilder();
 		// for (String s : ips) {

@@ -121,6 +121,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 
 		table.setModel(model);
 		table.setRowSorter(new TableRowSorter<TableModel>(model));
+
 		table.setBorder(null);
 		table.getTableHeader().setFont(font);
 		table.getTableHeader().setReorderingAllowed(false);
@@ -128,6 +129,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 
 			@Override
 			public void valueChanged(final ListSelectionEvent e) {
+				// If we're still picking things we don't want to spam
 				if (!e.getValueIsAdjusting()) {
 					if (table.getSelectionModel().isSelectionEmpty()) {
 						updatePreviewImage(null);
@@ -192,7 +194,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 			public void actionPerformed(final ActionEvent arg0) {
 				String ip;
 				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter IP:")) != null && ip.length() > 0) {
-					addSlaves(new Slave[] { new Slave(ip) });
+					updateSlaves(new Slave[] { new Slave(ip) });
 				}
 			}
 		});
@@ -280,12 +282,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 				g.fillRect(0, 0, this.getWidth(), this.getHeight());
 				if (previewImage != null) {
 					final Graphics2D g2 = (Graphics2D) g;
-					g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-					g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
-					g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
-					g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
-					g2.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+					g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 					g2.drawImage(previewImage, 0, 0, this.getWidth(), this.getHeight(), 0, 0, previewImage.getWidth(this), previewImage.getHeight(this), this);
 				}
 				g.setColor(grayBorder);
@@ -314,25 +311,32 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 		scrollPane_1.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane_1.getVerticalScrollBar()));
 	}
 
+	public void updateSlave(Slave slv) {
+		updateSlaves(new Slave[] { slv });
+	}
+
 	/**
 	 * Adds the specified slaves to the current list
 	 * @param slaves the slaves to add
 	 */
-	public void addSlaves(final Slave[] slaves) {
+	public void updateSlaves(final Slave[] slaves) {
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
 				for (final Slave slv : slaves) {
 					for (int i = 0; i < model.getRowCount(); i++) {
-						if (model.getValueAt(i, 0).equals(slv)) {
-							break;
+						if (model.getValueAt(i, 0).toString().equals(slv.toString())) {
+							model.setValueAt(slv.getUser(), i, 1);
+							model.setValueAt(slv.getOS(), i, 2);
+							model.setValueAt(slv.getVersion(), i, 3);
+							model.setValueAt(slv.isOnline() ? "Online" : "Offline", i, 4);
+							return;
 						}
 					}
-					model.addRow(new Object[] { slv, slv.getUser(), slv.getOS(), slv.getVersion(), "Offline" });
+					model.addRow(new Object[] { slv, slv.getUser(), slv.getOS(), slv.getVersion(), slv.isOnline() ? "Online" : "Offline" });
 				}
 			}
 		});
-		refresh(slaves);
 	}
 
 	/**
@@ -351,54 +355,6 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 				}
 			}
 		});
-	}
-
-	// TODO with new system this is not so necessary
-	/**
-	 * Updates the details of the slave that matches {@code ip}
-	 * @param ip the ip of the slave to update
-	 * @param user the updated user
-	 * @param os the updated operating system
-	 * @param version the updated version
-	 */
-	public void updateSlaveList(final String ip, final String user, final String os, final String version) {
-		runOnEdt(new Runnable() {
-			@Override
-			public void run() {
-				for (int i = 0; i < model.getRowCount(); i++) {
-					if (model.getValueAt(i, 0).equals(ip)) {
-						model.setValueAt(ip, i, 0);
-						model.setValueAt(user, i, 1);
-						model.setValueAt(os, i, 2);
-						model.setValueAt(version, i, 3);
-						model.setValueAt("Online", i, 4);
-						return;
-					}
-				}
-				model.addRow(new String[] { ip, user, os, version, "Online" });
-			}
-		});
-	}
-
-	// TODO not so necessary either
-	/**
-	 * Sets the slave's whose ip matches {@code ip} status to offline
-	 * @param ip the ip of the slave to set offline
-	 */
-	public void setSlaveOffline(final String ip) {
-		runOnEdt(new Runnable() {
-			@Override
-			public void run() {
-				for (int i = 0; i < model.getRowCount(); i++) {
-					if (model.getValueAt(i, 0).equals(ip)) {
-						model.setValueAt("Offline", i, 4);
-						return;
-					}
-				}
-				model.addRow(new String[] { ip, "-", "-", "-", "Offline" });
-			}
-		});
-		updatePreviewImage(null); //TODO does this go here?
 	}
 
 	/**
@@ -446,11 +402,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 			run.run();
 		}
 		else {
-			try {
-				EventQueue.invokeAndWait(run);
-			}
-			catch (final Throwable t) {
-			}
+			EventQueue.invokeLater(run);
 		}
 	}
 
