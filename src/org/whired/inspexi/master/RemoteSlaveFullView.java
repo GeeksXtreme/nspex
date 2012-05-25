@@ -1,5 +1,6 @@
 package org.whired.inspexi.master;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Graphics;
@@ -9,22 +10,23 @@ import java.awt.RenderingHints;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.WindowConstants;
 
-import org.whired.inspexi.tools.SessionListener;
+import org.whired.inspexi.net.Communicable;
+import org.whired.inspexi.tools.RemoteFile;
+import org.whired.inspexi.tools.SlaveView;
 
-public class RemoteSlaveFullView extends JFrame implements SessionListener, ImageConsumer {
+public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	/** The image to draw, as received by the remote slave */
 	private Image image;
 	/** The panel to draw on */
 	private final JPanel panel;
-	private final RemoteSlave slave;
+	private RemoteFileChooserPanel fileChooser;
+	private JScrollPane scrollPane;
 
 	/**
 	 * Creates a new full view for the specified slave
@@ -32,7 +34,6 @@ public class RemoteSlaveFullView extends JFrame implements SessionListener, Imag
 	 */
 	public RemoteSlaveFullView(final RemoteSlave slave) {
 		super(slave.getIp());
-		this.slave = slave;
 		panel = new JPanel() {
 			@Override
 			public void paint(final Graphics g) {
@@ -51,15 +52,10 @@ public class RemoteSlaveFullView extends JFrame implements SessionListener, Imag
 			public void run() {
 				setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
-				final JScrollPane scrollPane = new JScrollPane();
+				scrollPane = new JScrollPane();
 				scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 				scrollPane.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane.getVerticalScrollBar()));
 				scrollPane.setViewportBorder(null);
-
-				final GroupLayout groupLayout = new GroupLayout(getContentPane());
-
-				groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.LEADING).addGroup(groupLayout.createSequentialGroup().addComponent(panel, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)).addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE));
-				groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING).addGroup(groupLayout.createSequentialGroup().addComponent(panel, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE).addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE)));
 
 				final JConsole console = new JConsole();
 				console.addCommandListener(new CommandListener() {
@@ -68,14 +64,37 @@ public class RemoteSlaveFullView extends JFrame implements SessionListener, Imag
 						slave.executeRemoteCommand(command);
 					}
 				});
-
 				scrollPane.setViewportView(console);
-				getContentPane().setLayout(groupLayout);
+
+				fileChooser = new RemoteFileChooserPanel() {
+
+					@Override
+					protected void requestThumbnail(String path) {
+						slave.requestThumbnail(path);
+					}
+
+					@Override
+					protected void requestChildren(String parentPath) {
+						slave.requestChildFiles(parentPath);
+					}
+				};
+
+				BorderLayout layout = new BorderLayout();
+				layout.addLayoutComponent(scrollPane, BorderLayout.SOUTH);
+				layout.addLayoutComponent(panel, BorderLayout.CENTER);
+				layout.addLayoutComponent(fileChooser, BorderLayout.WEST);
+				getContentPane().add(scrollPane);
+				getContentPane().add(panel);
+				getContentPane().add(fileChooser);
+				getContentPane().setLayout(layout);
 
 				addWindowListener(new WindowAdapter() {
 					@Override
 					public void windowClosing(final WindowEvent e) {
-						slave.sessionEnded("User requested", null);
+						Communicable c;
+						if ((c = slave.getCommunicable()) != null) {
+							c.disconnect();
+						}
 						super.windowClosing(e);
 					}
 				});
@@ -83,20 +102,13 @@ public class RemoteSlaveFullView extends JFrame implements SessionListener, Imag
 		});
 
 		// Keep last
-		slave.setImageConsumer(this);
-		slave.setSessionListener(this);
+		slave.setView(this);
 	}
 
 	@Override
 	public void imageProduced(final Image image) {
 		this.image = image;
 		panel.repaint();
-	}
-
-	@Override
-	public void sessionEnded(final String reason, final Throwable t) {
-		slave.dialog.dispose();
-		this.dispose();
 	}
 
 	/**
@@ -121,8 +133,14 @@ public class RemoteSlaveFullView extends JFrame implements SessionListener, Imag
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
-				panel.setPreferredSize(new Dimension(width, height));
-				panel.invalidate();
+				Dimension d = new Dimension(width, height);
+				panel.setPreferredSize(d);
+				panel.setMaximumSize(d);
+				d = new Dimension(200, height);
+				fileChooser.setPreferredSize(d);
+				fileChooser.setMaximumSize(d);
+				scrollPane.setPreferredSize(new Dimension(getWidth(), 100));
+				invalidate();
 				pack();
 				setMinimumSize(getSize());
 				setLocationRelativeTo(null);
@@ -130,5 +148,25 @@ public class RemoteSlaveFullView extends JFrame implements SessionListener, Imag
 			}
 		});
 
+	}
+
+	@Override
+	public void setThumbnail(Image thumb) {
+		fileChooser.setThumbnail(thumb);
+	}
+
+	@Override
+	public void addChildFiles(String parentPath, RemoteFile[] childFiles) {
+		fileChooser.addChildren(parentPath, childFiles);
+	}
+
+	@Override
+	public Dimension getThumbSize() {
+		return fileChooser.getThumbSize();
+	}
+
+	@Override
+	public void disconnected() {
+		this.dispose();
 	}
 }

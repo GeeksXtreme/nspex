@@ -29,10 +29,14 @@ public class Master {
 			for (int i = 0; i < slaves.length; i++) {
 				try {
 					RemoteSlave rsm;
-					slaves[i] = rsm = new RemoteSlave(slaves[i].getIp(), 43596);
+					slaves[i] = rsm = new RemoteSlave(slaves[i].getIp(), 43596) {
+						@Override
+						protected void onPropertyChange() {
+							frame.updateSlave(this);
+						}
+					};
 					new RemoteSlaveFullView(rsm);
 					rsm.connect(Slave.INTENT_CONNECT);
-					rsm.setOnline(true);
 				}
 				catch (final IOException t) {
 					Log.l.warning("Could not connect to " + slaves[i].getIp() + ".");
@@ -49,7 +53,12 @@ public class Master {
 					for (int i = 0; i < slaves.length; i++) {
 						try {
 							final RemoteSlave r;
-							slaves[i] = r = new RemoteSlave(slaves[i].getIp(), 43596);
+							slaves[i] = r = new RemoteSlave(slaves[i].getIp(), 43596) {
+								@Override
+								protected void onPropertyChange() {
+									frame.updateSlave(this);
+								}
+							};
 							r.setOnline(false);
 							r.connect(Slave.INTENT_REBUILD);
 						}
@@ -57,7 +66,7 @@ public class Master {
 							slaves[i].setOnline(false);
 						}
 					}
-					frame.updateSlaves(slaves);
+					//frame.updateSlaves(slaves);
 				}
 			}).start();
 		}
@@ -70,9 +79,14 @@ public class Master {
 					for (int i = 0; i < slaves.length; i++) {
 						try {
 							final RemoteSlave r;
-							slaves[i] = r = new RemoteSlave(slaves[i].getIp(), 43596);
+							slaves[i] = r = new RemoteSlave(slaves[i].getIp(), 43596) {
+								@Override
+								protected void onPropertyChange() {
+									frame.updateSlave(this);
+								}
+							};
+							r.setView(frame);
 							if (slaves.length == 1) {
-								r.setImageConsumer(frame);
 								r.connect(Slave.INTENT_CHECK);
 							}
 							else {
@@ -83,7 +97,7 @@ public class Master {
 							slaves[i].setOnline(false);
 						}
 					}
-					frame.updateSlaves(slaves);
+					//frame.updateSlaves(slaves);
 					Log.l.info("Queried " + slaves.length + " slave(s)");
 				}
 			}).start();

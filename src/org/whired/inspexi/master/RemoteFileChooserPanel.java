@@ -1,6 +1,8 @@
-package org.whired.inspexi.tools;
+package org.whired.inspexi.master;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -8,13 +10,12 @@ import java.awt.Image;
 import java.awt.RenderingHints;
 import java.util.Enumeration;
 
-import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
@@ -23,59 +24,66 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.ExpandVetoException;
 import javax.swing.tree.TreeNode;
 
-public abstract class RemoteFileChooserDialog extends JDialog implements TreeWillExpandListener, TreeSelectionListener {
+import org.whired.inspexi.tools.LazyTreeNode;
+import org.whired.inspexi.tools.RemoteFile;
 
-	private final JPanel contentPanel = new JPanel();
+public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillExpandListener, TreeSelectionListener {
+
 	private final LazyTreeNode root = new LazyTreeNode("", true);
 	private final JTree treeFiles = new JTree(root);
 	private Image thumbnail;
+	private final Color grayBorder = new Color(146, 151, 161);
+
 	private final JPanel pnlPreview = new JPanel() {
 		@Override
 		protected void paintComponent(Graphics g) {
+			g.setColor(this.getBackground());
+			g.fillRect(0, 0, this.getWidth(), this.getHeight());
 			if (thumbnail != null) {
 				final Graphics2D g2 = (Graphics2D) g;
+				//g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+				int tWidth = thumbnail.getWidth(this);
+				int tHeight = thumbnail.getHeight(this);
+
+				int dx = this.getWidth() / 2 - tWidth / 2;
+				int dy = this.getHeight() / 2 - tHeight / 2;
+
+				g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 				g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-				double tWidth = thumbnail.getWidth(this);
-				double tHeight = thumbnail.getHeight(this);
-				int nWidth = (int) (this.getHeight() * (tWidth / tHeight));
-				g2.drawImage(thumbnail, 0, 0, (nWidth), this.getHeight(), 0, 0, (int) tWidth, (int) tHeight, this);
+				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+				g2.drawImage(thumbnail, dx, dy, dx + tWidth, dy + tHeight, 0, 0, tWidth, tHeight, this);
 			}
+			g.setColor(grayBorder);
+			g.drawRect(0, 0, this.getWidth() - 1, this.getHeight() - 1);
+			g.dispose();
 		};
 	};
 
 	/**
 	 * Create the dialog
 	 */
-	public RemoteFileChooserDialog() {
-		setSize(300, 500);
-		getContentPane().setLayout(new BorderLayout());
-		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
-		getContentPane().add(contentPanel, BorderLayout.CENTER);
-		contentPanel.setLayout(new BorderLayout(0, 0));
+	public RemoteFileChooserPanel() {
+		setBorder(new EmptyBorder(2, 2, 2, 2));
+		setLayout(new BorderLayout(0, 0));
 		FlowLayout fl_pnlPreview = (FlowLayout) pnlPreview.getLayout();
 		fl_pnlPreview.setHgap(10);
 		fl_pnlPreview.setVgap(80);
-		contentPanel.add(pnlPreview, BorderLayout.NORTH);
+		add(pnlPreview, BorderLayout.SOUTH);
+		treeFiles.setScrollsOnExpand(false);
 		treeFiles.setShowsRootHandles(true);
 		treeFiles.getSelectionModel().addTreeSelectionListener(this);
 
 		JScrollPane scrollPane = new JScrollPane();
+		LineBorder b = new LineBorder(grayBorder);
+		scrollPane.setBorder(b);
+		scrollPane.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane.getVerticalScrollBar()));
+		scrollPane.getHorizontalScrollBar().setUI(new MinimalScrollBar(scrollPane.getHorizontalScrollBar()));
 		scrollPane.setViewportView(treeFiles);
-		contentPanel.add(scrollPane, BorderLayout.CENTER);
+		((BorderLayout) getLayout()).setVgap(1);
+		add(scrollPane, BorderLayout.CENTER);
 		treeFiles.addTreeWillExpandListener(this);
 		treeFiles.collapseRow(0);
-		JPanel buttonPane = new JPanel();
-		buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
-		getContentPane().add(buttonPane, BorderLayout.SOUTH);
-
-		JButton okButton = new JButton("OK");
-		okButton.setActionCommand("OK");
-		buttonPane.add(okButton);
-		getRootPane().setDefaultButton(okButton);
-
-		JButton cancelButton = new JButton("Cancel");
-		cancelButton.setActionCommand("Cancel");
-		buttonPane.add(cancelButton);
 	}
 
 	protected abstract void requestChildren(String parentPath);
@@ -89,7 +97,6 @@ public abstract class RemoteFileChooserDialog extends JDialog implements TreeWil
 				String[] parentNodes = parentPath.split("\\|");
 				LazyTreeNode ltn = root;
 				Enumeration e;
-				System.out.println("Parent path: " + parentPath);
 				for (String parentNode : parentNodes) {
 					if (parentNode.length() > 0) {
 						e = ltn.children();
@@ -102,9 +109,7 @@ public abstract class RemoteFileChooserDialog extends JDialog implements TreeWil
 					}
 				}
 				ltn.expanding();
-				System.out.println("End match: " + ltn);
 				for (RemoteFile child : children) {
-					System.out.println(child + " " + child.hasChildren());
 					ltn.add(new LazyTreeNode(child.toString(), child.hasChildren()));
 				}
 				((DefaultTreeModel) treeFiles.getModel()).nodeStructureChanged(ltn);
@@ -139,9 +144,6 @@ public abstract class RemoteFileChooserDialog extends JDialog implements TreeWil
 
 		if (!parent.hasBeenExpanded()) {
 			// Hasn't been expanded, load children now
-			System.out.println("Time to load");
-
-			// Add loaded children
 			requestChildren(pathToString(parent.getPath()));
 		}
 	}
@@ -160,5 +162,10 @@ public abstract class RemoteFileChooserDialog extends JDialog implements TreeWil
 			}
 		}
 		return sb.toString();
+	}
+
+	public Dimension getThumbSize() {
+		invalidate();
+		return pnlPreview.getSize();
 	}
 }

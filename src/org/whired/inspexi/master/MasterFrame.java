@@ -2,6 +2,7 @@ package org.whired.inspexi.master;
 
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -40,7 +41,9 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
 
+import org.whired.inspexi.tools.RemoteFile;
 import org.whired.inspexi.tools.Slave;
+import org.whired.inspexi.tools.SlaveView;
 import org.whired.inspexi.tools.logging.Log;
 import org.whired.inspexi.tools.logging.LogFormatter;
 
@@ -48,7 +51,7 @@ import org.whired.inspexi.tools.logging.LogFormatter;
  * Controls and displays feedback from a master server
  * @author Whired
  */
-public class MasterFrame extends JFrame implements ControllerEventListener, ImageConsumer {
+public class MasterFrame extends JFrame implements ControllerEventListener, SlaveView {
 	/** The pane that contains content components */
 	private final JPanel contentPane;
 	/** The table that lists available slaves */
@@ -464,6 +467,29 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Imag
 	@Override
 	public void imageResized(final int width, final int height) {
 		// We don't care about this one
+	}
+
+	@Override
+	public void setThumbnail(Image thumb) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void addChildFiles(String parentPath, RemoteFile[] childFiles) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void disconnected() {
+		// TODO refreshSlave?
+	}
+
+	@Override
+	public Dimension getThumbSize() {
+		// TODO Auto-generated method stub
+		return pnlPreview.getPreferredSize();
 	}
 
 }

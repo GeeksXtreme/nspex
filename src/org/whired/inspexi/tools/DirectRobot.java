@@ -1,7 +1,7 @@
 package org.whired.inspexi.tools;
 
 import java.awt.AWTException;
-import java.awt.DisplayMode;
+import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
@@ -15,29 +15,16 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.peer.MouseInfoPeer;
 import java.awt.peer.RobotPeer;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import sun.awt.ComponentFactory;
 
 public final class DirectRobot extends Robot {
-	private int detail = LOW;
-	public static final int LOWEST = 0, LOWER = 1, LOW = 2, GREYSCALE = 3;
 	private final BufferedImage unscaled;
 	private final int[] unscaledPix;
 	private final BufferedImage scaled;
 	private final Graphics2D graphics;
-
-	public void setDetail(final int detail) {
-		this.detail = detail;
-	}
-
-	@Override
-	public Rectangle getScreenBounds() {
-		final DisplayMode dm = device.getDisplayMode();
-		return new Rectangle(0, 0, dm.getWidth(), dm.getHeight());
-	}
 
 	public DirectRobot(final Rectangle bounds, final double zoom) throws AWTException {
 		super(bounds, zoom);
@@ -103,22 +90,6 @@ public final class DirectRobot extends Robot {
 			getRGBPixelsMethodType = methodType;
 			getRGBPixelsMethodParam = methodParam;
 		}
-		else {
-			System.out.println("WARNING: Failed to acquire direct method for grabbing pixels, please post this on the main thread!");
-			System.out.println();
-			System.out.println(peer.getClass().getName());
-			System.out.println();
-			try {
-				final Method[] methods = peer.getClass().getDeclaredMethods();
-				for (final Method method1 : methods) {
-					System.out.println(method1);
-				}
-
-			}
-			catch (final Exception ex) {
-			}
-			System.out.println();
-		}
 		unscaled = new BufferedImage(getBounds().width, getBounds().height, BufferedImage.TYPE_INT_RGB);
 		unscaledPix = ((DataBufferInt) unscaled.getRaster().getDataBuffer()).getData();
 		scaled = new BufferedImage(getZoom(getBounds().width), getZoom(getBounds().height), BufferedImage.TYPE_INT_RGB);
@@ -129,6 +100,10 @@ public final class DirectRobot extends Robot {
 
 	public DirectRobot(final double zoom) throws AWTException {
 		this(null, zoom);
+	}
+
+	public DirectRobot(Dimension d) throws AWTException {
+		this(Robot.calculateZoom(Robot.getScreenBounds(), d));
 	}
 
 	public static GraphicsDevice getMouseInfo(final Point point) {
@@ -209,57 +184,9 @@ public final class DirectRobot extends Robot {
 	@Override
 	public byte[] getBytePixels() {
 		final int[] pix = peer.getRGBPixels(getBounds());
-		final byte[] pixels = new byte[pix.length];
-		switch (getDetail()) {
-			case LOWEST:
-				for (int i = 0; i < pix.length; i++/* i += 2 */) {
-					pixels[i] = (byte) -110;
-					if ((i - 1) % getBounds().width == 0 || i % getBounds().width == 0) {
-						i++;
-					}
-					if (i > pix.length - 1) {
-						i = pix.length - 1;
-					}
-					i++;
-					final int c = pix[i];
-					final int r = (c >> 16 & 0xFF) / 36;
-					final int g = (c >> 8 & 0xFF) / 36;
-					final int b = (c & 0xFF) / 85;
-					pixels[i] = (byte) ((r << 5) + (g << 2) + b);
-				}
-				return pixels;
-			case LOWER:
-				for (int i = 0; i < pix.length; i++) {
-					final int c = pix[i];
-					final int r = (c >> 16 & 0xFF) / 36;
-					final int g = (c >> 8 & 0xFF) / 36;
-					final int b = (c & 0xFF) / 85;
-					final byte col = (byte) ((r << 5) + (g << 2) + b);
-					if (pix.length - i > 2) {
-						pixels[i] = col;
-						pixels[++i] = col;
-					}
-
-				}
-			break;
-			case LOW:
-				System.arraycopy(pix, 0, unscaledPix, 0, unscaledPix.length);
-				graphics.drawImage(unscaled, 0, 0, scaled.getWidth(), scaled.getHeight(), 0, 0, unscaled.getWidth(), unscaled.getHeight(), null);
-
-				try {
-					return JPEGImageWriter.getImageBytes(scaled);
-				}
-				catch (IOException e) {
-					e.printStackTrace();
-				}
-			break;
-			case GREYSCALE:
-				for (int i = 0; i < pix.length; i++) {
-					pixels[i] = (byte) pix[i];
-				}
-			break;
-		}
-		return new byte[0];
+		System.arraycopy(pix, 0, unscaledPix, 0, unscaledPix.length);
+		graphics.drawImage(unscaled, 0, 0, scaled.getWidth(), scaled.getHeight(), 0, 0, unscaled.getWidth(), unscaled.getHeight(), null);
+		return JPEGImageWriter.getImageBytes(scaled);
 	}
 
 	public boolean getRGBPixels(final int x, final int y, final int width, final int height, final int[] pixels) {
@@ -316,10 +243,6 @@ public final class DirectRobot extends Robot {
 		finally {
 			super.finalize();
 		}
-	}
-
-	public int getDetail() {
-		return detail;
 	}
 
 	private Object getRGBPixelsMethodParam;

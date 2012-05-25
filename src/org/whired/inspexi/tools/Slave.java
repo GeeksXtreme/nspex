@@ -3,10 +3,10 @@ package org.whired.inspexi.tools;
 /** A slave */
 public class Slave {
 	/** The version */
-	public static String VERSION = "0.0.7";
+	public static String VERSION = "0.0.8";
 	/** Opcodes */
 	public static final int INTENT_CHECK = 0, INTENT_CONNECT = 1, INTENT_CHECK_BULK = 2, INTENT_REBUILD = 8;
-	public static final int OP_TRANSFER_IMAGE = 0, OP_DO_COMMAND = 1, OP_GET_FILES = 2, OP_GET_FILE_THUMB = 3;
+	public static final int OP_HANDSHAKE = 0, OP_TRANSFER_IMAGE = 1, OP_DO_COMMAND = 2, OP_GET_FILES = 3, OP_GET_FILE_THUMB = 4;
 	/** Slave information */
 	private String user, os, version;
 	private String ip;

@@ -1,5 +1,8 @@
 package org.whired.inspexi.tools;
 
+import java.awt.Dimension;
+import java.awt.DisplayMode;
+import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 
 public abstract class Robot {
@@ -16,10 +19,27 @@ public abstract class Robot {
 
 	public abstract byte[] getBytePixels();
 
-	public abstract Rectangle getScreenBounds();
+	private static final DisplayMode dm = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDisplayMode();
+	private static Rectangle screenBounds = new Rectangle(0, 0, dm.getWidth(), dm.getHeight());
+
+	public static Rectangle getScreenBounds() {
+		return screenBounds;
+	}
 
 	public int getZoom(final int orig) {
 		return (int) (orig * zoom);
+	}
+
+	public static double calculateZoom(Rectangle source, Dimension dest) {
+		if (source.width < dest.width && source.height < dest.width) {
+			return 1;
+		}
+		if (dest.width > dest.height) {
+			return 1f * dest.width / source.width;
+		}
+		else {
+			return 1f * dest.height / source.height;
+		}
 	}
 
 	public Rectangle getBounds() {

@@ -75,7 +75,7 @@ public class ScreenCapture implements ImageConsumer {
 	public synchronized void removeListener(final ImageConsumer listener) {
 		listeners.remove(listener);
 		// If we have no viewers, stop the capping process
-		if (listeners.size() == 0) {
+		if (started && listeners.size() == 0) {
 			started = false;
 			capThread.interrupt();
 		}

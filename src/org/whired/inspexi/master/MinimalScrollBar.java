@@ -5,6 +5,7 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Scrollbar;
 
 import javax.swing.JComponent;
 import javax.swing.JScrollBar;
@@ -28,7 +29,12 @@ public class MinimalScrollBar extends BasicScrollBarUI {
 			@Override
 			public void run() {
 				scrollbar.setOpaque(false);
-				scrollbar.setPreferredSize(new Dimension(8, scrollbar.getHeight()));
+				if (scrollbar.getOrientation() == Scrollbar.VERTICAL) {
+					scrollbar.setPreferredSize(new Dimension(8, scrollbar.getHeight()));
+				}
+				else {
+					scrollbar.setPreferredSize(new Dimension(scrollbar.getWidth(), 8));
+				}
 				if (decrButton != null && decrButton.getParent() != null) {
 					decrButton.getParent().remove(decrButton);
 				}

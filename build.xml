@@ -16,7 +16,7 @@
 		</jar>
 
 		<delete file="${slv}" />
-		<jar destfile="${slv}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/inspexi/slave/** org/whired/inspexi/tools/**">
+		<jar destfile="${slv}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/inspexi/slave/** org/whired/inspexi/tools/** org/whired/inspexi/net/**">
 			<manifest>
 				<attribute name="Main-Class" value="org.whired.inspexi.slave.LocalSlave" />
 			</manifest>
@@ -25,7 +25,7 @@
 		<checksum file="${slv}" />
 
 		<delete file="${mstr}" />
-		<jar destfile="${mstr}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/inspexi/master/** org/whired/inspexi/tools/**">
+		<jar destfile="${mstr}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/inspexi/master/** org/whired/inspexi/tools/** org/whired/inspexi/net/**">
 			<manifest>
 				<attribute name="Main-Class" value="org.whired.inspexi.master.Master" />
 			</manifest>

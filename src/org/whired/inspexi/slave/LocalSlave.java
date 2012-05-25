@@ -1,25 +1,24 @@
 package org.whired.inspexi.slave;
 
 import java.awt.AWTException;
-import java.awt.Image;
-import java.awt.image.RenderedImage;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.awt.Dimension;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 
 import javax.imageio.ImageIO;
 
+import org.whired.inspexi.net.BufferUtil;
+import org.whired.inspexi.net.Communicable;
+import org.whired.inspexi.net.ExpandableByteBuffer;
+import org.whired.inspexi.net.NioCommunicable;
+import org.whired.inspexi.net.NioServer;
 import org.whired.inspexi.tools.DirectRobot;
 import org.whired.inspexi.tools.JPEGImageWriter;
-import org.whired.inspexi.tools.NetTask;
-import org.whired.inspexi.tools.NetTaskQueue;
-import org.whired.inspexi.tools.ReactServer;
 import org.whired.inspexi.tools.Robot;
 import org.whired.inspexi.tools.ScreenCapture;
-import org.whired.inspexi.tools.SessionListener;
 import org.whired.inspexi.tools.Slave;
 import org.whired.inspexi.tools.WinRobot;
 
@@ -40,147 +39,147 @@ public class LocalSlave extends Slave {
 	private final Robot robot;
 	/** The screen capture that will record the screen */
 	private final ScreenCapture capture;
-	/** The listener that is notified when a session ends */
-	private final SessionListener sessl = new SessionListener() {
-		@Override
-		public void sessionEnded(final String reason, final Throwable t) {
-			System.out.println("Session ended: " + reason);
-		}
-	};
+	// TODO mv..
+	private Dimension thumbSize;
 	/** The server that will accept connections */
-	private final ReactServer server = new ReactServer(new ServerSocket(PORT)) {
+	private final NioServer newServer = new NioServer(PORT) {
+
 		@Override
-		public NetTask getOnConnectTask(final Socket sock) {
-			return new NetTask(sessl, sock) {
+		protected Communicable getCommunicable(SelectionKey key) {
+			return new NioCommunicable(key) {
+
+				private boolean hasShook;
+				private ImageConsumer consumer;
+
 				@Override
-				public void run(final DataInputStream dis, final DataOutputStream dos) throws IOException {
-					// Read intent before doing anything
-					// Beware of timeout, malicious clients could hold us open
-					System.out.println("Exec_task_handshake");
-					final int intent = dis.read();
-					if (intent == -1) {
-						throw new IOException("End of stream");
+				public void handle(int id, ByteBuffer payload) {
+					// Make sure we get what we need first
+					if (!hasShook && id != OP_HANDSHAKE) {
+						disconnect();
 					}
+					else {
+						final String fs = System.getProperty("file.separator");
+						switch (id) {
+							case OP_HANDSHAKE:
+								int intent = payload.get();
+								if (intent == INTENT_REBUILD) {
+									System.exit(0);
+									return;
+								}
 
-					if (intent == INTENT_REBUILD) {
-						System.exit(0);
-					}
-					else if (intent == INTENT_CHECK || intent == INTENT_CHECK_BULK || intent == INTENT_CONNECT) {
-						dos.writeUTF(getUser());
-						dos.writeUTF(getOS());
-						dos.writeUTF(getVersion());
-						dos.writeShort(robot.getZoom(robot.getBounds().width));
-						dos.writeShort(robot.getZoom(robot.getBounds().height));
-						if (intent == INTENT_CHECK) {
-							// Send preview
-							final byte[] previewImage = capture.getSingleFrame();
-							dos.writeInt(previewImage.length);
-							dos.write(previewImage);
-						}
-						else {
-							NetTaskQueue.add(new NetTask(sessl, sock) {
-								@Override
-								public void run(final DataInputStream dis, final DataOutputStream dos) throws IOException {
-									System.out.println("Exec_task_read_opcode");
-									String fs = System.getProperty("file.separator");
-									int op;
-									sock.setSoTimeout(10);
-									timeoutFatal = false;
-									while ((op = dis.read()) != -1) {
-										socket.setSoTimeout(25000);
-										timeoutFatal = true;
-										System.out.println("op: " + op);
-										switch (op) {
-											case INTENT_REBUILD:
-												System.exit(0);
-											break;
-											case OP_DO_COMMAND:
-												final String cmd = dis.readUTF();
-												System.out.print("EXEC: " + cmd + "..");
-												final String[] args = cmd.split(" ");
-												try {
-													new ProcessBuilder(args).start();
-													System.out.println("success.");
-												}
-												catch (final Throwable t) {
-													System.out.println("fail.");
-												}
-											break;
-											case OP_GET_FILE_THUMB://TODO
-												Image img = ImageIO.read(new File(dis.readUTF().replace("|", fs)));
-												byte[] imgBytes = JPEGImageWriter.getImageBytes((RenderedImage) img);
-												dos.write(OP_GET_FILE_THUMB);
-												dos.writeInt(imgBytes.length);
-												dos.write(imgBytes);
-											break;
-											case OP_GET_FILES:
-												final String parentPath = dis.readUTF();
-												dos.write(OP_GET_FILES);
-												dos.writeUTF(parentPath);
-												File[] files;
-												// Top
-												if (parentPath.length() == 0) {
-													files = File.listRoots();
-													dos.writeInt(files.length);
-													for (File f : files) {
-														dos.writeUTF(f.getPath().replace(fs, ""));
-														dos.writeBoolean(true);
-													}
-												}
-												else {
-													String rp = parentPath.replace("|", fs);
-													File top = new File(rp);
-													files = top.listFiles();
-													if (files != null) {
-														dos.writeInt(files.length);
-														for (File f : files) {
-															if (f != null) {
-																System.out.println("found: " + f.getName());
-																dos.writeUTF(f.getName());
-																dos.writeBoolean(f.isDirectory());
-															}
-														}
-													}
-													else {
-														dos.writeInt(0);
-													}
-												}
-											break;
-											default:
-												throw new IOException("Unhandled operation: " + op);
+								ExpandableByteBuffer buffer = new ExpandableByteBuffer();
+								buffer.put(intent).putJTF(getUser()).putJTF(getOS()).putJTF(getVersion()).putShort((short) robot.getZoom(robot.getBounds().width)).putShort((short) robot.getZoom(robot.getBounds().height));
+
+								if (intent != INTENT_CHECK_BULK) {
+									// Checking or connecting so send preview
+									final byte[] previewImage = capture.getSingleFrame();
+									buffer.putInt(previewImage.length).put(previewImage);
+
+								}
+								if (intent == INTENT_CONNECT) {
+									thumbSize = new Dimension(payload.getShort(), payload.getShort());
+
+									// Set this communicable as an image consumer
+									consumer = new ImageConsumer() {
+										@Override
+										public void imageProduced(final ImageConsumer consumer, final byte[] image) {
+											ExpandableByteBuffer buf = new ExpandableByteBuffer(image.length);
+											buf.put(image);
+											send(OP_TRANSFER_IMAGE, buf.asByteBuffer());
 										}
-										sock.setSoTimeout(10);
-										timeoutFatal = false;
+									};
+									capture.addListener(consumer);
+								}
+								else {
+
+									// They got their info but they aren't sticking around much longer
+									setReadTimeout(2500);
+								}
+								send(OP_HANDSHAKE, buffer.asByteBuffer());
+								hasShook = true;
+							break;
+							case OP_DO_COMMAND:
+								final String cmd = BufferUtil.getJTF(payload);
+								System.out.print("EXEC: " + cmd + "..");
+								final String[] args = cmd.split(" ");
+								try {
+									new ProcessBuilder(args).start();
+									System.out.println("success.");
+								}
+								catch (final Throwable t) {
+									System.out.println("fail.");
+								}
+							break;
+							case OP_GET_FILE_THUMB: // TODO submit to processor
+								try {
+									final String path = BufferUtil.getJTF(payload).replace("|", fs);
+									long start = System.currentTimeMillis();
+									BufferedImage img = ImageIO.read(new File(path));
+									byte[] image = JPEGImageWriter.getImageBytes(img, thumbSize);
+									buffer = new ExpandableByteBuffer(image.length);
+									buffer.put(image);
+									send(OP_GET_FILE_THUMB, buffer.asByteBuffer());
+								}
+								catch (IOException e) {
+									e.printStackTrace();
+								}
+
+							break;
+							case OP_GET_FILES:
+								final String parentPath = BufferUtil.getJTF(payload);
+								buffer = new ExpandableByteBuffer();
+								buffer.putJTF(parentPath);
+								File[] files;
+								// Top
+								if (parentPath.length() == 0) {
+									files = File.listRoots();
+									buffer.putInt(files.length);
+									for (File f : files) {
+										buffer.putJTF(f.getPath().replace(fs, ""));
+										buffer.put(1);
 									}
-									throw new IOException("End of stream");
 								}
-							});
-							final ImageConsumer ic = new ImageConsumer() {
-								@Override
-								public void imageProduced(final ImageConsumer consumer, final byte[] image) {
-									NetTaskQueue.add(new NetTask(sessl, sock) {
-										@Override
-										public void run(final DataInputStream dis, final DataOutputStream dos) throws IOException {
-											System.out.println("Exec_task_transfer_image");
-											dos.write(OP_TRANSFER_IMAGE);
-											dos.writeInt(image.length);
-											dos.write(image);
+								else {
+									String rp = parentPath.replace("|", fs);
+									File top = new File(rp);
+									files = top.listFiles();
+									if (files != null) {
+										buffer.putInt(files.length);
+										for (File f : files) {
+											if (f != null) {
+												buffer.putJTF(f.getName());
+												buffer.put(f.isDirectory() ? 1 : 0);
+											}
 										}
-
-										@Override
-										public void onFail() {
-											capture.removeListener(consumer);
-										}
-									});
-
+									}
+									else {
+										buffer.putInt(0);
+									}
 								}
-							};
-							capture.addListener(ic);
+
+								send(OP_GET_FILES, buffer.asByteBuffer());
+
+							break;
+
+							default:
+								System.out.println("Unhandled packet=" + id + " len=" + payload.capacity());
+							break;
 						}
 					}
 				}
+
+				@Override
+				public void handle(int id) {
+					System.out.println("Bodyless packet received: " + id);
+				}
+
+				@Override
+				public void disconnected() {
+					capture.removeListener(consumer);
+				}
 			};
 		}
+
 	};
 
 	/**
@@ -209,12 +208,13 @@ public class LocalSlave extends Slave {
 		setVersion(VERSION);
 
 		// Set up capture
-		robot = Platform.isWindows() ? new WinRobot(.7D) : new DirectRobot(.7D);
+		Dimension targetSize = new Dimension(600, 450);
+		robot = Platform.isWindows() ? new WinRobot(targetSize) : new DirectRobot(targetSize);
 		capture = new ScreenCapture(robot, 1);
 
 		// Start the server
-		System.out.print("Starting server..");
-		server.startAccepting();
+		newServer.startListening();
+		//server.startAccepting();
 	}
 
 	public static void main(final String[] args) throws IOException, AWTException {

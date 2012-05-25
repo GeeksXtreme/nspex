@@ -4,3 +4,5 @@
 0.0.4 - Remote shell
 0.0.5 - Preview support
 0.0.6 - INTENT_BULK_CHECK (no previews for bulk)
+0.0.7 - Networking fix
+0.0.8 - NIO/Remote file browse
