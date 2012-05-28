@@ -17,6 +17,7 @@ import org.whired.inspexi.net.NioCommunicable;
 import org.whired.inspexi.net.NioServer;
 import org.whired.inspexi.tools.DirectRobot;
 import org.whired.inspexi.tools.JPEGImageWriter;
+import org.whired.inspexi.tools.Processor;
 import org.whired.inspexi.tools.Robot;
 import org.whired.inspexi.tools.ScreenCapture;
 import org.whired.inspexi.tools.Slave;
@@ -53,7 +54,7 @@ public class LocalSlave extends Slave {
 				private ImageConsumer consumer;
 
 				@Override
-				public void handle(int id, ByteBuffer payload) {
+				public void handle(int id, final ByteBuffer payload) {
 					// Make sure we get what we need first
 					if (!hasShook && id != OP_HANDSHAKE) {
 						Log.l.warning("Handshake expected, but not received");
@@ -112,19 +113,23 @@ public class LocalSlave extends Slave {
 									Log.l.config("EXEC: " + cmd + "..fail (" + t.toString() + ")");
 								}
 							break;
-							case OP_GET_FILE_THUMB: // TODO submit to processor
-								try {
-									final String path = BufferUtil.getJTF(payload).replace("|", fs);
-									BufferedImage img = ImageIO.read(new File(path));
-									byte[] image = JPEGImageWriter.getImageBytes(img, thumbSize);
-									buffer = new ExpandableByteBuffer(image.length);
-									buffer.put(image);
-									send(OP_GET_FILE_THUMB, buffer.asByteBuffer());
-								}
-								catch (IOException e) {
-									e.printStackTrace();
-								}
-
+							case OP_GET_FILE_THUMB:
+								Processor.submit(this, new Runnable() {
+									@Override
+									public void run() {
+										try {
+											final String path = BufferUtil.getJTF(payload).replace("|", fs);
+											BufferedImage img = ImageIO.read(new File(path));
+											byte[] image = JPEGImageWriter.getImageBytes(img, thumbSize);
+											ExpandableByteBuffer buffer = new ExpandableByteBuffer(image.length);
+											buffer.put(image);
+											send(OP_GET_FILE_THUMB, buffer.asByteBuffer());
+										}
+										catch (IOException e) {
+											e.printStackTrace();
+										}
+									}
+								});
 							break;
 							case OP_GET_FILES:
 								final String parentPath = BufferUtil.getJTF(payload);

@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 public abstract class Communicable {
 	private long lastReadTime = System.currentTimeMillis();
 	private int readTimeout = 0;
+	protected boolean connected = true;
 
 	/**
 	 * Packages and sends a packet with the specified id
@@ -52,6 +53,10 @@ public abstract class Communicable {
 	 * Invoked when this communicable has been disconnected
 	 */
 	protected abstract void disconnected();
+
+	public boolean isConnected() {
+		return connected;
+	}
 
 	/**
 	 * Gets the amount of time (ms) that can pass between now and the next read and any consecutive reads a non-positive value is interpreted as an infinite timeout

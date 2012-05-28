@@ -39,7 +39,7 @@ public abstract class NioCommunicable extends Communicable {
 	 * @throws IOException if an I/O error occurs
 	 */
 	@Override
-	public int read() throws IOException {
+	protected final int read() throws IOException {
 		// We still need header data
 		if (headerBuffer.hasRemaining()) {
 			return readHeader();
@@ -111,7 +111,7 @@ public abstract class NioCommunicable extends Communicable {
 	}
 
 	@Override
-	public void send(int id) {
+	public final void send(int id) {
 		ByteBuffer packet = ByteBuffer.allocate(5);
 		packet.put((byte) id);
 		packet.putInt(0);
@@ -128,7 +128,7 @@ public abstract class NioCommunicable extends Communicable {
 	}
 
 	@Override
-	public void send(int id, ByteBuffer payload) {
+	public final void send(int id, ByteBuffer payload) {
 		payload.flip();
 		ByteBuffer packet = ByteBuffer.allocate(payload.capacity() + 5);
 		packet.put((byte) id);
@@ -146,7 +146,8 @@ public abstract class NioCommunicable extends Communicable {
 	}
 
 	@Override
-	public void disconnect() {
+	public final void disconnect() {
+		connected = false;
 		try {
 			key.channel().close();
 		}

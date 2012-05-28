@@ -42,7 +42,7 @@ public abstract class IoCommunicable extends Communicable {
 	}
 
 	@Override
-	public void send(int id) {
+	public final void send(int id) {
 		try {
 			dos.write(id);
 		}
@@ -52,12 +52,12 @@ public abstract class IoCommunicable extends Communicable {
 	}
 
 	@Override
-	protected int read() throws IOException {
+	protected final int read() throws IOException {
 		return 0;
 	}
 
 	@Override
-	public void send(int id, ByteBuffer payload) {
+	public final void send(int id, ByteBuffer payload) {
 		try {
 			payload.flip();
 			dos.write(id);
@@ -72,7 +72,8 @@ public abstract class IoCommunicable extends Communicable {
 	}
 
 	@Override
-	public void disconnect() {
+	public final void disconnect() {
+		connected = false;
 		try {
 			socket.close();
 		}
