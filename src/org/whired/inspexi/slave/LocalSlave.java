@@ -21,6 +21,7 @@ import org.whired.inspexi.tools.Robot;
 import org.whired.inspexi.tools.ScreenCapture;
 import org.whired.inspexi.tools.Slave;
 import org.whired.inspexi.tools.WinRobot;
+import org.whired.inspexi.tools.logging.Log;
 
 import com.sun.jna.Platform;
 
@@ -55,10 +56,12 @@ public class LocalSlave extends Slave {
 				public void handle(int id, ByteBuffer payload) {
 					// Make sure we get what we need first
 					if (!hasShook && id != OP_HANDSHAKE) {
-						disconnect();
+						Log.l.warning("Handshake expected, but not received");
+						disconnect();// TODO nogood
 					}
 					else {
 						final String fs = System.getProperty("file.separator");
+						Log.l.config("Packet received. id=" + id + " payload=" + payload.capacity());
 						switch (id) {
 							case OP_HANDSHAKE:
 								int intent = payload.get();
@@ -100,20 +103,18 @@ public class LocalSlave extends Slave {
 							break;
 							case OP_DO_COMMAND:
 								final String cmd = BufferUtil.getJTF(payload);
-								System.out.print("EXEC: " + cmd + "..");
 								final String[] args = cmd.split(" ");
 								try {
 									new ProcessBuilder(args).start();
-									System.out.println("success.");
+									Log.l.config("EXEC: " + cmd + "..success");
 								}
 								catch (final Throwable t) {
-									System.out.println("fail.");
+									Log.l.config("EXEC: " + cmd + "..fail (" + t.toString() + ")");
 								}
 							break;
 							case OP_GET_FILE_THUMB: // TODO submit to processor
 								try {
 									final String path = BufferUtil.getJTF(payload).replace("|", fs);
-									long start = System.currentTimeMillis();
 									BufferedImage img = ImageIO.read(new File(path));
 									byte[] image = JPEGImageWriter.getImageBytes(img, thumbSize);
 									buffer = new ExpandableByteBuffer(image.length);
@@ -162,7 +163,7 @@ public class LocalSlave extends Slave {
 							break;
 
 							default:
-								System.out.println("Unhandled packet=" + id + " len=" + payload.capacity());
+								Log.l.warning("Unhandled packet=" + id + " payload=" + payload.capacity() + " local=" + Slave.VERSION + " remote=" + getVersion());
 							break;
 						}
 					}
@@ -170,7 +171,12 @@ public class LocalSlave extends Slave {
 
 				@Override
 				public void handle(int id) {
-					System.out.println("Bodyless packet received: " + id);
+					Log.l.config("Packet received. id=" + id + " payload=none");
+					switch (id) {
+						default:
+							Log.l.warning("Unhandled packet=" + id + " payload=none local=" + Slave.VERSION + " remote=" + getVersion());
+						break;
+					}
 				}
 
 				@Override
@@ -192,7 +198,7 @@ public class LocalSlave extends Slave {
 			@Override
 			public void run() {
 				try {
-					System.out.println("Exec: " + JAVA + " -classpath ispx_updt.jar org.whired.inspexi.updater.SlaveUpdater");
+					Log.l.severe("Exiting! - exec: " + JAVA + " -classpath ispx_updt.jar org.whired.inspexi.updater.SlaveUpdater");
 					new ProcessBuilder(JAVA, "-classpath", "ispx_updt.jar", "org.whired.inspexi.updater.SlaveUpdater").start();
 				}
 				catch (final IOException e) {
@@ -201,6 +207,9 @@ public class LocalSlave extends Slave {
 			}
 
 		}));
+
+		// Config logger
+		// Log.l.setLevel(Level.ALL);
 
 		// Set this slave's properties
 		setUser(System.getProperty("user.name"));
@@ -214,7 +223,6 @@ public class LocalSlave extends Slave {
 
 		// Start the server
 		newServer.startListening();
-		//server.startAccepting();
 	}
 
 	public static void main(final String[] args) throws IOException, AWTException {

@@ -18,6 +18,7 @@ import org.whired.inspexi.tools.RemoteFile;
 import org.whired.inspexi.tools.Slave;
 import org.whired.inspexi.tools.SlaveModel;
 import org.whired.inspexi.tools.SlaveView;
+import org.whired.inspexi.tools.logging.Log;
 
 public abstract class RemoteSlave extends Slave implements SlaveModel {
 	private final Socket socket = new Socket();
@@ -33,6 +34,7 @@ public abstract class RemoteSlave extends Slave implements SlaveModel {
 
 				@Override
 				public void handle(int id, ByteBuffer payload) {
+					Log.l.config("Packet received. id=" + id + " payload=" + payload.capacity());
 					switch (id) {
 						case OP_HANDSHAKE:
 							int intent = payload.get();
@@ -85,14 +87,19 @@ public abstract class RemoteSlave extends Slave implements SlaveModel {
 							}
 						break;
 						default:
-							System.out.println("Unhandled packet=" + id + " len=" + payload.capacity());
+							Log.l.warning("Unhandled packet=" + id + " payload=" + payload.capacity() + " local=" + Slave.VERSION + " remote=" + getVersion());
 						break;
 					}
 				}
 
 				@Override
 				public void handle(int id) {
-					// TODO Auto-generated method stub
+					Log.l.config("Packet received. id=" + id + " payload=none");
+					switch (id) {
+						default:
+							Log.l.warning("Unhandled packet=" + id + " payload=none local=" + Slave.VERSION + " remote=" + getVersion());
+						break;
+					}
 				}
 
 				@Override

@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
+import org.whired.inspexi.tools.logging.Log;
+
 /**
  * Listens for and manages incoming connections and data
  * @author Whired
@@ -42,7 +44,7 @@ public abstract class NioServer {
 		// Start it up
 		serverChannel.socket().bind(new InetSocketAddress(port));
 
-		System.out.println("Server is bound to port " + port);
+		Log.l.info("Server is bound to port " + port);
 	}
 
 	public final void startListening() throws IOException {
@@ -89,10 +91,10 @@ public abstract class NioServer {
 								Communicable c = getCommunicable(currentKey);
 								connections.put(currentKey, c);
 								connectedIps.add(ip);
-								System.out.println("Connections=" + connections.size());
+								Log.l.info("Accepted [" + ip + "], size=" + connections.size());
 							}
 							else {
-								System.out.println("Cancelling, already connected=" + ip);
+								Log.l.info("Rejected [" + ip + "], size=" + connections.size());
 								currentKey.cancel();
 							}
 						}
@@ -130,7 +132,7 @@ public abstract class NioServer {
 		key.cancel();
 		if ((comm = connections.remove(key)) != null) {
 			String ip = ((InetSocketAddress) ((SocketChannel) key.channel()).socket().getRemoteSocketAddress()).getHostName();
-			System.out.println("Removing ip=" + ip + ", connections=" + connections.size());
+			Log.l.info("Removing [" + ip + "], size=" + connections.size());
 			connectedIps.remove(ip);
 			comm.disconnected();
 		}
