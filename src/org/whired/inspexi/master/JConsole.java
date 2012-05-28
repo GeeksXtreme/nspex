@@ -17,6 +17,9 @@ public class JConsole extends JTextArea {
 	private final Caret caret;
 	private final HashSet<CommandListener> listeners = new HashSet<CommandListener>();
 
+	BufferQueue<String> savedCommands = new BufferQueue<String>(256);
+	private int pos = 0;
+
 	public JConsole() {
 		caret = new DefaultCaret() {
 
@@ -63,6 +66,49 @@ public class JConsole extends JTextArea {
 					append("\n" + CMDC);
 					k.consume();
 					fireCommand(command);
+					savedCommands.offer(command);
+					pos = savedCommands.size() - 1;
+				}
+				else if (c == KeyEvent.VK_UP) {
+					if (k.isShiftDown()) {
+						// Do selection stuff
+						k.consume();
+						moveCaretPosition(getText().lastIndexOf(CMDC) + CMDC.length());
+					}
+					else {
+						// Do command history stuff
+						k.consume();
+						replaceCurrent(savedCommands.get(pos));
+						if (pos > 0) {
+							pos--;
+						}
+					}
+				}
+				else if (c == KeyEvent.VK_DOWN) {
+					if (k.isShiftDown()) {
+						// Do selection stuff
+						k.consume();
+						moveCaretPosition(getDocument().getLength());
+					}
+					else {
+						// Do command history stuff
+						k.consume();
+						if (pos < savedCommands.size() - 1) {
+							pos++;
+							replaceCurrent(savedCommands.get(pos));
+						}
+						else {
+							replaceCurrent("");
+						}
+					}
+				}
+				else if (c == KeyEvent.VK_HOME && k.isShiftDown()) {
+					k.consume();
+					moveCaretPosition(getText().lastIndexOf(CMDC) + CMDC.length());
+				}
+				else if (c == KeyEvent.VK_END && k.isShiftDown()) {
+					k.consume();
+					moveCaretPosition(getDocument().getLength());
 				}
 			}
 		});
@@ -73,6 +119,19 @@ public class JConsole extends JTextArea {
 		setSelectedTextColor(Color.BLACK);
 		setFont(new Font("Monospaced", Font.PLAIN, 12));
 		append(CMDC);
+	}
+
+	private void replaceCurrent(String newCommand) {
+		try {
+			int goodIdx = getText().lastIndexOf(CMDC) + CMDC.length();
+			getDocument().remove(goodIdx, getDocument().getLength() - goodIdx);
+			getDocument().insertString(goodIdx, newCommand, null);
+			setCaretPosition(getDocument().getLength());
+			moveCaretPosition(getDocument().getLength());
+		}
+		catch (BadLocationException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void fireCommand(final String cmd) {
