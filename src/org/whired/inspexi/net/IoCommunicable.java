@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 
+import org.whired.inspexi.tools.logging.Log;
+
 public abstract class IoCommunicable extends Communicable {
 	private final DataInputStream dis;
 	private final DataOutputStream dos;
@@ -15,9 +17,11 @@ public abstract class IoCommunicable extends Communicable {
 		this.socket = socket;
 		dis = new DataInputStream(socket.getInputStream());
 		dos = new DataOutputStream(socket.getOutputStream());
+
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
+				Log.l.info("Start read");
 				int op;
 				try {
 					while ((op = dis.read()) != -1) {
@@ -33,6 +37,7 @@ public abstract class IoCommunicable extends Communicable {
 						}
 						socket.setSoTimeout(60000 * 30);
 					}
+					Log.l.info("Reached EOF");
 				}
 				catch (IOException e) {
 				}
@@ -73,6 +78,7 @@ public abstract class IoCommunicable extends Communicable {
 
 	@Override
 	public final void disconnect() {
+		Log.l.warning("");
 		connected = false;
 		try {
 			socket.close();

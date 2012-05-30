@@ -12,5 +12,7 @@ public interface SlaveView extends ImageConsumer {
 
 	Dimension getThumbSize();
 
-	void disconnected();
+	void disconnected(Slave slave);
+
+	void connected(Slave slave);
 }

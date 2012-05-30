@@ -138,7 +138,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 						updatePreviewImage(null);
 					}
 					else {
-						refresh(new Slave[] { (Slave) model.getValueAt(table.getSelectionModel().getLeadSelectionIndex(), 0) });
+						refresh(new RemoteSlave[] { (RemoteSlave) model.getValueAt(table.getSelectionModel().getLeadSelectionIndex(), 0) });
 					}
 				}
 			}
@@ -148,7 +148,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		btnConnect.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
-				Slave[] slaves = getSelectedSlaves();
+				RemoteSlave[] slaves = getSelectedSlaves();
 				if (slaves.length > 0) {
 					connect(slaves);
 				}
@@ -169,7 +169,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		btnRefresh.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
-				Slave[] slaves = getSelectedSlaves();
+				RemoteSlave[] slaves = getSelectedSlaves();
 				if (slaves.length == 0) {
 					slaves = getAllSlaves();
 				}
@@ -181,7 +181,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		btnBuild.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent e) {
-				Slave[] slaves = getSelectedSlaves();
+				RemoteSlave[] slaves = getSelectedSlaves();
 				if (slaves.length > 0) {
 					rebuild(slaves);
 				}
@@ -197,7 +197,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			public void actionPerformed(final ActionEvent arg0) {
 				String ip;
 				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter IP:")) != null && ip.length() > 0) {
-					updateSlaves(new Slave[] { new Slave(ip) });
+					updateInformation(new Slave[] { new Slave(ip) });
 				}
 			}
 		});
@@ -297,9 +297,9 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			@Override
 			public void mousePressed(final MouseEvent e) {
 				if (previewImage != null) {
-					Slave[] ips = getSelectedSlaves();
-					if (ips.length > 0) {
-						connect(ips);
+					RemoteSlave[] slaves = getSelectedSlaves();
+					if (slaves.length > 0) {
+						connect(slaves);
 					}
 				}
 			}
@@ -314,15 +314,15 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		scrollPane_1.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane_1.getVerticalScrollBar()));
 	}
 
-	public void updateSlave(Slave slv) {
-		updateSlaves(new Slave[] { slv });
+	private void updateInformation(Slave slv) {
+		updateInformation(new Slave[] { slv });
 	}
 
 	/**
 	 * Adds the specified slaves to the current list
 	 * @param slaves the slaves to add
 	 */
-	public void updateSlaves(final Slave[] slaves) {
+	private void updateInformation(final Slave[] slaves) {
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
@@ -410,52 +410,52 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	}
 
 	/**
-	 * Gets all the listed ips regardless of selection
-	 * @return the ips
+	 * Gets all the listed slaves regardless of selection
+	 * @return the slaves
 	 */
-	private Slave[] getAllSlaves() {
-		final Slave[] ips = new Slave[model.getRowCount()];
+	private RemoteSlave[] getAllSlaves() {
+		final RemoteSlave[] slaves = new RemoteSlave[model.getRowCount()];
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
 				for (int i = 0; i < model.getRowCount(); i++) {
-					ips[i] = (Slave) model.getValueAt(i, 0);
+					slaves[i] = (RemoteSlave) model.getValueAt(i, 0);
 				}
 			}
 		});
-		return ips;
+		return slaves;
 	}
 
 	/**
-	 * Gets all the currently selected ips
-	 * @return the selected ips, or an empty array if none are selected
+	 * Gets all the currently selected slaves
+	 * @return the selected slaves, or an empty array if none are selected
 	 */
-	public Slave[] getSelectedSlaves() {
+	public RemoteSlave[] getSelectedSlaves() {
 		final int[] rows = table.getSelectedRows();
-		final Slave[] ips = new Slave[rows.length];
+		final RemoteSlave[] slaves = new RemoteSlave[rows.length];
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
 				for (int i = 0; i < rows.length; i++) {
-					ips[i] = (Slave) model.getValueAt(rows[i], 0);
+					slaves[i] = (RemoteSlave) model.getValueAt(rows[i], 0);
 				}
 			}
 		});
-		return ips;
+		return slaves;
 	}
 
 	@Override
-	public void connect(final Slave[] slaves) {
+	public void connect(final RemoteSlave[] slaves) {
 		listener.connect(slaves);
 	}
 
 	@Override
-	public void rebuild(final Slave[] slaves) {
+	public void rebuild(final RemoteSlave[] slaves) {
 		listener.rebuild(slaves);
 	}
 
 	@Override
-	public void refresh(final Slave[] slaves) {
+	public void refresh(final RemoteSlave[] slaves) {
 		listener.refresh(slaves);
 	}
 
@@ -466,30 +466,32 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 
 	@Override
 	public void imageResized(final int width, final int height) {
-		// We don't care about this one
+		Log.l.config("");
 	}
 
 	@Override
 	public void setThumbnail(Image thumb) {
-		// TODO Auto-generated method stub
-
+		Log.l.config("");
 	}
 
 	@Override
 	public void addChildFiles(String parentPath, RemoteFile[] childFiles) {
-		// TODO Auto-generated method stub
-
+		Log.l.config("");
 	}
 
 	@Override
-	public void disconnected() {
-		// TODO refreshSlave?
+	public void disconnected(Slave slave) {
+		updateInformation(slave);
 	}
 
 	@Override
 	public Dimension getThumbSize() {
-		// TODO Auto-generated method stub
 		return pnlPreview.getPreferredSize();
+	}
+
+	@Override
+	public void connected(Slave slave) {
+		updateInformation(slave);
 	}
 
 }

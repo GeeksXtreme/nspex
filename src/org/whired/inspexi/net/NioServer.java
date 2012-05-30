@@ -129,7 +129,11 @@ public abstract class NioServer {
 	 */
 	private void removeKey(SelectionKey key) {
 		Communicable comm;
-		key.cancel();
+		try {
+			key.channel().close();
+		}
+		catch (IOException e) {
+		}
 		if ((comm = connections.remove(key)) != null) {
 			String ip = ((InetSocketAddress) ((SocketChannel) key.channel()).socket().getRemoteSocketAddress()).getHostName();
 			Log.l.info("Removing [" + ip + "], size=" + connections.size());

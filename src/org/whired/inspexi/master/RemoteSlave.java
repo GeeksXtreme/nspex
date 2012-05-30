@@ -20,17 +20,26 @@ import org.whired.inspexi.tools.SlaveModel;
 import org.whired.inspexi.tools.SlaveView;
 import org.whired.inspexi.tools.logging.Log;
 
-public abstract class RemoteSlave extends Slave implements SlaveModel {
-	private final Socket socket = new Socket();
+public class RemoteSlave extends Slave implements SlaveModel {
+	private Socket socket = new Socket();
 	private SlaveView view;
-	private final IoCommunicable comm;
+	private IoCommunicable comm;
+	private final InetSocketAddress endpoint;
 
 	public RemoteSlave(final String ip, final int port) throws IOException {
 		super(ip);
-		try {
-			socket.connect(new InetSocketAddress(ip, port), 1500);
-			setOnline(true);
-			comm = new IoCommunicable(socket) {
+		endpoint = new InetSocketAddress(ip, port);
+	}
+
+	/**
+	 * Connects to {@link #endpoint} if not already connected. If already connected, this method returns immediately.
+	 * @throws IOException if a connection cannot be established
+	 */
+	private IoCommunicable connectToRemote() throws IOException {
+		if (!socket.isConnected() || socket.isClosed()) {
+			socket = new Socket();
+			socket.connect(endpoint, 1500);
+			return comm = new IoCommunicable(socket) {
 
 				@Override
 				public void handle(int id, ByteBuffer payload) {
@@ -55,7 +64,8 @@ public abstract class RemoteSlave extends Slave implements SlaveModel {
 									e.printStackTrace();
 								}
 							}
-							onPropertyChange();
+							setOnline(true);
+							view.connected(RemoteSlave.this);
 						break;
 						case OP_TRANSFER_IMAGE:
 							byte[] image = new byte[payload.capacity()];
@@ -104,51 +114,55 @@ public abstract class RemoteSlave extends Slave implements SlaveModel {
 
 				@Override
 				protected void disconnected() {
-					setOnline(false);
-					view.disconnected();
-					onPropertyChange();
+					//setOnline(false);
+					view.disconnected(RemoteSlave.this);
 				}
 			};
 		}
-		catch (IOException e) {
-			setOnline(false);
-			onPropertyChange();
-			throw (e);
+		else {
+			return comm;
 		}
 	}
-
-	protected abstract void onPropertyChange();
 
 	public void connect(final int intent) throws IOException {
-		ExpandableByteBuffer buf = new ExpandableByteBuffer();
-		buf.put(intent);
-
-		if (intent == INTENT_CONNECT) {
-			Dimension d = view.getThumbSize();
-			buf.putShort((short) 200);// d.width);// TODO
-			buf.putShort((short) 160);// d.height);
+		try {
+			IoCommunicable ioc = connectToRemote();
+			ExpandableByteBuffer buf = new ExpandableByteBuffer();
+			buf.put(intent);
+			if (intent == INTENT_CONNECT) {
+				Dimension d = view.getThumbSize();
+				buf.putShort((short) 200);// d.width);// TODO
+				buf.putShort((short) 160);// d.height);
+			}
+			ioc.send(OP_HANDSHAKE, buf.asByteBuffer());
 		}
-		comm.send(OP_HANDSHAKE, buf.asByteBuffer());
+		catch (IOException e) {
+			setOnline(false);
+			view.disconnected(this);
+		}
 	}
 
 	@Override
-	public void requestThumbnail(final String path) {
+	public void requestThumbnail(final String path) throws IOException {
+		IoCommunicable ioc = connectToRemote();
 		ExpandableByteBuffer buf = new ExpandableByteBuffer();
 		buf.putJTF(path);
-		comm.send(OP_GET_FILE_THUMB, buf.asByteBuffer());
+		ioc.send(OP_GET_FILE_THUMB, buf.asByteBuffer());
 	}
 
 	@Override
-	public void requestChildFiles(final String parentPath) {
+	public void requestChildFiles(final String parentPath) throws IOException {
+		IoCommunicable ioc = connectToRemote();
 		ExpandableByteBuffer buf = new ExpandableByteBuffer();
 		buf.putJTF(parentPath);
-		comm.send(OP_GET_FILES, buf.asByteBuffer());
+		ioc.send(OP_GET_FILES, buf.asByteBuffer());
 	}
 
-	public void executeRemoteCommand(final String command) {
+	public void executeRemoteCommand(final String command) throws IOException {
+		IoCommunicable ioc = connectToRemote();
 		ExpandableByteBuffer buf = new ExpandableByteBuffer();
 		buf.putJTF(command);
-		comm.send(OP_DO_COMMAND, buf.asByteBuffer());
+		ioc.send(OP_DO_COMMAND, buf.asByteBuffer());
 	}
 
 	@Override
@@ -160,8 +174,8 @@ public abstract class RemoteSlave extends Slave implements SlaveModel {
 		return view;
 	}
 
-	public Communicable getCommunicable() {
-		return this.comm;
+	public Communicable getCommunicable() throws IOException {
+		return connectToRemote();
 	}
 
 	@Override
