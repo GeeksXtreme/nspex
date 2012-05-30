@@ -13,14 +13,15 @@ import javax.swing.text.DefaultCaret;
 import javax.swing.text.Position.Bias;
 
 public class JConsole extends JTextArea {
-	private static final String CMDC = "[-> ";
+	private final String CMDC;// = "[" + System.getProperty("user.name") + "> ";
 	private final Caret caret;
 	private final HashSet<CommandListener> listeners = new HashSet<CommandListener>();
 
 	BufferQueue<String> savedCommands = new BufferQueue<String>(256);
 	private int pos = 0;
 
-	public JConsole() {
+	public JConsole(final String username) {
+		CMDC = "[" + username + "> ";
 		caret = new DefaultCaret() {
 
 			@Override

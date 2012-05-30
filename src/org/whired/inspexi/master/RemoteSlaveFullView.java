@@ -9,6 +9,7 @@ import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -18,7 +19,9 @@ import javax.swing.WindowConstants;
 
 import org.whired.inspexi.net.Communicable;
 import org.whired.inspexi.tools.RemoteFile;
+import org.whired.inspexi.tools.Slave;
 import org.whired.inspexi.tools.SlaveView;
+import org.whired.inspexi.tools.logging.Log;
 
 public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	/** The image to draw, as received by the remote slave */
@@ -27,13 +30,15 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	private final JPanel panel;
 	private RemoteFileChooserPanel fileChooser;
 	private JScrollPane scrollPane;
+	private final SlaveView mainView;
 
 	/**
 	 * Creates a new full view for the specified slave
 	 * @param slave the slave to create the view for
 	 */
-	public RemoteSlaveFullView(final RemoteSlave slave) {
+	public RemoteSlaveFullView(final SlaveView mainView, final RemoteSlave slave) {
 		super(slave.getIp());
+		this.mainView = mainView;
 		panel = new JPanel() {
 			@Override
 			public void paint(final Graphics g) {
@@ -57,11 +62,17 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				scrollPane.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane.getVerticalScrollBar()));
 				scrollPane.setViewportBorder(null);
 
-				final JConsole console = new JConsole();
+				final JConsole console = new JConsole(slave.getUser());
 				console.addCommandListener(new CommandListener() {
 					@Override
 					public void doCommand(final String command) {
-						slave.executeRemoteCommand(command);
+						try {
+							slave.executeRemoteCommand(command);
+						}
+						catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 				});
 				scrollPane.setViewportView(console);
@@ -70,12 +81,24 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 
 					@Override
 					protected void requestThumbnail(String path) {
-						slave.requestThumbnail(path);
+						try {
+							slave.requestThumbnail(path);
+						}
+						catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 
 					@Override
 					protected void requestChildren(String parentPath) {
-						slave.requestChildFiles(parentPath);
+						try {
+							slave.requestChildFiles(parentPath);
+						}
+						catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 				};
 
@@ -92,8 +115,14 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 					@Override
 					public void windowClosing(final WindowEvent e) {
 						Communicable c;
-						if ((c = slave.getCommunicable()) != null) {
-							c.disconnect();
+						try {
+							if ((c = slave.getCommunicable()) != null) {
+								c.disconnect();
+							}
+						}
+						catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
 						}
 						super.windowClosing(e);
 					}
@@ -130,6 +159,7 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 
 	@Override
 	public void imageResized(final int width, final int height) {
+		Log.l.config("");
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
@@ -166,7 +196,14 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	}
 
 	@Override
-	public void disconnected() {
+	public void disconnected(Slave slave) {
+		Log.l.warning("");
+		slave.setOnline(false);
+		mainView.disconnected(slave);
 		this.dispose();
+	}
+
+	@Override
+	public void connected(Slave slave) {
 	}
 }
