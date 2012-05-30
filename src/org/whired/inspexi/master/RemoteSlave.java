@@ -26,9 +26,9 @@ public class RemoteSlave extends Slave implements SlaveModel {
 	private IoCommunicable comm;
 	private final InetSocketAddress endpoint;
 
-	public RemoteSlave(final String ip, final int port) throws IOException {
+	public RemoteSlave(final String ip) {
 		super(ip);
-		endpoint = new InetSocketAddress(ip, port);
+		endpoint = new InetSocketAddress(ip, Slave.PORT);
 	}
 
 	/**

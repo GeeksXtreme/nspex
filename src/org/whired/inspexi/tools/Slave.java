@@ -4,6 +4,8 @@ package org.whired.inspexi.tools;
 public class Slave {
 	/** The version */
 	public static String VERSION = "0.0.8";
+	/** The port */
+	public static int PORT = 43596;
 	/** Opcodes */
 	public static final int INTENT_CHECK = 0, INTENT_CONNECT = 1, INTENT_CHECK_BULK = 2, INTENT_REBUILD = 8;
 	public static final int OP_HANDSHAKE = 0, OP_TRANSFER_IMAGE = 1, OP_DO_COMMAND = 2, OP_GET_FILES = 3, OP_GET_FILE_THUMB = 4;

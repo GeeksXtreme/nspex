@@ -136,7 +136,7 @@ public class Master {
 		String[] ips = s != null ? s.split(",") : new String[0];
 		RemoteSlave[] slaves = new RemoteSlave[ips.length];
 		for (int i = 0; i < slaves.length; i++) {
-			slaves[i] = new RemoteSlave(ips[i], 43596);
+			slaves[i] = new RemoteSlave(ips[i]);
 		}
 		new Master(slaves);
 	}

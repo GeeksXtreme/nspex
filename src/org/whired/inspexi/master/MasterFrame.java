@@ -197,7 +197,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			public void actionPerformed(final ActionEvent arg0) {
 				String ip;
 				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter IP:")) != null && ip.length() > 0) {
-					updateInformation(new Slave[] { new Slave(ip) });
+					updateInformation(new RemoteSlave[] { new RemoteSlave(ip) });
 				}
 			}
 		});
