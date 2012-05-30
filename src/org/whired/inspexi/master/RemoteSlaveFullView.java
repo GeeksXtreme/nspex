@@ -197,7 +197,7 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 
 	@Override
 	public void disconnected(Slave slave) {
-		Log.l.warning("");
+		Log.l.warning("No connection with " + slave);
 		slave.setOnline(false);
 		mainView.disconnected(slave);
 		this.dispose();
