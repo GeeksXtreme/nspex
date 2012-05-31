@@ -127,7 +127,7 @@ public abstract class NioServer {
 	 * Removes, invalidates, and closes a key's channel
 	 * @param key the key to remove
 	 */
-	private void removeKey(SelectionKey key) {
+	public void removeKey(SelectionKey key) {
 		Communicable comm;
 		try {
 			key.channel().close();
