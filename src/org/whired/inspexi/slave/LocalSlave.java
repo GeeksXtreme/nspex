@@ -47,7 +47,7 @@ public class LocalSlave extends Slave {
 	private final NioServer newServer = new NioServer(PORT) {
 
 		@Override
-		protected Communicable getCommunicable(SelectionKey key) {
+		protected Communicable getCommunicable(final SelectionKey key) {
 			return new NioCommunicable(key) {
 
 				private boolean hasShook;
@@ -58,7 +58,7 @@ public class LocalSlave extends Slave {
 					// Make sure we get what we need first
 					if (!hasShook && id != OP_HANDSHAKE) {
 						Log.l.warning("Handshake expected, but not received");
-						disconnect();// TODO nogood
+						newServer.removeKey(key);
 					}
 					else {
 						final String fs = System.getProperty("file.separator");
