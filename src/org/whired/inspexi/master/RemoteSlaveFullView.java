@@ -23,6 +23,10 @@ import org.whired.inspexi.tools.Slave;
 import org.whired.inspexi.tools.SlaveView;
 import org.whired.inspexi.tools.logging.Log;
 
+/**
+ * A full, administrative view
+ * @author Whired
+ */
 public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	/** The image to draw, as received by the remote slave */
 	private Image image;
@@ -45,11 +49,10 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				if (image == null) {
 					return;
 				}
-				// This actually shouldn't be a problem at 1 fps
 				final Graphics2D g2 = (Graphics2D) g;
 				g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 				g2.drawImage(image, 0, 0, this);
-				g.dispose();//..?
+				g.dispose();
 			}
 		};
 		runOnEdt(new Runnable() {
@@ -70,7 +73,6 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 							slave.executeRemoteCommand(command);
 						}
 						catch (IOException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}
@@ -85,7 +87,6 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 							slave.requestThumbnail(path);
 						}
 						catch (IOException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}
@@ -96,7 +97,6 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 							slave.requestChildFiles(parentPath);
 						}
 						catch (IOException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}
@@ -119,12 +119,13 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 							if ((c = slave.getCommunicable()) != null) {
 								c.disconnect();
 							}
+							else {
+								disconnected(slave);
+							}
 						}
 						catch (IOException e1) {
-							// TODO Auto-generated catch block
 							e1.printStackTrace();
 						}
-						super.windowClosing(e);
 					}
 				});
 			}

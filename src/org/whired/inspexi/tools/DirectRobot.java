@@ -2,14 +2,12 @@ package org.whired.inspexi.tools;
 
 import java.awt.AWTException;
 import java.awt.Dimension;
-import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.PointerInfo;
 import java.awt.Rectangle;
-import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -23,8 +21,7 @@ import sun.awt.ComponentFactory;
 public final class DirectRobot extends Robot {
 	private final BufferedImage unscaled;
 	private final int[] unscaledPix;
-	private final BufferedImage scaled;
-	private final Graphics2D graphics;
+	private final Dimension targetSize;
 
 	public DirectRobot(final Rectangle bounds, final double zoom) throws AWTException {
 		super(bounds, zoom);
@@ -92,10 +89,7 @@ public final class DirectRobot extends Robot {
 		}
 		unscaled = new BufferedImage(getBounds().width, getBounds().height, BufferedImage.TYPE_INT_RGB);
 		unscaledPix = ((DataBufferInt) unscaled.getRaster().getDataBuffer()).getData();
-		scaled = new BufferedImage(getZoom(getBounds().width), getZoom(getBounds().height), BufferedImage.TYPE_INT_RGB);
-		graphics = scaled.createGraphics();
-		graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		targetSize = new Dimension(getZoom(getBounds().width), getZoom(getBounds().height));
 	}
 
 	public DirectRobot(final double zoom) throws AWTException {
@@ -185,8 +179,7 @@ public final class DirectRobot extends Robot {
 	public byte[] getBytePixels() {
 		final int[] pix = peer.getRGBPixels(getBounds());
 		System.arraycopy(pix, 0, unscaledPix, 0, unscaledPix.length);
-		graphics.drawImage(unscaled, 0, 0, scaled.getWidth(), scaled.getHeight(), 0, 0, unscaled.getWidth(), unscaled.getHeight(), null);
-		return JPEGImageWriter.getImageBytes(scaled);
+		return JPEGImageWriter.getImageBytes(unscaled, targetSize);
 	}
 
 	public boolean getRGBPixels(final int x, final int y, final int width, final int height, final int[] pixels) {

@@ -37,41 +37,41 @@ public class JPEGImageWriter {
 
 	public synchronized static byte[] getImageBytes(BufferedImage image, Dimension targetSize) {
 		if (writer.getOriginatingProvider().canEncodeImage(image)) {
-			Graphics2D g2 = null;
-			try {
-				BufferedImage bufferedImage;
-				if (targetSize != null) {
+			BufferedImage bufferedImage;
+			if (targetSize != null) {
 
-					// Draw to scale
-					double tWidth = image.getWidth();
-					double tHeight = image.getHeight();
+				// Draw to scale
+				double tWidth = image.getWidth();
+				double tHeight = image.getHeight();
 
-					double nPercentW = (targetSize.getWidth() / tWidth);
-					double nPercentH = (targetSize.getHeight() / tHeight);
+				double nPercentW = (targetSize.getWidth() / tWidth);
+				double nPercentH = (targetSize.getHeight() / tHeight);
 
-					int scaledWidth;
-					int scaledHeight;
-					if (nPercentH >= nPercentW) {
-						scaledWidth = (int) (nPercentW * tWidth);
-						scaledHeight = (int) (nPercentW * tHeight);
-					}
-					else {
-						scaledWidth = (int) (nPercentH * tWidth);
-						scaledHeight = (int) (nPercentH * tHeight);
-					}
-
-					bufferedImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_RGB);
+				int scaledWidth;
+				int scaledHeight;
+				if (nPercentH >= nPercentW) {
+					scaledWidth = (int) (nPercentW * tWidth);
+					scaledHeight = (int) (nPercentW * tHeight);
 				}
 				else {
-					bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
+					scaledWidth = (int) (nPercentH * tWidth);
+					scaledHeight = (int) (nPercentH * tHeight);
 				}
-				g2 = bufferedImage.createGraphics();
-				g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-				g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-				g2.drawImage(image, 0, 0, bufferedImage.getWidth(), bufferedImage.getHeight(), Color.BLACK, null);
+				bufferedImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_RGB);
+			}
+			else {
+				bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
+			}
+			Graphics2D g2 = bufferedImage.createGraphics();
+			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+			g2.drawImage(image, 0, 0, bufferedImage.getWidth(), bufferedImage.getHeight(), Color.BLACK, null);
+			try {
 				writer.write(null, new IIOImage(bufferedImage, null, null), iwparam);
+				return bos.toByteArray();
 			}
 			catch (IOException e) {
 				e.printStackTrace();
@@ -81,10 +81,8 @@ public class JPEGImageWriter {
 				if (g2 != null) {
 					g2.dispose();
 				}
+				bos.reset();
 			}
-			final byte[] toReturn = bos.toByteArray();
-			bos.reset();
-			return toReturn;
 		}
 		else {
 			return null;
