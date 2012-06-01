@@ -22,14 +22,17 @@ public abstract class NioCommunicable extends Communicable {
 	private int size;
 	/** The key for this communicable */
 	private final SelectionKey key;
+	/** The host for this communicable */
+	private final NioServer host;
 
 	/**
 	 * Creates a new reader for the specified channel
 	 * @param channel the channel to read from
 	 */
-	public NioCommunicable(SelectionKey key) {
+	public NioCommunicable(SelectionKey key, NioServer host) {
 		this.key = key;
 		this.channel = (SocketChannel) key.channel();
+		this.host = host;
 		setReadTimeout(3000);
 	}
 
@@ -112,17 +115,16 @@ public abstract class NioCommunicable extends Communicable {
 
 	@Override
 	public final void send(int id) {
+		// id:byte length:int (1+4)
 		ByteBuffer packet = ByteBuffer.allocate(5);
 		packet.put((byte) id);
 		packet.putInt(0);
 		packet.flip();
 
 		try {
-			// TODO Sleep here and DC purposely to see result
 			channel.write(packet);
 		}
 		catch (IOException e) {
-			// Maybe..?
 			disconnect();
 		}
 	}
@@ -130,9 +132,12 @@ public abstract class NioCommunicable extends Communicable {
 	@Override
 	public final void send(int id, ByteBuffer payload) {
 		payload.flip();
+		// id:byte length:int (1+4+payload)
 		ByteBuffer packet = ByteBuffer.allocate(payload.capacity() + 5);
+		// Put header
 		packet.put((byte) id);
 		packet.putInt(payload.capacity());
+		// put payload
 		packet.put(payload);
 		packet.flip();
 
@@ -140,7 +145,6 @@ public abstract class NioCommunicable extends Communicable {
 			channel.write(packet);
 		}
 		catch (IOException e) {
-			// Maybe..?
 			disconnect();
 		}
 	}
@@ -148,12 +152,6 @@ public abstract class NioCommunicable extends Communicable {
 	@Override
 	public final void disconnect() {
 		connected = false;
-		try {
-			key.channel().close();
-		}
-		catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		host.removeKey(key);
 	}
 }

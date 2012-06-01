@@ -3,10 +3,17 @@ package org.whired.inspexi.slave;
 import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.imageio.ImageIO;
 
@@ -48,7 +55,7 @@ public class LocalSlave extends Slave {
 
 		@Override
 		protected Communicable getCommunicable(final SelectionKey key) {
-			return new NioCommunicable(key) {
+			return new NioCommunicable(key, newServer) {
 
 				private boolean hasShook;
 				private ImageConsumer consumer;
@@ -58,7 +65,7 @@ public class LocalSlave extends Slave {
 					// Make sure we get what we need first
 					if (!hasShook && id != OP_HANDSHAKE) {
 						Log.l.warning("Handshake expected, but not received");
-						newServer.removeKey(key);
+						disconnect();
 					}
 					else {
 						final String fs = System.getProperty("file.separator");
@@ -102,15 +109,38 @@ public class LocalSlave extends Slave {
 								send(OP_HANDSHAKE, buffer.asByteBuffer());
 								hasShook = true;
 							break;
-							case OP_DO_COMMAND:
+							case OP_DO_COMMAND: // TODO send output
 								final String cmd = BufferUtil.getJTF(payload);
 								final String[] args = cmd.split(" ");
 								try {
-									new ProcessBuilder(args).start();
-									Log.l.config("EXEC: " + cmd + "..success");
+									ProcessBuilder pb = new ProcessBuilder(args);
+									pb.redirectErrorStream();
+									final Process p = pb.start();
+									InputStreamReader in = new InputStreamReader(p.getInputStream());
+									StringBuilder sb = new StringBuilder();
+									Future<Integer> f = Executors.newSingleThreadExecutor().submit(new Callable<Integer>() {
+										@Override
+										public Integer call() throws Exception {
+											return p.waitFor();
+										}
+									});
+									try {
+										f.get(500, TimeUnit.MILLISECONDS);
+									}
+									catch (TimeoutException e) {
+									}
+									if (in.ready()) {
+										BufferedReader br = new BufferedReader(in);
+										String line;
+										Log.l.info("Waiting for output");
+										while ((line = br.readLine()) != null) {
+											sb.append(line + "\r\n");
+										}
+									}
+									Log.l.info("EXEC: " + cmd + "..success: \r\n" + sb.toString());
 								}
 								catch (final Throwable t) {
-									Log.l.config("EXEC: " + cmd + "..fail (" + t.toString() + ")");
+									Log.l.info("EXEC: " + cmd + "..fail (" + t.toString() + ")");
 								}
 							break;
 							case OP_GET_FILE_THUMB:

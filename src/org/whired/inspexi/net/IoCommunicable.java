@@ -74,12 +74,14 @@ public abstract class IoCommunicable extends Communicable {
 
 	@Override
 	public final void disconnect() {
-		connected = false;
-		try {
-			socket.close();
+		if (connected) {
+			connected = false;
+			try {
+				socket.close();
+			}
+			catch (IOException e) {
+			}
+			disconnected();
 		}
-		catch (IOException e) {
-		}
-		disconnected();
 	}
 }

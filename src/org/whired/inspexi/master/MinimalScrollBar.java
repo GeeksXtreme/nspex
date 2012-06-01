@@ -66,11 +66,6 @@ public class MinimalScrollBar extends BasicScrollBarUI {
 		}
 		((java.awt.Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g.fillRoundRect(r.x, r.y, r.width, r.height, 5, 5);
+		g.dispose();
 	}
-
-	@Override
-	public void paint(final Graphics g, final JComponent c) {
-		super.paint(g, c);
-	}
-
 }

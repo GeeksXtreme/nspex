@@ -1,18 +1,9 @@
 package org.whired.inspexi.tools;
 
 import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Rectangle;
-import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-
-import javax.imageio.ImageIO;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
@@ -35,8 +26,7 @@ public class WinRobot extends Robot {
 	private final RECT wBounds = new RECT();
 	private final BufferedImage unscaled = new BufferedImage(getBounds().width, getBounds().height, BufferedImage.TYPE_INT_RGB);
 	private final int[] unscaledPix = ((DataBufferInt) unscaled.getRaster().getDataBuffer()).getData();
-	private final BufferedImage scaled = new BufferedImage(getZoom(getBounds().width), getZoom(getBounds().height), BufferedImage.TYPE_INT_RGB);
-	private final Graphics2D graphics = scaled.createGraphics();
+	private final Dimension targetSize = new Dimension(getZoom(getBounds().width), getZoom(getBounds().height));
 	private final HBITMAP hBitmap = GDI32.INSTANCE.CreateCompatibleBitmap(hdcWindow, getBounds().width, getBounds().height);
 	private final BITMAPINFO bmi = new BITMAPINFO();
 	private final Memory buffer = new Memory(getBounds().width * getBounds().height * 4);
@@ -60,8 +50,6 @@ public class WinRobot extends Robot {
 		wBounds.left = getBounds().x;
 		wBounds.top = getBounds().y;
 		wBounds.bottom = getBounds().y + getBounds().height;
-		graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 		GDI32.INSTANCE.SelectObject(hdcMemDC, hBitmap);
 		bmi.bmiHeader.biWidth = getBounds().width;
 		bmi.bmiHeader.biHeight = -getBounds().height;
@@ -80,42 +68,16 @@ public class WinRobot extends Robot {
 
 	@Override
 	public byte[] getBytePixels() {
+		// Copy native
 		GDI32.INSTANCE.BitBlt(hdcMemDC, 0, 0, getBounds().width, getBounds().height, hdcWindow, 0, 0, GDI32.SRCCOPY);
 		GDI32.INSTANCE.GetDIBits(hdcWindow, hBitmap, 0, getBounds().height, buffer, bmi, WinGDI.DIB_RGB_COLORS);
 
+		// Nonnative copy
 		final int[] toCompress = buffer.getIntArray(0, getBounds().width * getBounds().height);
 		System.arraycopy(toCompress, 0, unscaledPix, 0, toCompress.length);
 
-		graphics.drawImage(unscaled, 0, 0, scaled.getWidth(), scaled.getHeight(), 0, 0, unscaled.getWidth(), unscaled.getHeight(), null);
-		return JPEGImageWriter.getImageBytes(scaled);
-	}
-
-	public static void main(final String[] args) throws IOException {
-		final WinRobot t = new WinRobot(new Dimension(600, 450));
-		for (int i = 0; i < 5; i++) {
-			final byte[] compressed = t.getBytePixels();
-			System.out.println((compressed.length / 1024) + "kb");
-			final BufferedImage image = ImageIO.read(new ByteArrayInputStream(compressed));
-			final JFrame frame = new JFrame("Inspexi JNA");
-			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			frame.setAlwaysOnTop(true);
-			final JPanel panel = new JPanel() {
-				@Override
-				public void paint(final Graphics g) {
-					final Graphics2D g2 = (Graphics2D) g;
-					g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-					g2.drawImage(image, 0, 0, this);
-					g2.dispose();
-					g.dispose();
-				}
-			};
-			panel.setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
-			frame.getContentPane().add(panel);
-			frame.pack();
-			frame.setLocationRelativeTo(null);
-			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			frame.setVisible(true);
-		}
+		// Scale and compress
+		return JPEGImageWriter.getImageBytes(unscaled, targetSize);
 	}
 
 	private interface GDI32 extends com.sun.jna.platform.win32.GDI32 {
