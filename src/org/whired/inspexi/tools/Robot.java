@@ -30,7 +30,7 @@ public abstract class Robot {
 		return (int) (orig * zoom);
 	}
 
-	public static double calculateZoom(Rectangle source, Dimension dest) {
+	public static double calculateZoom(final Rectangle source, final Dimension dest) {
 		if (source.width < dest.width && source.height < dest.width) {
 			return 1;
 		}

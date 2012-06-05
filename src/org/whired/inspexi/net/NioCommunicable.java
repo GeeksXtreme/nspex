@@ -1,9 +1,12 @@
 package org.whired.inspexi.net;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+
+import org.whired.inspexi.tools.logging.Log;
 
 /**
  * Reads organized packet data from a channel into a buffer
@@ -24,14 +27,17 @@ public abstract class NioCommunicable extends Communicable {
 	private final SelectionKey key;
 	/** The host for this communicable */
 	private final NioServer host;
+	/** The hostname for this communicable */
+	protected final String hostName;
 
 	/**
 	 * Creates a new reader for the specified channel
 	 * @param channel the channel to read from
 	 */
-	public NioCommunicable(SelectionKey key, NioServer host) {
+	public NioCommunicable(final SelectionKey key, final NioServer host) {
 		this.key = key;
 		this.channel = (SocketChannel) key.channel();
+		this.hostName = ((InetSocketAddress) channel.socket().getRemoteSocketAddress()).getAddress().getHostAddress();
 		this.host = host;
 		setReadTimeout(3000);
 	}
@@ -76,13 +82,14 @@ public abstract class NioCommunicable extends Communicable {
 				size = headerBuffer.getInt();
 				// Handle and reset if it's time
 				if (size == 0) {
+					Log.l.config("Packet recevied=" + id + " length=0");
 					handle(id);
 					headerBuffer.clear();
 					return val;
 				}
 				// There's a chance that we can read more without blocking
 				else {
-					int i = readPayload();
+					final int i = readPayload();
 					// If readPayload is -1, we're at EOF
 					return i == -1 ? i : val + i;
 				}
@@ -105,6 +112,7 @@ public abstract class NioCommunicable extends Communicable {
 				// All done, clean up and notify that the packet is ready
 				setReadTimeout(30 * 60000);
 				payloadBuffer.flip();
+				Log.l.config("Packet recevied=" + id + " length=" + payloadBuffer.capacity());
 				handle(id, payloadBuffer.asReadOnlyBuffer());
 				payloadBuffer = null;
 				headerBuffer.clear();
@@ -114,9 +122,10 @@ public abstract class NioCommunicable extends Communicable {
 	}
 
 	@Override
-	public final void send(int id) {
+	public final void send(final int id) {
+		Log.l.config("Sending packet=" + id + " length=0");
 		// id:byte length:int (1+4)
-		ByteBuffer packet = ByteBuffer.allocate(5);
+		final ByteBuffer packet = ByteBuffer.allocate(5);
 		packet.put((byte) id);
 		packet.putInt(0);
 		packet.flip();
@@ -124,16 +133,19 @@ public abstract class NioCommunicable extends Communicable {
 		try {
 			channel.write(packet);
 		}
-		catch (IOException e) {
+		catch (final IOException e) {
 			disconnect();
 		}
 	}
 
 	@Override
-	public final void send(int id, ByteBuffer payload) {
-		payload.flip();
+	public final void send(final int id, final ByteBuffer payload) {
+		Log.l.config("Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
+		if (payload.position() > 0) {
+			payload.flip();
+		}
 		// id:byte length:int (1+4+payload)
-		ByteBuffer packet = ByteBuffer.allocate(payload.capacity() + 5);
+		final ByteBuffer packet = ByteBuffer.allocate(payload.capacity() + 5);
 		// Put header
 		packet.put((byte) id);
 		packet.putInt(payload.capacity());
@@ -144,7 +156,7 @@ public abstract class NioCommunicable extends Communicable {
 		try {
 			channel.write(packet);
 		}
-		catch (IOException e) {
+		catch (final IOException e) {
 			disconnect();
 		}
 	}

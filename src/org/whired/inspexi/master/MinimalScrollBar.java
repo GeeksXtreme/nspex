@@ -20,8 +20,8 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
 public class MinimalScrollBar extends BasicScrollBarUI {
 
 	final Color transparent = new Color(0, 0, 0, 0);
-	final Color ghostBlue = new Color(99, 130, 191, 120);
-	final Color ghostHighlight = new Color(119, 150, 211, 140);
+	final Color ghostBlue = new Color(57, 105, 138);
+	final Color ghostHighlight = ghostBlue.brighter();
 
 	public MinimalScrollBar(final JScrollBar scrollbar) {
 		SwingUtilities.invokeLater(new Runnable() {
@@ -66,6 +66,5 @@ public class MinimalScrollBar extends BasicScrollBarUI {
 		}
 		((java.awt.Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g.fillRoundRect(r.x, r.y, r.width, r.height, 5, 5);
-		g.dispose();
 	}
 }

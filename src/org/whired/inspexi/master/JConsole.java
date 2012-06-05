@@ -115,22 +115,23 @@ public class JConsole extends JTextArea {
 		});
 		setCaret(caret);
 		setBackground(Color.BLACK);
-		setForeground(Color.GREEN);
-		setSelectionColor(Color.GREEN);
+		final Color nimBlue = new Color(57, 105, 138);
+		setForeground(nimBlue);
+		setSelectionColor(nimBlue);
 		setSelectedTextColor(Color.BLACK);
 		setFont(new Font("Monospaced", Font.PLAIN, 12));
 		append(CMDC);
 	}
 
-	private void replaceCurrent(String newCommand) {
+	private void replaceCurrent(final String newCommand) {
 		try {
-			int goodIdx = getText().lastIndexOf(CMDC) + CMDC.length();
+			final int goodIdx = getText().lastIndexOf(CMDC) + CMDC.length();
 			getDocument().remove(goodIdx, getDocument().getLength() - goodIdx);
 			getDocument().insertString(goodIdx, newCommand, null);
 			setCaretPosition(getDocument().getLength());
 			moveCaretPosition(getDocument().getLength());
 		}
-		catch (BadLocationException e) {
+		catch (final BadLocationException e) {
 			e.printStackTrace();
 		}
 	}

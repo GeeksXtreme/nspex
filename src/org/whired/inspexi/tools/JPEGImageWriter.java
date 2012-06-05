@@ -35,17 +35,17 @@ public class JPEGImageWriter {
 		}
 	}
 
-	public synchronized static byte[] getImageBytes(BufferedImage image, Dimension targetSize) {
+	public synchronized static byte[] getImageBytes(final BufferedImage image, final Dimension targetSize) {
 		if (writer.getOriginatingProvider().canEncodeImage(image)) {
 			BufferedImage bufferedImage;
 			if (targetSize != null) {
 
 				// Draw to scale
-				double tWidth = image.getWidth();
-				double tHeight = image.getHeight();
+				final double tWidth = image.getWidth();
+				final double tHeight = image.getHeight();
 
-				double nPercentW = (targetSize.getWidth() / tWidth);
-				double nPercentH = (targetSize.getHeight() / tHeight);
+				final double nPercentW = targetSize.getWidth() / tWidth;
+				final double nPercentH = targetSize.getHeight() / tHeight;
 
 				int scaledWidth;
 				int scaledHeight;
@@ -63,7 +63,7 @@ public class JPEGImageWriter {
 			else {
 				bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
 			}
-			Graphics2D g2 = bufferedImage.createGraphics();
+			final Graphics2D g2 = bufferedImage.createGraphics();
 			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -73,7 +73,7 @@ public class JPEGImageWriter {
 				writer.write(null, new IIOImage(bufferedImage, null, null), iwparam);
 				return bos.toByteArray();
 			}
-			catch (IOException e) {
+			catch (final IOException e) {
 				e.printStackTrace();
 				return null;
 			}
@@ -89,7 +89,7 @@ public class JPEGImageWriter {
 		}
 	}
 
-	public synchronized static byte[] getImageBytes(BufferedImage image) {
+	public synchronized static byte[] getImageBytes(final BufferedImage image) {
 		return getImageBytes(image, null);
 	}
 }

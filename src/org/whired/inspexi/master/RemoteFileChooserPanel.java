@@ -36,17 +36,17 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 
 	private final JPanel pnlPreview = new JPanel() {
 		@Override
-		protected void paintComponent(Graphics g) {
+		protected void paintComponent(final Graphics g) {
 			g.setColor(this.getBackground());
 			g.fillRect(0, 0, this.getWidth(), this.getHeight());
 			if (thumbnail != null) {
 				final Graphics2D g2 = (Graphics2D) g;
 				//g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-				int tWidth = thumbnail.getWidth(this);
-				int tHeight = thumbnail.getHeight(this);
+				final int tWidth = thumbnail.getWidth(this);
+				final int tHeight = thumbnail.getHeight(this);
 
-				int dx = this.getWidth() / 2 - tWidth / 2;
-				int dy = this.getHeight() / 2 - tHeight / 2;
+				final int dx = this.getWidth() / 2 - tWidth / 2;
+				final int dy = this.getHeight() / 2 - tHeight / 2;
 
 				g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 				g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
@@ -66,7 +66,7 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 	public RemoteFileChooserPanel() {
 		setBorder(new EmptyBorder(2, 2, 2, 2));
 		setLayout(new BorderLayout(0, 0));
-		FlowLayout fl_pnlPreview = (FlowLayout) pnlPreview.getLayout();
+		final FlowLayout fl_pnlPreview = (FlowLayout) pnlPreview.getLayout();
 		fl_pnlPreview.setHgap(10);
 		fl_pnlPreview.setVgap(80);
 		add(pnlPreview, BorderLayout.SOUTH);
@@ -74,8 +74,8 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 		treeFiles.setShowsRootHandles(true);
 		treeFiles.getSelectionModel().addTreeSelectionListener(this);
 
-		JScrollPane scrollPane = new JScrollPane();
-		LineBorder b = new LineBorder(grayBorder);
+		final JScrollPane scrollPane = new JScrollPane();
+		final LineBorder b = new LineBorder(grayBorder);
 		scrollPane.setBorder(b);
 		scrollPane.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane.getVerticalScrollBar()));
 		scrollPane.getHorizontalScrollBar().setUI(new MinimalScrollBar(scrollPane.getHorizontalScrollBar()));
@@ -94,14 +94,14 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
 			public void run() {
-				String[] parentNodes = parentPath.split("\\|");
+				final String[] parentNodes = parentPath.split("\\|");
 				LazyTreeNode ltn = root;
 				Enumeration e;
-				for (String parentNode : parentNodes) {
+				for (final String parentNode : parentNodes) {
 					if (parentNode.length() > 0) {
 						e = ltn.children();
 						while (e.hasMoreElements()) {
-							Object pmatch = e.nextElement();
+							final Object pmatch = e.nextElement();
 							if (pmatch.toString().equals(parentNode)) {
 								ltn = (LazyTreeNode) pmatch;
 							}
@@ -109,7 +109,7 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 					}
 				}
 				ltn.expanding();
-				for (RemoteFile child : children) {
+				for (final RemoteFile child : children) {
 					ltn.add(new LazyTreeNode(child.toString(), child.hasChildren()));
 				}
 				((DefaultTreeModel) treeFiles.getModel()).nodeStructureChanged(ltn);
@@ -119,16 +119,16 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 
 	}
 
-	public void setThumbnail(Image thumb) {
+	public void setThumbnail(final Image thumb) {
 		this.thumbnail = thumb;
 		pnlPreview.repaint();
 	}
 
 	@Override
-	public void valueChanged(TreeSelectionEvent e) {
-		LazyTreeNode node = (LazyTreeNode) treeFiles.getLastSelectedPathComponent();
+	public void valueChanged(final TreeSelectionEvent e) {
+		final LazyTreeNode node = (LazyTreeNode) treeFiles.getLastSelectedPathComponent();
 		if (node != null && node.isLeaf()) {
-			String name = node.toString().toLowerCase();
+			final String name = node.toString().toLowerCase();
 			if (name.endsWith("jpeg") || name.endsWith("jpg") || name.endsWith("bmp") || name.endsWith("png") || name.endsWith("gif")) {
 				String fname = pathToString(node.getPath());
 				fname = fname.substring(0, fname.length() - 1);
@@ -138,9 +138,9 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 	}
 
 	@Override
-	public void treeWillExpand(TreeExpansionEvent e) throws ExpandVetoException {
+	public void treeWillExpand(final TreeExpansionEvent e) throws ExpandVetoException {
 		// Load children from server!
-		LazyTreeNode parent = (LazyTreeNode) e.getPath().getLastPathComponent();
+		final LazyTreeNode parent = (LazyTreeNode) e.getPath().getLastPathComponent();
 
 		if (!parent.hasBeenExpanded()) {
 			// Hasn't been expanded, load children now
@@ -149,15 +149,15 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 	}
 
 	@Override
-	public void treeWillCollapse(TreeExpansionEvent arg0) throws ExpandVetoException {
+	public void treeWillCollapse(final TreeExpansionEvent arg0) throws ExpandVetoException {
 		// We don't care
 	}
 
-	private String pathToString(TreeNode[] path) {
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < path.length; i++) {
-			sb.append(path[i].toString());
-			if (path[i].toString().length() > 0) {
+	private String pathToString(final TreeNode[] path) {
+		final StringBuilder sb = new StringBuilder();
+		for (final TreeNode element : path) {
+			sb.append(element.toString());
+			if (element.toString().length() > 0) {
 				sb.append("|");
 			}
 		}

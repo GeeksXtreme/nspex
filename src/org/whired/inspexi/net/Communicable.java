@@ -70,11 +70,11 @@ public abstract class Communicable {
 	 * Sets the amount of time (ms) that can pass between now and the next read and any consecutive reads a non-positive value is interpreted as an infinite timeout
 	 * @param timeout the timeout, in milliseconds, to set
 	 */
-	public void setReadTimeout(int timeout) {
+	public void setReadTimeout(final int timeout) {
 		readTimeout = timeout;
 	}
 
-	void setLastReadTime(long time) {
+	void setLastReadTime(final long time) {
 		lastReadTime = time;
 	}
 

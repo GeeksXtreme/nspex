@@ -1,14 +1,9 @@
 package org.whired.inspexi.blackbox;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
@@ -21,67 +16,29 @@ import javax.crypto.Cipher;
  */
 public class RSASession {
 	private PublicKey remotePublicKey;
-	private final PrivateKey localPrivateKey;
 	private final Cipher cipher = Cipher.getInstance("RSA");
 	private final KeyFactory fact = KeyFactory.getInstance("RSA");
-	private final RSAPublicKeySpec localPublicKeySpec;
+	private final RSAKeySet keys;
 
-	/**
-	 * Creates a new RSA session. This operation is expensive and should not be done repetitively.
-	 * @throws GeneralSecurityException when keys could not be generated for any reason
-	 */
-	public RSASession() throws GeneralSecurityException {
-		long start = System.currentTimeMillis();
-		final KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-		kpg.initialize(2048);
-		final KeyPair kp = kpg.genKeyPair();
-		localPublicKeySpec = fact.getKeySpec(kp.getPublic(), RSAPublicKeySpec.class);
-		localPrivateKey = kp.getPrivate();
-		System.out.println("RSA keys generated (" + (System.currentTimeMillis() - start) + "ms)");
-	}
-
-	public String readEncryptedUTF(DataInputStream dis) throws IOException, GeneralSecurityException {
-		byte[] payload = new byte[dis.readInt()];
-		dis.readFully(payload);
-		payload = decrypt(payload);
-		return new String(payload, "utf8");
-	}
-
-	public void exchangeKeys(DataInputStream dis, DataOutputStream dos) throws IOException, InvalidKeySpecException {
-		writeLocalKeySpec(dos);
-		readRemoteKeySpec(dis);
+	public RSASession(final RSAKeySet keys) throws GeneralSecurityException {
+		this.keys = keys;
 	}
 
 	/**
-	 * Reads the remote public key specification from the specified input stream
-	 * @param dis the input stream to read from
-	 * @throws IOException if the key cannot be read
+	 * Generates a public key based off the given specification
+	 * @param spec the buffer that contains the specification information
 	 * @throws InvalidKeySpecException when a public key cannot be generated
 	 */
-	private void readRemoteKeySpec(DataInputStream dis) throws IOException, InvalidKeySpecException {
-		byte[] buf = new byte[dis.readInt()];
-		dis.readFully(buf);
+	public void generateRemotePublicKey(final ByteBuffer spec) throws InvalidKeySpecException {
+		byte[] buf = new byte[spec.getInt()];
+		spec.get(buf);
 		final BigInteger mod = new BigInteger(buf);
 
-		buf = new byte[dis.readInt()];
-		dis.readFully(buf);
+		buf = new byte[spec.getInt()];
+		spec.get(buf);
 		final BigInteger exp = new BigInteger(buf);
+
 		remotePublicKey = fact.generatePublic(new RSAPublicKeySpec(mod, exp));
-	}
-
-	/**
-	 * Writes the local public key specification to the specified output stream
-	 * @param dos the output stream to write to
-	 * @throws IOException when the key cannot be written
-	 */
-	private void writeLocalKeySpec(DataOutputStream dos) throws IOException {
-		byte[] data = localPublicKeySpec.getModulus().toByteArray();
-		dos.writeInt(data.length);
-		dos.write(data);
-
-		data = localPublicKeySpec.getPublicExponent().toByteArray();
-		dos.writeInt(data.length);
-		dos.write(data);
 	}
 
 	/**
@@ -90,10 +47,15 @@ public class RSASession {
 	 * @return the decrypted bytes
 	 * @throws GeneralSecurityException when the bytes can't be decrypted for any reason
 	 */
-	public final byte[] decrypt(final byte[] encrypted) throws GeneralSecurityException {
-		cipher.init(Cipher.DECRYPT_MODE, localPrivateKey);
-		final byte[] cipherData = cipher.doFinal(encrypted);
-		return cipherData;
+	public final ByteBuffer decrypt(final ByteBuffer encrypted) throws GeneralSecurityException {
+		cipher.init(Cipher.DECRYPT_MODE, keys.getPrivateKey());
+		if (encrypted.position() > 0) {
+			encrypted.flip();
+		}
+		final byte[] encBytes = new byte[encrypted.capacity()];
+		encrypted.get(encBytes);
+		final byte[] cipherData = cipher.doFinal(encBytes);
+		return ByteBuffer.wrap(cipherData).asReadOnlyBuffer();
 	}
 
 	/**
@@ -102,14 +64,20 @@ public class RSASession {
 	 * @return the encrypted bytes
 	 * @throws GeneralSecurityException when the bytes can't be encrypted for any reason
 	 */
-	public final byte[] encrpyt(final byte[] plainText) throws GeneralSecurityException {
+	public final ByteBuffer encrpyt(final ByteBuffer plainText) throws GeneralSecurityException {
+		// TODO this sucks for obvious reasons
 		if (remotePublicKey == null) {
 			// There's no way to guarantee that we have a key
 			// Should be asked for in parameters but exceptions make it just as messy..
-			throw new NullPointerException("Cannot encrpyt without remote key (getRemoteKey())");
+			throw new NullPointerException("Cannot encrpyt without remote key (generateRemotePublicKey())");
 		}
 		cipher.init(Cipher.ENCRYPT_MODE, remotePublicKey);
-		final byte[] cipherData = cipher.doFinal(plainText);
-		return cipherData;
+		if (plainText.position() > 0) {
+			plainText.flip();
+		}
+		final byte[] ptBytes = new byte[plainText.capacity()];
+		plainText.get(ptBytes);
+		final byte[] cipherData = cipher.doFinal(ptBytes);
+		return ByteBuffer.wrap(cipherData).asReadOnlyBuffer();
 	}
 }

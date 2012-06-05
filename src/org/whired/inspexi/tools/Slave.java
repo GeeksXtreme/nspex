@@ -11,7 +11,7 @@ public class Slave {
 	public static final int OP_HANDSHAKE = 0, OP_TRANSFER_IMAGE = 1, OP_DO_COMMAND = 2, OP_GET_FILES = 3, OP_GET_FILE_THUMB = 4;
 	/** Slave information */
 	private String user, os, version;
-	private String ip;
+	private String host;
 	private boolean online;
 
 	public Slave() {
@@ -19,10 +19,10 @@ public class Slave {
 
 	/**
 	 * Creates a new slave with the specified ip
-	 * @param ip the ip for this slave
+	 * @param host the ip for this slave
 	 */
-	public Slave(String ip) {
-		this.ip = ip;
+	public Slave(final String host) {
+		this.host = host;
 	}
 
 	/**
@@ -74,15 +74,15 @@ public class Slave {
 	}
 
 	/**
-	 * Gets the IP of this slave
+	 * Gets the host of this slave
 	 */
-	public String getIp() {
-		return this.ip;
+	public String getHost() {
+		return this.host;
 	}
 
 	@Override
 	public String toString() {
-		return this.ip;
+		return this.host;
 	}
 
 	/**
@@ -97,7 +97,7 @@ public class Slave {
 	 * Sets whether or not this slave is online
 	 * @param online
 	 */
-	public void setOnline(boolean online) {
+	public void setOnline(final boolean online) {
 		this.online = online;
 	}
 }
