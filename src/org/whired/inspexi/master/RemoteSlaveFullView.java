@@ -41,7 +41,7 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	 * @param slave the slave to create the view for
 	 */
 	public RemoteSlaveFullView(final SlaveView mainView, final RemoteSlave slave) {
-		super(slave.getIp());
+		super(slave.getUser() + "@" + slave.getHost() + " (" + slave.getOS() + ")");
 		this.mainView = mainView;
 		panel = new JPanel() {
 			@Override
@@ -72,7 +72,7 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 						try {
 							slave.executeRemoteCommand(command);
 						}
-						catch (IOException e) {
+						catch (final IOException e) {
 							e.printStackTrace();
 						}
 					}
@@ -82,27 +82,27 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				fileChooser = new RemoteFileChooserPanel() {
 
 					@Override
-					protected void requestThumbnail(String path) {
+					protected void requestThumbnail(final String path) {
 						try {
 							slave.requestThumbnail(path);
 						}
-						catch (IOException e) {
+						catch (final IOException e) {
 							e.printStackTrace();
 						}
 					}
 
 					@Override
-					protected void requestChildren(String parentPath) {
+					protected void requestChildren(final String parentPath) {
 						try {
 							slave.requestChildFiles(parentPath);
 						}
-						catch (IOException e) {
+						catch (final IOException e) {
 							e.printStackTrace();
 						}
 					}
 				};
 
-				BorderLayout layout = new BorderLayout();
+				final BorderLayout layout = new BorderLayout();
 				layout.addLayoutComponent(scrollPane, BorderLayout.SOUTH);
 				layout.addLayoutComponent(panel, BorderLayout.CENTER);
 				layout.addLayoutComponent(fileChooser, BorderLayout.WEST);
@@ -123,7 +123,7 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 								disconnected(slave);
 							}
 						}
-						catch (IOException e1) {
+						catch (final IOException e1) {
 							e1.printStackTrace();
 						}
 					}
@@ -182,12 +182,12 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	}
 
 	@Override
-	public void setThumbnail(Image thumb) {
+	public void setThumbnail(final Image thumb) {
 		fileChooser.setThumbnail(thumb);
 	}
 
 	@Override
-	public void addChildFiles(String parentPath, RemoteFile[] childFiles) {
+	public void addChildFiles(final String parentPath, final RemoteFile[] childFiles) {
 		fileChooser.addChildren(parentPath, childFiles);
 	}
 
@@ -197,7 +197,7 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	}
 
 	@Override
-	public void disconnected(Slave slave) {
+	public void disconnected(final Slave slave) {
 		Log.l.warning("No connection with " + slave);
 		slave.setOnline(false);
 		mainView.disconnected(slave);
@@ -205,6 +205,6 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	}
 
 	@Override
-	public void connected(Slave slave) {
+	public void connected(final Slave slave) {
 	}
 }

@@ -20,9 +20,9 @@ public class SQLiteDatabase {
 	private final Connection connection;
 	private final String databaseName;
 
-	public SQLiteDatabase(String workingDir, String databaseName) throws SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+	public SQLiteDatabase(final String workingDir, final String databaseName) throws SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 		Class.forName(DRIVER);
-		Properties connectionProperties = new Properties();
+		final Properties connectionProperties = new Properties();
 		connectionProperties.put("user", "program");
 		connectionProperties.put("password", "program");
 		this.databaseName = databaseName;
@@ -35,7 +35,7 @@ public class SQLiteDatabase {
 	 * @param autoCommit whether or not to autocommit--{@code false} is optimum for batch statements
 	 * @throws SQLException
 	 */
-	public void setAutoCommit(boolean autoCommit) throws SQLException {
+	public void setAutoCommit(final boolean autoCommit) throws SQLException {
 		this.connection.setAutoCommit(autoCommit);
 	}
 
@@ -52,14 +52,14 @@ public class SQLiteDatabase {
 	 * @param statement the statement to execute
 	 * @throws SQLException when a statement fails to execute
 	 */
-	public void executeStatement(String statement) throws SQLException {
-		Statement s = connection.createStatement();
+	public void executeStatement(final String statement) throws SQLException {
+		final Statement s = connection.createStatement();
 		s.execute(statement);
 		s.close();
 	}
 
-	public void executePreparedStatement(String statement) throws SQLException {
-		PreparedStatement ps = connection.prepareStatement(statement);
+	public void executePreparedStatement(final String statement) throws SQLException {
+		final PreparedStatement ps = connection.prepareStatement(statement);
 		ps.executeUpdate();
 		ps.close();
 	}
@@ -70,10 +70,16 @@ public class SQLiteDatabase {
 	 * @return the results returned by the query
 	 * @throws SQLException if the database can not be queried
 	 */
-	public ResultSet executeQuery(String query) throws SQLException {
-		Statement s = connection.createStatement();
-		ResultSet rs = s.executeQuery(query);
+	public ResultSet executeQuery(final String query) throws SQLException {
+		final Statement s = connection.createStatement();
+		final ResultSet rs = s.executeQuery(query);
 		return rs;
+	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		close();
+		super.finalize();
 	}
 
 	/**
@@ -83,7 +89,7 @@ public class SQLiteDatabase {
 		try {
 			connection.close();
 		}
-		catch (SQLException ex) {
+		catch (final SQLException ex) {
 		}
 	}
 }

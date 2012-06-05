@@ -61,7 +61,7 @@ public class LocalSlave extends Slave {
 				private ImageConsumer consumer;
 
 				@Override
-				public void handle(int id, final ByteBuffer payload) {
+				public void handle(final int id, final ByteBuffer payload) {
 					// Make sure we get what we need first
 					if (!hasShook && id != OP_HANDSHAKE) {
 						Log.l.warning("Handshake expected, but not received");
@@ -72,7 +72,7 @@ public class LocalSlave extends Slave {
 						Log.l.config("Packet received. id=" + id + " payload=" + payload.capacity());
 						switch (id) {
 							case OP_HANDSHAKE:
-								int intent = payload.get();
+								final int intent = payload.get();
 								if (intent == INTENT_REBUILD) {
 									System.exit(0);
 									return;
@@ -93,8 +93,8 @@ public class LocalSlave extends Slave {
 									// Set this communicable as an image consumer
 									consumer = new ImageConsumer() {
 										@Override
-										public void imageProduced(final ImageConsumer consumer, final byte[] image) {
-											ExpandableByteBuffer buf = new ExpandableByteBuffer(image.length);
+										public void imageProduced(final byte[] image) {
+											final ExpandableByteBuffer buf = new ExpandableByteBuffer(image.length);
 											buf.put(image);
 											send(OP_TRANSFER_IMAGE, buf.asByteBuffer());
 										}
@@ -113,12 +113,12 @@ public class LocalSlave extends Slave {
 								final String cmd = BufferUtil.getJTF(payload);
 								final String[] args = cmd.split(" ");
 								try {
-									ProcessBuilder pb = new ProcessBuilder(args);
+									final ProcessBuilder pb = new ProcessBuilder(args);
 									pb.redirectErrorStream();
 									final Process p = pb.start();
-									InputStreamReader in = new InputStreamReader(p.getInputStream());
-									StringBuilder sb = new StringBuilder();
-									Future<Integer> f = Executors.newSingleThreadExecutor().submit(new Callable<Integer>() {
+									final InputStreamReader in = new InputStreamReader(p.getInputStream());
+									final StringBuilder sb = new StringBuilder();
+									final Future<Integer> f = Executors.newSingleThreadExecutor().submit(new Callable<Integer>() {
 										@Override
 										public Integer call() throws Exception {
 											return p.waitFor();
@@ -127,10 +127,10 @@ public class LocalSlave extends Slave {
 									try {
 										f.get(500, TimeUnit.MILLISECONDS);
 									}
-									catch (TimeoutException e) {
+									catch (final TimeoutException e) {
 									}
 									if (in.ready()) {
-										BufferedReader br = new BufferedReader(in);
+										final BufferedReader br = new BufferedReader(in);
 										String line;
 										Log.l.info("Waiting for output");
 										while ((line = br.readLine()) != null) {
@@ -149,13 +149,13 @@ public class LocalSlave extends Slave {
 									public void run() {
 										try {
 											final String path = BufferUtil.getJTF(payload).replace("|", fs);
-											BufferedImage img = ImageIO.read(new File(path));
-											byte[] image = JPEGImageWriter.getImageBytes(img, thumbSize);
-											ExpandableByteBuffer buffer = new ExpandableByteBuffer(image.length);
+											final BufferedImage img = ImageIO.read(new File(path));
+											final byte[] image = JPEGImageWriter.getImageBytes(img, thumbSize);
+											final ExpandableByteBuffer buffer = new ExpandableByteBuffer(image.length);
 											buffer.put(image);
 											send(OP_GET_FILE_THUMB, buffer.asByteBuffer());
 										}
-										catch (IOException e) {
+										catch (final IOException e) {
 											e.printStackTrace();
 										}
 									}
@@ -170,18 +170,18 @@ public class LocalSlave extends Slave {
 								if (parentPath.length() == 0) {
 									files = File.listRoots();
 									buffer.putInt(files.length);
-									for (File f : files) {
+									for (final File f : files) {
 										buffer.putJTF(f.getPath().replace(fs, ""));
 										buffer.put(1);
 									}
 								}
 								else {
-									String rp = parentPath.replace("|", fs);
-									File top = new File(rp);
+									final String rp = parentPath.replace("|", fs);
+									final File top = new File(rp);
 									files = top.listFiles();
 									if (files != null) {
 										buffer.putInt(files.length);
-										for (File f : files) {
+										for (final File f : files) {
 											if (f != null) {
 												buffer.putJTF(f.getName());
 												buffer.put(f.isDirectory() ? 1 : 0);
@@ -205,7 +205,7 @@ public class LocalSlave extends Slave {
 				}
 
 				@Override
-				public void handle(int id) {
+				public void handle(final int id) {
 					Log.l.config("Packet received. id=" + id + " payload=none");
 					switch (id) {
 						default:
@@ -252,7 +252,7 @@ public class LocalSlave extends Slave {
 		setVersion(VERSION);
 
 		// Set up capture
-		Dimension targetSize = new Dimension(600, 450);
+		final Dimension targetSize = new Dimension(600, 450);
 		robot = Platform.isWindows() ? new WinRobot(targetSize) : new DirectRobot(targetSize);
 		capture = new ScreenCapture(robot, 1);
 

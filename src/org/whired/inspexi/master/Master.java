@@ -26,14 +26,13 @@ public class Master {
 	private final ControllerEventListener listener = new ControllerEventListener() {
 		@Override
 		public void connect(final RemoteSlave[] slaves) {
-			for (int i = 0; i < slaves.length; i++) {
-				RemoteSlave rsm = slaves[i];
+			for (final RemoteSlave rsm : slaves) {
 				try {
 					new RemoteSlaveFullView(frame, rsm);
 					rsm.connect(Slave.INTENT_CONNECT);
 				}
 				catch (final IOException t) {
-					Log.l.warning("Could not connect to " + rsm.getIp() + ".");
+					Log.l.warning("Could not connect to " + rsm.getHost() + ".");
 				}
 			}
 		}
@@ -43,8 +42,7 @@ public class Master {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (int i = 0; i < slaves.length; i++) {
-						final RemoteSlave rsm = slaves[i];
+					for (final RemoteSlave rsm : slaves) {
 						try {
 							rsm.connect(Slave.INTENT_REBUILD);
 						}
@@ -60,8 +58,7 @@ public class Master {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (int i = 0; i < slaves.length; i++) {
-						final RemoteSlave rsm = slaves[i];
+					for (final RemoteSlave rsm : slaves) {
 						try {
 							rsm.setView(frame);
 							if (slaves.length == 1) {
@@ -133,8 +130,8 @@ public class Master {
 		// props.put("ips", b.toString());
 		// props.store(new FileOutputStream("props.dat"), null);
 		final String s = (String) props.get("ips");
-		String[] ips = s != null ? s.split(",") : new String[0];
-		RemoteSlave[] slaves = new RemoteSlave[ips.length];
+		final String[] ips = s != null ? s.split(",") : new String[0];
+		final RemoteSlave[] slaves = new RemoteSlave[ips.length];
 		for (int i = 0; i < slaves.length; i++) {
 			slaves[i] = new RemoteSlave(ips[i]);
 		}

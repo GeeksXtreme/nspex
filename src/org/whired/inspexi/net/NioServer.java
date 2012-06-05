@@ -32,7 +32,7 @@ public abstract class NioServer {
 	 * @param port the port to listen on
 	 * @throws IOException if the server cannot be started
 	 */
-	public NioServer(int port) throws IOException {
+	public NioServer(final int port) throws IOException {
 		// Prepare the NIO facilities
 		selector = Selector.open();
 		serverChannel = ServerSocketChannel.open();
@@ -52,15 +52,15 @@ public abstract class NioServer {
 
 			//If a suitable amount of time passed, check for idle channels
 			if (System.currentTimeMillis() - lastIdleCheckMS > 1500) {
-				Iterator<SelectionKey> keys = selector.keys().iterator();
+				final Iterator<SelectionKey> keys = selector.keys().iterator();
 				while (keys.hasNext()) {
-					SelectionKey key = keys.next();
+					final SelectionKey key = keys.next();
 					if (key.isValid()) {
-						Communicable comm = connections.get(key);
+						final Communicable comm = connections.get(key);
 						// Not all keys are communicables
 						if (comm != null) {
-							int to = comm.getReadTimeout();
-							if (to > 0 && (System.currentTimeMillis() - comm.getLastReadTime()) >= to) {
+							final int to = comm.getReadTimeout();
+							if (to > 0 && System.currentTimeMillis() - comm.getLastReadTime() >= to) {
 								removeKey(key);
 							}
 						}
@@ -70,25 +70,25 @@ public abstract class NioServer {
 			}
 
 			// Block until we get a key or 2s elapse
-			int count = selector.select(2000);
+			final int count = selector.select(2000);
 
 			if (count > 0) {
-				Iterator<SelectionKey> it = selector.selectedKeys().iterator();
+				final Iterator<SelectionKey> it = selector.selectedKeys().iterator();
 				while (it.hasNext()) {
 					SelectionKey currentKey = it.next();
 					if (currentKey.isValid()) {
 						if (currentKey.isAcceptable()) {
-							ServerSocketChannel ssc = (ServerSocketChannel) currentKey.channel();
+							final ServerSocketChannel ssc = (ServerSocketChannel) currentKey.channel();
 
 							// We'll accept no matter what to show we're online
-							SocketChannel sc = ssc.accept();
+							final SocketChannel sc = ssc.accept();
 
 							// But we aren't going to add another reader for this host
-							String ip = ((InetSocketAddress) sc.socket().getRemoteSocketAddress()).getHostName();
+							final String ip = ((InetSocketAddress) sc.socket().getRemoteSocketAddress()).getHostName();
 							sc.configureBlocking(false);
 							currentKey = sc.register(selector, SelectionKey.OP_READ);
 							if (!connectedIps.contains(ip)) {
-								Communicable c = getCommunicable(currentKey);
+								final Communicable c = getCommunicable(currentKey);
 								connections.put(currentKey, c);
 								connectedIps.add(ip);
 								Log.l.info("Accepted [" + ip + "], size=" + connections.size());
@@ -100,7 +100,7 @@ public abstract class NioServer {
 						}
 						else if (currentKey.isReadable()) {
 							try {
-								Communicable comm = connections.get(currentKey);
+								final Communicable comm = connections.get(currentKey);
 								if (comm.read() > -1) {
 									comm.setLastReadTime(System.currentTimeMillis());
 								}
@@ -108,7 +108,7 @@ public abstract class NioServer {
 									currentKey.cancel();
 								}
 							}
-							catch (IOException ioe) {
+							catch (final IOException ioe) {
 								currentKey.cancel();
 							}
 						}
@@ -127,15 +127,15 @@ public abstract class NioServer {
 	 * Removes, invalidates, and closes a key's channel
 	 * @param key the key to remove
 	 */
-	void removeKey(SelectionKey key) {
+	void removeKey(final SelectionKey key) {
 		Communicable comm;
 		try {
 			key.channel().close();
 		}
-		catch (IOException e) {
+		catch (final IOException e) {
 		}
 		if ((comm = connections.remove(key)) != null) {
-			String ip = ((InetSocketAddress) ((SocketChannel) key.channel()).socket().getRemoteSocketAddress()).getHostName();
+			final String ip = ((InetSocketAddress) ((SocketChannel) key.channel()).socket().getRemoteSocketAddress()).getHostName();
 			Log.l.info("Removing [" + ip + "], size=" + connections.size());
 			connectedIps.remove(ip);
 			comm.disconnected();

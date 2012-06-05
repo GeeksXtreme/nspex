@@ -77,14 +77,14 @@ public class BufferUtil {
 		return new String(chars, 0, count);
 	}
 
-	public static String getJTF(ByteBuffer buf) {
-		byte[] enc = new byte[buf.getShort() & 0xffff];
+	public static String getJTF(final ByteBuffer buf) {
+		final byte[] enc = new byte[buf.getShort() & 0xffff];
 		buf.get(enc);
 		return decodeJTF(enc);
 	}
 
-	public static ByteBuffer putJTF(ByteBuffer buf, String str) {
-		byte[] toEnc = encodeJTF(str);
+	public static ByteBuffer putJTF(final ByteBuffer buf, final String str) {
+		final byte[] toEnc = encodeJTF(str);
 		return buf.putShort((short) toEnc.length).put(toEnc);
 	}
 }

@@ -65,7 +65,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	/** The pane that is used as a canvas for {@link #previewImage} */
 	private final JPanel pnlPreview;
 	/** The table model used by {@link #table} */
-	private final DefaultTableModel model = new DefaultTableModel(new String[] { "IP", "User", "OS", "Version", "Status" }, 0) {
+	private final DefaultTableModel model = new DefaultTableModel(new String[] { "Host", "User", "OS", "Version", "Status" }, 0) {
 		@Override
 		public boolean isCellEditable(final int rowIndex, final int mColIndex) {
 			return false;
@@ -123,22 +123,22 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		scrollPane.setViewportView(table);
 
 		table.setModel(model);
-		table.setRowSorter(new TableRowSorter<TableModel>(model));
+		final TableRowSorter<TableModel> trs = new TableRowSorter<TableModel>(model);
+		trs.setSortsOnUpdates(true);
+		table.setRowSorter(trs);
 
 		table.setBorder(null);
 		table.getTableHeader().setFont(font);
 		table.getTableHeader().setReorderingAllowed(false);
 		table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-
 			@Override
 			public void valueChanged(final ListSelectionEvent e) {
-				// If we're still picking things we don't want to spam
 				if (!e.getValueIsAdjusting()) {
 					if (table.getSelectionModel().isSelectionEmpty()) {
 						updatePreviewImage(null);
 					}
 					else {
-						refresh(new RemoteSlave[] { (RemoteSlave) model.getValueAt(table.getSelectionModel().getLeadSelectionIndex(), 0) });
+						refresh(new RemoteSlave[] { (RemoteSlave) model.getValueAt(table.convertRowIndexToModel(table.getSelectionModel().getLeadSelectionIndex()), 0) });
 					}
 				}
 			}
@@ -148,7 +148,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		btnConnect.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
-				RemoteSlave[] slaves = getSelectedSlaves();
+				final RemoteSlave[] slaves = getSelectedSlaves();
 				if (slaves.length > 0) {
 					connect(slaves);
 				}
@@ -181,7 +181,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		btnBuild.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent e) {
-				RemoteSlave[] slaves = getSelectedSlaves();
+				final RemoteSlave[] slaves = getSelectedSlaves();
 				if (slaves.length > 0) {
 					rebuild(slaves);
 				}
@@ -196,8 +196,10 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
 				String ip;
-				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter IP:")) != null && ip.length() > 0) {
-					updateInformation(new RemoteSlave[] { new RemoteSlave(ip) });
+				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter host:")) != null && ip.length() > 0) {
+					final RemoteSlave[] slv = new RemoteSlave[] { new RemoteSlave(ip) };
+					refresh(slv);
+					updateInformation(slv);
 				}
 			}
 		});
@@ -297,7 +299,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			@Override
 			public void mousePressed(final MouseEvent e) {
 				if (previewImage != null) {
-					RemoteSlave[] slaves = getSelectedSlaves();
+					final RemoteSlave[] slaves = getSelectedSlaves();
 					if (slaves.length > 0) {
 						connect(slaves);
 					}
@@ -314,7 +316,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		scrollPane_1.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane_1.getVerticalScrollBar()));
 	}
 
-	private void updateInformation(Slave slv) {
+	private void updateInformation(final Slave slv) {
 		updateInformation(new Slave[] { slv });
 	}
 
@@ -333,10 +335,18 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 							model.setValueAt(slv.getOS(), i, 2);
 							model.setValueAt(slv.getVersion(), i, 3);
 							model.setValueAt(slv.isOnline() ? "Online" : "Offline", i, 4);
+							if (slaves.length == 1 && !slv.isOnline()) {
+								updatePreviewImage(null);
+							}
+							model.fireTableRowsUpdated(i, i);
 							return;
 						}
 					}
 					model.addRow(new Object[] { slv, slv.getUser(), slv.getOS(), slv.getVersion(), slv.isOnline() ? "Online" : "Offline" });
+					if (slaves.length == 1 && !slv.isOnline()) {
+						updatePreviewImage(null);
+					}
+					model.fireTableRowsUpdated(model.getRowCount() - 1, model.getRowCount() - 1);
 				}
 			}
 		});
@@ -364,7 +374,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	 * Updates {@link #previewImage} and {@link #pnlPreview} according to the specified image
 	 * @param newImg the new image to display; can be null
 	 */
-	private final void updatePreviewImage(Image newImg) {
+	private final void updatePreviewImage(final Image newImg) {
 		previewImage = newImg;
 		if (newImg != null) {
 			pnlPreview.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -437,7 +447,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			@Override
 			public void run() {
 				for (int i = 0; i < rows.length; i++) {
-					slaves[i] = (RemoteSlave) model.getValueAt(rows[i], 0);
+					slaves[i] = (RemoteSlave) model.getValueAt(table.convertRowIndexToModel(rows[i]), 0);
 				}
 			}
 		});
@@ -470,17 +480,17 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	}
 
 	@Override
-	public void setThumbnail(Image thumb) {
+	public void setThumbnail(final Image thumb) {
 		Log.l.config("");
 	}
 
 	@Override
-	public void addChildFiles(String parentPath, RemoteFile[] childFiles) {
+	public void addChildFiles(final String parentPath, final RemoteFile[] childFiles) {
 		Log.l.config("");
 	}
 
 	@Override
-	public void disconnected(Slave slave) {
+	public void disconnected(final Slave slave) {
 		updateInformation(slave);
 	}
 
@@ -490,7 +500,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	}
 
 	@Override
-	public void connected(Slave slave) {
+	public void connected(final Slave slave) {
 		updateInformation(slave);
 	}
 

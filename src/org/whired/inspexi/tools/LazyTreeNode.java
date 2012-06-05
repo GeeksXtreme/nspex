@@ -7,7 +7,7 @@ public class LazyTreeNode extends DefaultMutableTreeNode {
 	private boolean hasBeenExpanded;
 	private final boolean willHaveChildren;
 
-	public LazyTreeNode(String label, boolean willHaveChildren) {
+	public LazyTreeNode(final String label, final boolean willHaveChildren) {
 		super(label);
 		this.willHaveChildren = willHaveChildren;
 		if (this.willHaveChildren) {

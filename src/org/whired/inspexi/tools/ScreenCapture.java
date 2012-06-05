@@ -24,7 +24,7 @@ public class ScreenCapture implements ImageConsumer {
 			long start;
 			while (isStarted()) {
 				start = System.currentTimeMillis();
-				imageProduced(ScreenCapture.this, getSingleFrame());
+				imageProduced(getSingleFrame());
 				try {
 					Thread.sleep(Math.max(1000 / fps - (System.currentTimeMillis() - start), 0));
 				}
@@ -94,9 +94,9 @@ public class ScreenCapture implements ImageConsumer {
 	}
 
 	@Override
-	public synchronized void imageProduced(final ImageConsumer trg, final byte[] image) {
+	public synchronized void imageProduced(final byte[] image) {
 		for (final ImageConsumer l : listeners) {
-			l.imageProduced(l, image);
+			l.imageProduced(image);
 		}
 	}
 }

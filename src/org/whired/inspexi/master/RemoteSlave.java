@@ -42,11 +42,11 @@ public class RemoteSlave extends Slave implements SlaveModel {
 			return comm = new IoCommunicable(socket) {
 
 				@Override
-				public void handle(int id, ByteBuffer payload) {
+				public void handle(final int id, final ByteBuffer payload) {
 					Log.l.config("Packet received. id=" + id + " payload=" + payload.capacity());
 					switch (id) {
 						case OP_HANDSHAKE:
-							int intent = payload.get();
+							final int intent = payload.get();
 							setUser(BufferUtil.getJTF(payload));
 							setOS(BufferUtil.getJTF(payload));
 							setVersion(BufferUtil.getJTF(payload));
@@ -60,7 +60,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 								try {
 									imageProduced(ImageIO.read(new ByteArrayInputStream(buf)));
 								}
-								catch (IOException e) {
+								catch (final IOException e) {
 									e.printStackTrace();
 								}
 							}
@@ -73,13 +73,13 @@ public class RemoteSlave extends Slave implements SlaveModel {
 							try {
 								imageProduced(ImageIO.read(new ByteArrayInputStream(image)));
 							}
-							catch (IOException e) {
+							catch (final IOException e) {
 								e.printStackTrace();
 							}
 						break;
 						case OP_GET_FILES:
-							String parentPath = BufferUtil.getJTF(payload);
-							RemoteFile[] rf = new RemoteFile[payload.getInt()];
+							final String parentPath = BufferUtil.getJTF(payload);
+							final RemoteFile[] rf = new RemoteFile[payload.getInt()];
 							for (int i = 0; i < rf.length; i++) {
 								rf[i] = new RemoteFile(BufferUtil.getJTF(payload), payload.get() != 0);
 							}
@@ -91,8 +91,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 							try {
 								view.setThumbnail(ImageIO.read(new ByteArrayInputStream(image)));
 							}
-							catch (IOException e) {
-								// TODO Auto-generated catch block
+							catch (final IOException e) {
 								e.printStackTrace();
 							}
 						break;
@@ -103,7 +102,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 				}
 
 				@Override
-				public void handle(int id) {
+				public void handle(final int id) {
 					Log.l.config("Packet received. id=" + id + " payload=none");
 					switch (id) {
 						default:
@@ -126,17 +125,17 @@ public class RemoteSlave extends Slave implements SlaveModel {
 
 	public void connect(final int intent) throws IOException {
 		try {
-			IoCommunicable ioc = connectToRemote();
-			ExpandableByteBuffer buf = new ExpandableByteBuffer();
+			final IoCommunicable ioc = connectToRemote();
+			final ExpandableByteBuffer buf = new ExpandableByteBuffer();
 			buf.put(intent);
 			if (intent == INTENT_CONNECT) {
-				Dimension d = view.getThumbSize();
+				final Dimension d = view.getThumbSize();
 				buf.putShort((short) 200);// d.width);// TODO
 				buf.putShort((short) 160);// d.height);
 			}
 			ioc.send(OP_HANDSHAKE, buf.asByteBuffer());
 		}
-		catch (IOException e) {
+		catch (final IOException e) {
 			setOnline(false);
 			view.disconnected(this);
 		}
@@ -144,23 +143,23 @@ public class RemoteSlave extends Slave implements SlaveModel {
 
 	@Override
 	public void requestThumbnail(final String path) throws IOException {
-		IoCommunicable ioc = connectToRemote();
-		ExpandableByteBuffer buf = new ExpandableByteBuffer();
+		final IoCommunicable ioc = connectToRemote();
+		final ExpandableByteBuffer buf = new ExpandableByteBuffer();
 		buf.putJTF(path);
 		ioc.send(OP_GET_FILE_THUMB, buf.asByteBuffer());
 	}
 
 	@Override
 	public void requestChildFiles(final String parentPath) throws IOException {
-		IoCommunicable ioc = connectToRemote();
-		ExpandableByteBuffer buf = new ExpandableByteBuffer();
+		final IoCommunicable ioc = connectToRemote();
+		final ExpandableByteBuffer buf = new ExpandableByteBuffer();
 		buf.putJTF(parentPath);
 		ioc.send(OP_GET_FILES, buf.asByteBuffer());
 	}
 
 	public void executeRemoteCommand(final String command) throws IOException {
-		IoCommunicable ioc = connectToRemote();
-		ExpandableByteBuffer buf = new ExpandableByteBuffer();
+		final IoCommunicable ioc = connectToRemote();
+		final ExpandableByteBuffer buf = new ExpandableByteBuffer();
 		buf.putJTF(command);
 		ioc.send(OP_DO_COMMAND, buf.asByteBuffer());
 	}
@@ -190,6 +189,6 @@ public class RemoteSlave extends Slave implements SlaveModel {
 
 	@Override
 	public String toString() {
-		return getIp();
+		return getHost();
 	}
 }

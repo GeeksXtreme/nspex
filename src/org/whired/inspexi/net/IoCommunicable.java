@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 
+import org.whired.inspexi.tools.logging.Log;
+
 public abstract class IoCommunicable extends Communicable {
 	private final DataInputStream dis;
 	private final DataOutputStream dos;
@@ -24,18 +26,20 @@ public abstract class IoCommunicable extends Communicable {
 					while ((op = dis.read()) != -1) {
 						op &= 0xFF; // Unsign
 						socket.setSoTimeout(3000);
-						byte[] toFill = new byte[dis.readInt()];
+						final byte[] toFill = new byte[dis.readInt()];
 						if (toFill.length > 0) {
 							dis.readFully(toFill);
-							handle(op, ByteBuffer.wrap(toFill));
+							Log.l.config("Packet recevied=" + op + " length=" + toFill.length);
+							handle(op, ByteBuffer.wrap(toFill).asReadOnlyBuffer());
 						}
 						else {
+							Log.l.config("Packet recevied=" + op + " length=0");
 							handle(op);
 						}
 						socket.setSoTimeout(60000 * 30);
 					}
 				}
-				catch (IOException e) {
+				catch (final IOException e) {
 				}
 				disconnect();
 			}
@@ -43,11 +47,12 @@ public abstract class IoCommunicable extends Communicable {
 	}
 
 	@Override
-	public final void send(int id) {
+	public final void send(final int id) {
+		Log.l.config("Sending packet=" + id + " length=0");
 		try {
 			dos.write(id);
 		}
-		catch (IOException e) {
+		catch (final IOException e) {
 			disconnect();
 		}
 	}
@@ -58,16 +63,19 @@ public abstract class IoCommunicable extends Communicable {
 	}
 
 	@Override
-	public final void send(int id, ByteBuffer payload) {
+	public final void send(final int id, final ByteBuffer payload) {
+		Log.l.config("Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
 		try {
-			payload.flip();
+			if (payload.position() > 0) {
+				payload.flip();
+			}
 			dos.write(id);
-			byte[] raw = new byte[payload.limit()];
+			final byte[] raw = new byte[payload.capacity()];
 			dos.writeInt(raw.length);
 			payload.get(raw, 0, raw.length);
 			dos.write(raw);
 		}
-		catch (IOException e) {
+		catch (final IOException e) {
 			disconnect();
 		}
 	}
@@ -79,7 +87,7 @@ public abstract class IoCommunicable extends Communicable {
 			try {
 				socket.close();
 			}
-			catch (IOException e) {
+			catch (final IOException e) {
 			}
 			disconnected();
 		}

@@ -96,7 +96,7 @@ public final class DirectRobot extends Robot {
 		this(null, zoom);
 	}
 
-	public DirectRobot(Dimension d) throws AWTException {
+	public DirectRobot(final Dimension d) throws AWTException {
 		this(Robot.calculateZoom(Robot.getScreenBounds(), d));
 	}
 

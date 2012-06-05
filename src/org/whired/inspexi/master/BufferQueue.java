@@ -5,11 +5,11 @@ public class BufferQueue<E> {
 	private int idx = 0;
 
 	@SuppressWarnings("unchecked")
-	public BufferQueue(int capacity) {
+	public BufferQueue(final int capacity) {
 		elems = (E[]) new Object[capacity];
 	}
 
-	public boolean offer(E e) {
+	public boolean offer(final E e) {
 		if (idx < elems.length) {
 			elems[idx++] = e;
 		}
@@ -29,7 +29,7 @@ public class BufferQueue<E> {
 	}
 
 	public E pollFirst() {
-		E val = elems[0];
+		final E val = elems[0];
 		elems = shiftLeft();
 		idx--;
 		return val;
@@ -39,7 +39,7 @@ public class BufferQueue<E> {
 		return elems[idx--];
 	}
 
-	public E get(int index) {
+	public E get(final int index) {
 		return elems[index];
 	}
 
@@ -49,7 +49,7 @@ public class BufferQueue<E> {
 
 	@SuppressWarnings("unchecked")
 	private E[] shiftLeft() {
-		E[] newElems = (E[]) new Object[elems.length];
+		final E[] newElems = (E[]) new Object[elems.length];
 		System.arraycopy(elems, 1, newElems, 0, newElems.length - 1);
 		return newElems;
 	}

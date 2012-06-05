@@ -25,7 +25,7 @@ public class ExpandableByteBuffer {
 	 * Creates a new expandable {@link ByteBuffer}, initializing the ByteBuffer instance stored using the provided one.
 	 * @param buf
 	 */
-	public ExpandableByteBuffer(ByteBuffer buf) {
+	public ExpandableByteBuffer(final ByteBuffer buf) {
 		this.buf = buf;
 	}
 
@@ -33,7 +33,7 @@ public class ExpandableByteBuffer {
 	 * Creates a new expandable byte buffer with the specified initial capacity
 	 * @param capacity the initial capacity
 	 */
-	public ExpandableByteBuffer(int capacity) {
+	public ExpandableByteBuffer(final int capacity) {
 		buf = ByteBuffer.allocate(capacity);
 	}
 
@@ -41,7 +41,7 @@ public class ExpandableByteBuffer {
 	 * Puts a single byte into the buffer.
 	 * @param b
 	 */
-	public ExpandableByteBuffer put(int b) {
+	public ExpandableByteBuffer put(final int b) {
 		ensureCapacity(1);
 		buf.put((byte) b);
 		return this;
@@ -51,7 +51,7 @@ public class ExpandableByteBuffer {
 	 * Puts an array of bytes into the buffer.
 	 * @param bytes
 	 */
-	public ExpandableByteBuffer put(byte[] bytes) {
+	public ExpandableByteBuffer put(final byte[] bytes) {
 		ensureCapacity(bytes.length);
 		buf.put(bytes);
 		return this;
@@ -63,7 +63,7 @@ public class ExpandableByteBuffer {
 	 * @param offset
 	 * @param length
 	 */
-	public ExpandableByteBuffer put(byte[] bytes, int offset, int length) {
+	public ExpandableByteBuffer put(final byte[] bytes, final int offset, final int length) {
 		ensureCapacity(length);
 		buf.put(bytes, offset, length);
 		return this;
@@ -73,7 +73,7 @@ public class ExpandableByteBuffer {
 	 * Puts the data from another {@link ByteBuffer} into this buffer.
 	 * @param from
 	 */
-	public ExpandableByteBuffer put(ByteBuffer from) {
+	public ExpandableByteBuffer put(final ByteBuffer from) {
 		ensureCapacity(from.capacity() - from.remaining());
 		buf.put(from);
 		return this;
@@ -83,7 +83,7 @@ public class ExpandableByteBuffer {
 	 * Puts a character into the the buffer.
 	 * @param c
 	 */
-	public ExpandableByteBuffer putChar(char c) {
+	public ExpandableByteBuffer putChar(final char c) {
 		ensureCapacity(2);
 		buf.putChar(c);
 		return this;
@@ -93,7 +93,7 @@ public class ExpandableByteBuffer {
 	 * Puts a short into the buffer.
 	 * @param s
 	 */
-	public ExpandableByteBuffer putShort(short s) {
+	public ExpandableByteBuffer putShort(final short s) {
 		ensureCapacity(2);
 		buf.putShort(s);
 		return this;
@@ -103,7 +103,7 @@ public class ExpandableByteBuffer {
 	 * Puts an integer into the buffer.
 	 * @param i
 	 */
-	public ExpandableByteBuffer putInt(int i) {
+	public ExpandableByteBuffer putInt(final int i) {
 		ensureCapacity(4);
 		buf.putInt(i);
 		return this;
@@ -113,7 +113,7 @@ public class ExpandableByteBuffer {
 	 * Puts a float into the buffer.
 	 * @param f
 	 */
-	public ExpandableByteBuffer putFloat(float f) {
+	public ExpandableByteBuffer putFloat(final float f) {
 		ensureCapacity(4);
 		buf.putFloat(f);
 		return this;
@@ -123,7 +123,7 @@ public class ExpandableByteBuffer {
 	 * Puts a double into the buffer.
 	 * @param d
 	 */
-	public ExpandableByteBuffer putDouble(double d) {
+	public ExpandableByteBuffer putDouble(final double d) {
 		ensureCapacity(8);
 		buf.putDouble(d);
 		return this;
@@ -133,14 +133,14 @@ public class ExpandableByteBuffer {
 	 * Puts a long into the buffer.
 	 * @param l
 	 */
-	public ExpandableByteBuffer putLong(long l) {
+	public ExpandableByteBuffer putLong(final long l) {
 		ensureCapacity(8);
 		buf.putLong(l);
 		return this;
 	}
 
-	public ExpandableByteBuffer putJTF(String s) {
-		byte[] enc = BufferUtil.encodeJTF(s);
+	public ExpandableByteBuffer putJTF(final String s) {
+		final byte[] enc = BufferUtil.encodeJTF(s);
 		ensureCapacity(2 + enc.length);
 		buf.putShort((short) enc.length);
 		buf.put(enc);
@@ -164,7 +164,7 @@ public class ExpandableByteBuffer {
 	 * @return a writable version of this buffer
 	 */
 	public ByteBuffer getWritableBuffer() {
-		byte[] data = new byte[buf.position()];
+		final byte[] data = new byte[buf.position()];
 		buf.get(data);
 		return ByteBuffer.wrap(data);
 	}
@@ -172,11 +172,11 @@ public class ExpandableByteBuffer {
 	/**
 	 * Checks if more space needs to be allocated.
 	 */
-	private void ensureCapacity(int amount) {
+	private void ensureCapacity(final int amount) {
 		if (buf.remaining() >= amount) {
 			return;
 		}
-		ByteBuffer buf = ByteBuffer.allocate(((this.buf.capacity() + amount) * 3) / 2 + 1);
+		final ByteBuffer buf = ByteBuffer.allocate((this.buf.capacity() + amount) * 3 / 2 + 1);
 		this.buf.flip();
 		buf.put(this.buf);
 		this.buf = buf;
