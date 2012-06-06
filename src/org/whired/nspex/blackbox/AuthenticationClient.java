@@ -16,15 +16,13 @@ import org.whired.nspex.tools.logging.Log;
  * @author Whired
  */
 public class AuthenticationClient {
-	public static void main(final String[] args) throws UnknownHostException, IOException, GeneralSecurityException {
-		Log.l.setLevel(Level.ALL);
 
-		// Set up RSA
-		final RSAKeySet rsaKeys = new RSAKeySet();
-		final RSASession rsaSess = new RSASession(rsaKeys);
+	private RSASession rsaSess;
+	private final RSAKeySet rsaKeys = new RSAKeySet();
+	private final IoCommunicable comm;
 
-		// Streamlined connect
-		final IoCommunicable comm = new IoCommunicable(new Socket("localhost", 43597)) {
+	public AuthenticationClient() throws UnknownHostException, IOException, GeneralSecurityException {
+		comm = new IoCommunicable(new Socket("localhost", 43597)) {
 
 			@Override
 			public void handle(final int id) {
@@ -38,7 +36,7 @@ public class AuthenticationClient {
 					switch (id) {
 						case Opcodes.RSA_KEY_REQUEST:
 							// Generate key from remote's spec
-							rsaSess.generateRemotePublicKey(payload);
+							rsaSess = new RSASession(rsaKeys, payload);
 							// Guess we can also send the other junk here
 							final ExpandableByteBuffer buf = new ExpandableByteBuffer();
 							buf.putJTF("Whired");
@@ -61,5 +59,10 @@ public class AuthenticationClient {
 		};
 		// Send local public key
 		comm.send(0, rsaKeys.getPublicKeySpec());
+	}
+
+	public static void main(final String[] args) throws UnknownHostException, IOException, GeneralSecurityException {
+		Log.l.setLevel(Level.ALL);
+		new AuthenticationClient();
 	}
 }

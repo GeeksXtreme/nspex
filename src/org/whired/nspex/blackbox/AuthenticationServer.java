@@ -67,8 +67,7 @@ public class AuthenticationServer {
 							case Opcodes.RSA_KEY_REQUEST:
 								try {
 									// Get remote public key spec
-									rsaSess = new RSASession(rsaKeys);
-									rsaSess.generateRemotePublicKey(payload);
+									rsaSess = new RSASession(rsaKeys, payload);
 
 									// Send local public key
 									send(0, rsaKeys.getPublicKeySpec());

@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 
 import javax.crypto.Cipher;
@@ -15,25 +14,23 @@ import javax.crypto.Cipher;
  * @author Whired
  */
 public class RSASession {
-	private PublicKey remotePublicKey;
+	private final PublicKey remotePublicKey;
 	private final Cipher cipher = Cipher.getInstance("RSA");
 	private final KeyFactory fact = KeyFactory.getInstance("RSA");
 	private final RSAKeySet keys;
 
-	public RSASession(final RSAKeySet keys) throws GeneralSecurityException {
-		this.keys = keys;
-	}
-
 	/**
-	 * TODO move to c-tor Generates a public key based off the given specification
-	 * @param spec the buffer that contains the specification information
-	 * @throws InvalidKeySpecException when a public key cannot be generated
+	 * Creates a new RSA session with the specified local keys and remote key spec The remote key will be generated immediately, so this operation is expensive
+	 * @param keys the local keys
+	 * @param spec the remote key spec
+	 * @throws GeneralSecurityException if a key cannot be generated
 	 */
-	public void generateRemotePublicKey(final ByteBuffer spec) throws InvalidKeySpecException {
+	public RSASession(final RSAKeySet keys, final ByteBuffer spec) throws GeneralSecurityException {
+		this.keys = keys;
+
 		byte[] buf = new byte[spec.getInt()];
 		spec.get(buf);
 		final BigInteger mod = new BigInteger(buf);
-
 		buf = new byte[spec.getInt()];
 		spec.get(buf);
 		final BigInteger exp = new BigInteger(buf);
