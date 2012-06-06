@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
 
 import javax.imageio.ImageIO;
 
@@ -163,6 +164,7 @@ public class LocalSlave extends Slave {
 							break;
 							case OP_GET_FILES:
 								final String parentPath = BufferUtil.getJTF(payload);
+								Log.l.fine(parentPath);
 								buffer = new ExpandableByteBuffer();
 								buffer.putJTF(parentPath);
 								File[] files;
@@ -171,6 +173,8 @@ public class LocalSlave extends Slave {
 									files = File.listRoots();
 									buffer.putInt(files.length);
 									for (final File f : files) {
+										// Guess what, linux root is "/":
+										Log.l.fine("rootfile=" + f.getPath());
 										buffer.putJTF(f.getPath().replace(fs, ""));
 										buffer.put(1);
 									}
@@ -184,6 +188,7 @@ public class LocalSlave extends Slave {
 										for (final File f : files) {
 											if (f != null) {
 												buffer.putJTF(f.getName());
+												Log.l.fine(f.getName());
 												buffer.put(f.isDirectory() ? 1 : 0);
 											}
 										}
@@ -261,6 +266,7 @@ public class LocalSlave extends Slave {
 	}
 
 	public static void main(final String[] args) throws IOException, AWTException {
+		Log.l.setLevel(Level.ALL);
 		new LocalSlave();
 	}
 }

@@ -117,6 +117,7 @@ public class Master {
 	}
 
 	public static void main(final String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException {
+		Log.l.setLevel(Level.ALL);
 		final Properties props = getProps();
 
 		//Log.l.setLevel(Level.ALL);

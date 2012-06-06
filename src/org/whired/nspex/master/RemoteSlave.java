@@ -82,6 +82,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 							final RemoteFile[] rf = new RemoteFile[payload.getInt()];
 							for (int i = 0; i < rf.length; i++) {
 								rf[i] = new RemoteFile(BufferUtil.getJTF(payload), payload.get() != 0);
+								Log.l.fine("parentfolder=" + parentPath + " child=" + rf[i]);
 							}
 							view.addChildFiles(parentPath, rf);
 						break;
@@ -113,7 +114,6 @@ public class RemoteSlave extends Slave implements SlaveModel {
 
 				@Override
 				protected void disconnected() {
-					//setOnline(false);
 					view.disconnected(RemoteSlave.this);
 				}
 			};
