@@ -28,7 +28,6 @@ public final class DirectRobot extends Robot {
 		final Toolkit toolkit = Toolkit.getDefaultToolkit();
 		peer = ((ComponentFactory) toolkit).createRobot(null, device);
 		final Class<?> peerClass = peer.getClass();
-		System.out.println("Class name: " + peerClass.getName());
 		Method method = null;
 		int methodType = -1;
 		Object methodParam = null;

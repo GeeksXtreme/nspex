@@ -187,8 +187,8 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	}
 
 	@Override
-	public void addChildFiles(final String parentPath, final RemoteFile[] childFiles) {
-		fileChooser.addChildren(parentPath, childFiles);
+	public void addChildFiles(final char fs, final String parentPath, final RemoteFile[] childFiles) {
+		fileChooser.addChildren(fs, parentPath, childFiles);
 	}
 
 	@Override

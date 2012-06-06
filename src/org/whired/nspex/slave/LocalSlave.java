@@ -14,7 +14,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 
 import javax.imageio.ImageIO;
 
@@ -69,7 +68,7 @@ public class LocalSlave extends Slave {
 						disconnect();
 					}
 					else {
-						final String fs = System.getProperty("file.separator");
+						final char fs = System.getProperty("file.separator").charAt(0);
 						Log.l.config("Packet received. id=" + id + " payload=" + payload.capacity());
 						switch (id) {
 							case OP_HANDSHAKE:
@@ -82,7 +81,7 @@ public class LocalSlave extends Slave {
 								ExpandableByteBuffer buffer = new ExpandableByteBuffer();
 								buffer.put(intent).putJTF(getUser()).putJTF(getOS()).putJTF(getVersion()).putShort((short) robot.getZoom(robot.getBounds().width)).putShort((short) robot.getZoom(robot.getBounds().height));
 
-								if (intent != INTENT_CHECK_BULK) {
+								if (intent != INTENT_CHECK_BULK && intent != INTENT_CONNECT) {
 									// Checking or connecting so send preview
 									final byte[] previewImage = capture.getSingleFrame();
 									buffer.putInt(previewImage.length).put(previewImage);
@@ -95,9 +94,9 @@ public class LocalSlave extends Slave {
 									consumer = new ImageConsumer() {
 										@Override
 										public void imageProduced(final byte[] image) {
-											final ExpandableByteBuffer buf = new ExpandableByteBuffer(image.length);
+											final ByteBuffer buf = ByteBuffer.allocate(image.length);
 											buf.put(image);
-											send(OP_TRANSFER_IMAGE, buf.asByteBuffer());
+											send(OP_TRANSFER_IMAGE, buf);
 										}
 									};
 									capture.addListener(consumer);
@@ -149,7 +148,8 @@ public class LocalSlave extends Slave {
 									@Override
 									public void run() {
 										try {
-											final String path = BufferUtil.getJTF(payload).replace("|", fs);
+											final String path = BufferUtil.getJTF(payload);
+											Log.l.fine("Thumb requested=" + path);
 											final BufferedImage img = ImageIO.read(new File(path));
 											final byte[] image = JPEGImageWriter.getImageBytes(img, thumbSize);
 											final ExpandableByteBuffer buffer = new ExpandableByteBuffer(image.length);
@@ -164,31 +164,32 @@ public class LocalSlave extends Slave {
 							break;
 							case OP_GET_FILES:
 								final String parentPath = BufferUtil.getJTF(payload);
-								Log.l.fine(parentPath);
+								Log.l.fine("parent=" + parentPath);
 								buffer = new ExpandableByteBuffer();
+								buffer.putChar(fs);
 								buffer.putJTF(parentPath);
 								File[] files;
 								// Top
 								if (parentPath.length() == 0) {
 									files = File.listRoots();
 									buffer.putInt(files.length);
+									String rname;
 									for (final File f : files) {
-										// Guess what, linux root is "/":
-										Log.l.fine("rootfile=" + f.getPath());
-										buffer.putJTF(f.getPath().replace(fs, ""));
+										rname = f.getPath();
+										Log.l.fine("rootfile=" + rname);
+										buffer.putJTF(rname);
 										buffer.put(1);
 									}
 								}
 								else {
-									final String rp = parentPath.replace("|", fs);
-									final File top = new File(rp);
+									final File top = new File(parentPath);
 									files = top.listFiles();
 									if (files != null) {
 										buffer.putInt(files.length);
 										for (final File f : files) {
 											if (f != null) {
 												buffer.putJTF(f.getName());
-												Log.l.fine(f.getName());
+												Log.l.fine("child=" + f.getName());
 												buffer.put(f.isDirectory() ? 1 : 0);
 											}
 										}
@@ -266,7 +267,6 @@ public class LocalSlave extends Slave {
 	}
 
 	public static void main(final String[] args) throws IOException, AWTException {
-		Log.l.setLevel(Level.ALL);
 		new LocalSlave();
 	}
 }

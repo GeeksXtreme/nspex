@@ -485,7 +485,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	}
 
 	@Override
-	public void addChildFiles(final String parentPath, final RemoteFile[] childFiles) {
+	public void addChildFiles(final char fs, final String parentPath, final RemoteFile[] childFiles) {
 		Log.l.config("");
 	}
 

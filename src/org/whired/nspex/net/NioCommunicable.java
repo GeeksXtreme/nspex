@@ -123,7 +123,7 @@ public abstract class NioCommunicable extends Communicable {
 
 	@Override
 	public final void send(final int id) {
-		Log.l.config("Sending packet=" + id + " length=0");
+		Log.l.fine("Sending packet=" + id + " length=0");
 		// id:byte length:int (1+4)
 		final ByteBuffer packet = ByteBuffer.allocate(5);
 		packet.put((byte) id);
@@ -140,10 +140,10 @@ public abstract class NioCommunicable extends Communicable {
 
 	@Override
 	public final void send(final int id, final ByteBuffer payload) {
-		Log.l.config("Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
 		if (payload.position() > 0) {
 			payload.flip();
 		}
+		Log.l.fine("Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
 		// id:byte length:int (1+4+payload)
 		final ByteBuffer packet = ByteBuffer.allocate(payload.capacity() + 5);
 		// Put header

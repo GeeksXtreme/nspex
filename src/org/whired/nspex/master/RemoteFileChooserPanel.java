@@ -26,6 +26,7 @@ import javax.swing.tree.TreeNode;
 
 import org.whired.nspex.tools.LazyTreeNode;
 import org.whired.nspex.tools.RemoteFile;
+import org.whired.nspex.tools.logging.Log;
 
 public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillExpandListener, TreeSelectionListener {
 
@@ -33,7 +34,6 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 	private final JTree treeFiles = new JTree(root);
 	private Image thumbnail;
 	private final Color grayBorder = new Color(146, 151, 161);
-
 	private final JPanel pnlPreview = new JPanel() {
 		@Override
 		protected void paintComponent(final Graphics g) {
@@ -41,7 +41,6 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 			g.fillRect(0, 0, this.getWidth(), this.getHeight());
 			if (thumbnail != null) {
 				final Graphics2D g2 = (Graphics2D) g;
-				//g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 				final int tWidth = thumbnail.getWidth(this);
 				final int tHeight = thumbnail.getHeight(this);
 
@@ -90,19 +89,31 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 
 	protected abstract void requestThumbnail(String path);
 
-	public void addChildren(final String parentPath, final RemoteFile[] children) {
+	public void addChildren(final char fs, final String parentPath, final RemoteFile[] children) {
+		Log.l.fine("addChildren(), fs=" + fs + " parentPath=" + parentPath + " children.length=" + children.length);
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
 			public void run() {
-				final String[] parentNodes = parentPath.split("\\|");
 				LazyTreeNode ltn = root;
-				Enumeration e;
-				for (final String parentNode : parentNodes) {
-					if (parentNode.length() > 0) {
+				if (parentPath.length() > 0) {
+					final String[] oldNodes = parentPath.split("\\" + fs);
+					final String[] goodNodes;
+					goodNodes = new String[oldNodes.length + 1];
+					goodNodes[0] = parentPath.substring(0, parentPath.indexOf(fs) + 1);
+					if (oldNodes.length > 0) {
+						System.arraycopy(oldNodes, 0, goodNodes, 1, oldNodes.length);
+					}
+					Log.l.fine("goodNodes.length=" + goodNodes.length);
+
+					Enumeration e;
+					for (int i = 0; i < goodNodes.length; i++) {
+						if (i > 0) {
+							goodNodes[i] += fs; // Maybe not..
+						}
 						e = ltn.children();
 						while (e.hasMoreElements()) {
 							final Object pmatch = e.nextElement();
-							if (pmatch.toString().equals(parentNode)) {
+							if (pmatch.toString().equals(goodNodes[i])) {
 								ltn = (LazyTreeNode) pmatch;
 							}
 						}
@@ -110,7 +121,9 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 				}
 				ltn.expanding();
 				for (final RemoteFile child : children) {
-					ltn.add(new LazyTreeNode(child.toString(), child.hasChildren()));
+					boolean b = child.hasChildren();
+					String s = child.toString();
+					ltn.add(new LazyTreeNode(s + (b && !s.endsWith("" + fs) ? fs : ""), b));
 				}
 				((DefaultTreeModel) treeFiles.getModel()).nodeStructureChanged(ltn);
 				ltn.setExpanded();
@@ -131,7 +144,6 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 			final String name = node.toString().toLowerCase();
 			if (name.endsWith("jpeg") || name.endsWith("jpg") || name.endsWith("bmp") || name.endsWith("png") || name.endsWith("gif")) {
 				String fname = pathToString(node.getPath());
-				fname = fname.substring(0, fname.length() - 1);
 				requestThumbnail(fname);
 			}
 		}
@@ -157,9 +169,6 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 		final StringBuilder sb = new StringBuilder();
 		for (final TreeNode element : path) {
 			sb.append(element.toString());
-			if (element.toString().length() > 0) {
-				sb.append("|");
-			}
 		}
 		return sb.toString();
 	}

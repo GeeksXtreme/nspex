@@ -20,7 +20,7 @@
 			<manifest>
 				<attribute name="Main-Class" value="org.whired.nspex.slave.LocalSlave" />
 			</manifest>
-			<zipgroupfileset dir="lib" includes="*.jar" />
+			<zipgroupfileset dir="lib" includes="platform.jar jna.jar" />
 		</jar>
 		<checksum file="${slv}" />
 

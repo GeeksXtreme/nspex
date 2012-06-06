@@ -43,7 +43,6 @@ public class RemoteSlave extends Slave implements SlaveModel {
 
 				@Override
 				public void handle(final int id, final ByteBuffer payload) {
-					Log.l.config("Packet received. id=" + id + " payload=" + payload.capacity());
 					switch (id) {
 						case OP_HANDSHAKE:
 							final int intent = payload.get();
@@ -52,7 +51,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 							setVersion(BufferUtil.getJTF(payload));
 							imageResized(payload.getShort(), payload.getShort());
 
-							if (intent != INTENT_CHECK_BULK) {
+							if (intent != INTENT_CHECK_BULK && intent != INTENT_CONNECT) {
 								// Read preview if this isn't a bulk check
 								final int imgLen = payload.getInt();
 								final byte[] buf = new byte[imgLen];
@@ -78,13 +77,14 @@ public class RemoteSlave extends Slave implements SlaveModel {
 							}
 						break;
 						case OP_GET_FILES:
+							final char fs = payload.getChar();
 							final String parentPath = BufferUtil.getJTF(payload);
 							final RemoteFile[] rf = new RemoteFile[payload.getInt()];
 							for (int i = 0; i < rf.length; i++) {
 								rf[i] = new RemoteFile(BufferUtil.getJTF(payload), payload.get() != 0);
 								Log.l.fine("parentfolder=" + parentPath + " child=" + rf[i]);
 							}
-							view.addChildFiles(parentPath, rf);
+							view.addChildFiles(fs, parentPath, rf);
 						break;
 						case OP_GET_FILE_THUMB:
 							image = new byte[payload.capacity()];
@@ -104,7 +104,6 @@ public class RemoteSlave extends Slave implements SlaveModel {
 
 				@Override
 				public void handle(final int id) {
-					Log.l.config("Packet received. id=" + id + " payload=none");
 					switch (id) {
 						default:
 							Log.l.warning("Unhandled packet=" + id + " payload=none local=" + Slave.VERSION + " remote=" + getVersion());

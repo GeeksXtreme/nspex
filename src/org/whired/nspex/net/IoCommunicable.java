@@ -26,7 +26,9 @@ public abstract class IoCommunicable extends Communicable {
 					while ((op = dis.read()) != -1) {
 						op &= 0xFF; // Unsign
 						socket.setSoTimeout(3000);
-						final byte[] toFill = new byte[dis.readInt()];
+						int fillLen = dis.readInt();
+						Log.l.fine("fillLen=" + fillLen);
+						final byte[] toFill = new byte[fillLen];
 						if (toFill.length > 0) {
 							dis.readFully(toFill);
 							Log.l.config("Packet recevied=" + op + " length=" + toFill.length);
@@ -48,7 +50,7 @@ public abstract class IoCommunicable extends Communicable {
 
 	@Override
 	public final void send(final int id) {
-		Log.l.config("Sending packet=" + id + " length=0");
+		Log.l.fine("Sending packet=" + id + " length=0");
 		try {
 			dos.write(id);
 		}
@@ -64,11 +66,11 @@ public abstract class IoCommunicable extends Communicable {
 
 	@Override
 	public final void send(final int id, final ByteBuffer payload) {
-		Log.l.config("Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
 		try {
 			if (payload.position() > 0) {
 				payload.flip();
 			}
+			Log.l.fine("Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
 			dos.write(id);
 			final byte[] raw = new byte[payload.capacity()];
 			dos.writeInt(raw.length);

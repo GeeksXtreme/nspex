@@ -8,7 +8,7 @@ import org.whired.nspex.master.ImageConsumer;
 public interface SlaveView extends ImageConsumer {
 	void setThumbnail(final Image thumb);
 
-	void addChildFiles(final String parentPath, RemoteFile[] childFiles);
+	void addChildFiles(final char fs, final String parentPath, RemoteFile[] childFiles);
 
 	Dimension getThumbSize();
 

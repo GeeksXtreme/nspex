@@ -3,7 +3,7 @@ package org.whired.nspex.tools;
 /** A slave */
 public class Slave {
 	/** The version */
-	public static String VERSION = "0.0.8";
+	public static String VERSION = "0.0.9";
 	/** The port */
 	public static int PORT = 43596;
 	/** Opcodes */
