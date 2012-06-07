@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="inspexi" default="default" basedir=".">
+<project name="nspex" default="default" basedir=".">
 	<description>Builds, tests, and runs the project.</description>
 	<target name="default">
 
@@ -9,25 +9,25 @@
 		<property name="mstr" value="dist/ispx_mstr.jar" />
 
 		<delete file="${updt}" />
-		<jar destfile="${updt}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/inspexi/updater/**">
+		<jar destfile="${updt}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/nspex/updater/**">
 			<manifest>
-				<attribute name="Main-Class" value="org.whired.inspexi.updater.SlaveUpdater" />
+				<attribute name="Main-Class" value="org.whired.nspex.updater.SlaveUpdater" />
 			</manifest>
 		</jar>
 
 		<delete file="${slv}" />
-		<jar destfile="${slv}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/inspexi/slave/** org/whired/inspexi/tools/** org/whired/inspexi/net/**">
+		<jar destfile="${slv}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/nspex/slave/** org/whired/nspex/tools/** org/whired/nspex/net/**">
 			<manifest>
-				<attribute name="Main-Class" value="org.whired.inspexi.slave.LocalSlave" />
+				<attribute name="Main-Class" value="org.whired.nspex.slave.LocalSlave" />
 			</manifest>
-			<zipgroupfileset dir="lib" includes="*.jar" />
+			<zipgroupfileset dir="lib" includes="platform.jar jna.jar" />
 		</jar>
 		<checksum file="${slv}" />
 
 		<delete file="${mstr}" />
-		<jar destfile="${mstr}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/inspexi/master/** org/whired/inspexi/tools/** org/whired/inspexi/net/**">
+		<jar destfile="${mstr}" filesetmanifest="skip" update="true" basedir="bin" includes="org/whired/nspex/master/** org/whired/nspex/tools/** org/whired/nspex/net/**">
 			<manifest>
-				<attribute name="Main-Class" value="org.whired.inspexi.master.Master" />
+				<attribute name="Main-Class" value="org.whired.nspex.master.Master" />
 			</manifest>
 		</jar>
 	</target>
