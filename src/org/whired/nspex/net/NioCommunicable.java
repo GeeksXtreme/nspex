@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.logging.Level;
 
 import org.whired.nspex.tools.logging.Log;
 
@@ -131,7 +132,9 @@ public abstract class NioCommunicable extends Communicable {
 		packet.flip();
 
 		try {
-			channel.write(packet);
+			while (packet.hasRemaining()) {
+				Log.l.fine("Wrote bytes=" + channel.write(packet));
+			}
 		}
 		catch (final IOException e) {
 			disconnect();
@@ -154,16 +157,21 @@ public abstract class NioCommunicable extends Communicable {
 		packet.flip();
 
 		try {
-			channel.write(packet);
+			while (packet.hasRemaining()) {
+				channel.write(packet);
+			}
 		}
 		catch (final IOException e) {
+			Log.l.log(Level.FINE, "Caught write exception=", e);
 			disconnect();
 		}
 	}
 
 	@Override
 	public final void disconnect() {
-		connected = false;
-		host.removeKey(key);
+		if (connected) {
+			connected = false;
+			host.removeKey(key);
+		}
 	}
 }

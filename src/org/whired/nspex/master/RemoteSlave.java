@@ -38,7 +38,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 	private IoCommunicable connectToRemote() throws IOException {
 		if (!socket.isConnected() || socket.isClosed()) {
 			socket = new Socket();
-			socket.connect(endpoint, 1500);
+			socket.connect(endpoint, 2000);
 			return comm = new IoCommunicable(socket) {
 
 				@Override
@@ -129,7 +129,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 			buf.put(intent);
 			if (intent == INTENT_CONNECT) {
 				final Dimension d = view.getThumbSize();
-				buf.putShort((short) 200);// d.width);// TODO
+				buf.putShort((short) 200);// d.width);// TODO !
 				buf.putShort((short) 160);// d.height);
 			}
 			ioc.send(OP_HANDSHAKE, buf.asByteBuffer());

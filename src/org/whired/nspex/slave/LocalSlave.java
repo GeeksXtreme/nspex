@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
 
 import javax.imageio.ImageIO;
 
@@ -50,6 +51,8 @@ public class LocalSlave extends Slave {
 	private final ScreenCapture capture;
 	// TODO mv..
 	private Dimension thumbSize;
+	/** The file separator char for this machine */
+	private final char fs = System.getProperty("file.separator").charAt(0);
 	/** The server that will accept connections */
 	private final NioServer newServer = new NioServer(PORT) {
 
@@ -68,7 +71,6 @@ public class LocalSlave extends Slave {
 						disconnect();
 					}
 					else {
-						final char fs = System.getProperty("file.separator").charAt(0);
 						Log.l.config("Packet received. id=" + id + " payload=" + payload.capacity());
 						switch (id) {
 							case OP_HANDSHAKE:
@@ -85,7 +87,6 @@ public class LocalSlave extends Slave {
 									// Checking or connecting so send preview
 									final byte[] previewImage = capture.getSingleFrame();
 									buffer.putInt(previewImage.length).put(previewImage);
-
 								}
 								if (intent == INTENT_CONNECT) {
 									thumbSize = new Dimension(payload.getShort(), payload.getShort());
@@ -102,9 +103,8 @@ public class LocalSlave extends Slave {
 									capture.addListener(consumer);
 								}
 								else {
-
 									// They got their info but they aren't sticking around much longer
-									setReadTimeout(2500);
+									setReadTimeout(3500);
 								}
 								send(OP_HANDSHAKE, buffer.asByteBuffer());
 								hasShook = true;
@@ -250,7 +250,7 @@ public class LocalSlave extends Slave {
 		}));
 
 		// Config logger
-		// Log.l.setLevel(Level.ALL);
+		Log.l.setLevel(Level.ALL);
 
 		// Set this slave's properties
 		setUser(System.getProperty("user.name"));

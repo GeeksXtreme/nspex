@@ -117,6 +117,7 @@ public class Master {
 	}
 
 	public static void main(final String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException {
+		Log.l.setLevel(Level.ALL);
 		final Properties props = getProps();
 		// TODO save on exit:
 		// String[] ips = new String[] { "localhost", "192.168.2.8" };
