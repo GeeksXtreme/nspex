@@ -25,9 +25,8 @@ public abstract class IoCommunicable extends Communicable {
 				try {
 					while ((op = dis.read()) != -1) {
 						op &= 0xFF; // Unsign
-						socket.setSoTimeout(3000);
+						socket.setSoTimeout(3500);
 						int fillLen = dis.readInt();
-						Log.l.fine("fillLen=" + fillLen);
 						final byte[] toFill = new byte[fillLen];
 						if (toFill.length > 0) {
 							dis.readFully(toFill);

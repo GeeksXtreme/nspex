@@ -98,7 +98,7 @@ public abstract class NioServer {
 								currentKey.cancel();
 							}
 						}
-						else if (currentKey.isReadable()) {
+						if (currentKey.isReadable()) {
 							try {
 								final Communicable comm = connections.get(currentKey);
 								if (comm.read() > -1) {

@@ -9,8 +9,8 @@ import java.nio.ByteBuffer;
  */
 public abstract class Communicable {
 	private long lastReadTime = System.currentTimeMillis();
-	private int readTimeout = 0;
-	protected boolean connected = true;
+	private int readTimeout;
+	boolean connected = true;
 
 	/**
 	 * Packages and sends a packet with the specified id

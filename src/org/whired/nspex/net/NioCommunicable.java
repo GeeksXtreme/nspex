@@ -131,7 +131,9 @@ public abstract class NioCommunicable extends Communicable {
 		packet.flip();
 
 		try {
-			channel.write(packet);
+			while (packet.hasRemaining()) {
+				Log.l.fine("Wrote bytes=" + channel.write(packet));
+			}
 		}
 		catch (final IOException e) {
 			disconnect();
@@ -154,7 +156,9 @@ public abstract class NioCommunicable extends Communicable {
 		packet.flip();
 
 		try {
-			channel.write(packet);
+			while (packet.hasRemaining()) {
+				channel.write(packet);
+			}
 		}
 		catch (final IOException e) {
 			disconnect();
@@ -162,8 +166,10 @@ public abstract class NioCommunicable extends Communicable {
 	}
 
 	@Override
-	public final void disconnect() {
-		connected = false;
-		host.removeKey(key);
+	public final synchronized void disconnect() {
+		if (connected) {
+			connected = false;
+			host.removeKey(key);
+		}
 	}
 }
