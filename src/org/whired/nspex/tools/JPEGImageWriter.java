@@ -22,7 +22,7 @@ public class JPEGImageWriter {
 	private static final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 	static {
 		iwparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-		iwparam.setCompressionQuality(.8F);
+		iwparam.setCompressionQuality(.75F);
 		final Iterator<ImageWriter> iter = ImageIO.getImageWritersByFormatName("jpg");
 		if (iter.hasNext()) {
 			writer = iter.next();

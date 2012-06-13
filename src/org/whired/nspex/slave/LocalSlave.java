@@ -67,11 +67,10 @@ public class LocalSlave extends Slave {
 				public void handle(final int id, final ByteBuffer payload) {
 					// Make sure we get what we need first
 					if (!hasShook && id != OP_HANDSHAKE) {
-						Log.l.warning("Handshake expected, but not received");
+						Log.l.warning("[" + this + "] Handshake expected, but not received");
 						disconnect();
 					}
 					else {
-						Log.l.config("Packet received. id=" + id + " payload=" + payload.capacity());
 						switch (id) {
 							case OP_HANDSHAKE:
 								final int intent = payload.get();
@@ -132,15 +131,15 @@ public class LocalSlave extends Slave {
 									if (in.ready()) {
 										final BufferedReader br = new BufferedReader(in);
 										String line;
-										Log.l.info("Waiting for output");
+										Log.l.fine("[" + this + "] Waiting for output..");
 										while ((line = br.readLine()) != null) {
 											sb.append(line + "\r\n");
 										}
 									}
-									Log.l.info("EXEC: " + cmd + "..success: \r\n" + sb.toString());
+									Log.l.config("[" + this + "] EXEC: " + cmd + "..success: \r\n" + sb.toString());
 								}
 								catch (final Throwable t) {
-									Log.l.info("EXEC: " + cmd + "..fail (" + t.toString() + ")");
+									Log.l.config("[" + this + "] EXEC: " + cmd + "..fail (" + t.toString() + ")");
 								}
 							break;
 							case OP_GET_FILE_THUMB:
@@ -149,14 +148,14 @@ public class LocalSlave extends Slave {
 									public void run() {
 										try {
 											final String path = BufferUtil.getJTF(payload);
-											Log.l.fine("Thumb requested=" + path);
+											Log.l.config("[" + this + "] Thumb requested=" + path);
 											final BufferedImage img = ImageIO.read(new File(path));
 											final byte[] image = JPEGImageWriter.getImageBytes(img, thumbSize);
 											final ExpandableByteBuffer buffer = new ExpandableByteBuffer(image.length);
 											buffer.put(image);
 											send(OP_GET_FILE_THUMB, buffer.asByteBuffer());
 										}
-										catch (final IOException e) {
+										catch (final Throwable e) {
 											e.printStackTrace();
 										}
 									}
@@ -164,19 +163,19 @@ public class LocalSlave extends Slave {
 							break;
 							case OP_GET_FILES:
 								final String parentPath = BufferUtil.getJTF(payload);
-								Log.l.fine("parent=" + parentPath);
+								Log.l.fine("[" + this + "] parent=" + parentPath);
 								buffer = new ExpandableByteBuffer();
 								buffer.putChar(fs);
 								buffer.putJTF(parentPath);
 								File[] files;
-								// Top
+								// parentPath is root
 								if (parentPath.length() == 0) {
 									files = File.listRoots();
 									buffer.putInt(files.length);
 									String rname;
 									for (final File f : files) {
 										rname = f.getPath();
-										Log.l.fine("rootfile=" + rname);
+										Log.l.fine("[" + this + "] rootfile=" + rname);
 										buffer.putJTF(rname);
 										buffer.put(1);
 									}
@@ -189,7 +188,7 @@ public class LocalSlave extends Slave {
 										for (final File f : files) {
 											if (f != null) {
 												buffer.putJTF(f.getName());
-												Log.l.fine("child=" + f.getName());
+												Log.l.fine("[" + this + "] child=" + f.getName());
 												buffer.put(f.isDirectory() ? 1 : 0);
 											}
 										}
@@ -204,7 +203,7 @@ public class LocalSlave extends Slave {
 							break;
 
 							default:
-								Log.l.warning("Unhandled packet=" + id + " payload=" + payload.capacity() + " local=" + Slave.VERSION + " remote=" + getVersion());
+								Log.l.warning("[" + this + "] Unhandled packet=" + id + " payload=" + payload.capacity() + " local=" + Slave.VERSION + " remote=" + getVersion());
 							break;
 						}
 					}
@@ -212,10 +211,9 @@ public class LocalSlave extends Slave {
 
 				@Override
 				public void handle(final int id) {
-					Log.l.config("Packet received. id=" + id + " payload=none");
 					switch (id) {
 						default:
-							Log.l.warning("Unhandled packet=" + id + " payload=none local=" + Slave.VERSION + " remote=" + getVersion());
+							Log.l.warning("[" + this + "] Unhandled packet=" + id + " payload=none local=" + Slave.VERSION + " remote=" + getVersion());
 						break;
 					}
 				}
@@ -258,8 +256,8 @@ public class LocalSlave extends Slave {
 		setVersion(VERSION);
 
 		// Set up capture
-		final Dimension targetSize = new Dimension(600, 450);
-		robot = Platform.isWindows() ? new WinRobot(targetSize) : new DirectRobot(targetSize);
+		final Dimension targetSize = new Dimension(600, 450); // TODO send val and hold for each comm - resizing will have to be done for each comm
+		robot = Platform.isWindows() ? new WinRobot(.8F) : new DirectRobot(.8F);
 		capture = new ScreenCapture(robot, 1);
 
 		// Start the server

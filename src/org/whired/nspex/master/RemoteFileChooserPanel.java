@@ -108,7 +108,7 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 					Enumeration e;
 					for (int i = 0; i < goodNodes.length; i++) {
 						if (i > 0) {
-							goodNodes[i] += fs; // Maybe not..
+							goodNodes[i] += fs;
 						}
 						e = ltn.children();
 						while (e.hasMoreElements()) {

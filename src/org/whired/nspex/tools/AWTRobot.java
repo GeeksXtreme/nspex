@@ -18,12 +18,12 @@ import java.lang.reflect.Method;
 
 import sun.awt.ComponentFactory;
 
-public final class DirectRobot extends Robot {
+public final class AWTRobot extends Robot {
 	private final BufferedImage unscaled;
 	private final int[] unscaledPix;
 	private final Dimension targetSize;
 
-	public DirectRobot(final Rectangle bounds, final double zoom) throws AWTException {
+	public AWTRobot(final Rectangle bounds, final double zoom) throws AWTException {
 		super(bounds, zoom);
 		final Toolkit toolkit = Toolkit.getDefaultToolkit();
 		peer = ((ComponentFactory) toolkit).createRobot(null, device);
@@ -86,16 +86,16 @@ public final class DirectRobot extends Robot {
 			getRGBPixelsMethodType = methodType;
 			getRGBPixelsMethodParam = methodParam;
 		}
-		unscaled = new BufferedImage(getBounds().width, getBounds().height, BufferedImage.TYPE_INT_RGB);
+		unscaled = new BufferedImage(getCaptureBounds().width, getCaptureBounds().height, BufferedImage.TYPE_INT_RGB);
 		unscaledPix = ((DataBufferInt) unscaled.getRaster().getDataBuffer()).getData();
-		targetSize = new Dimension(getZoom(getBounds().width), getZoom(getBounds().height));
+		targetSize = new Dimension(scale(getCaptureBounds().width), scale(getCaptureBounds().height));
 	}
 
-	public DirectRobot(final double zoom) throws AWTException {
+	public AWTRobot(final double zoom) throws AWTException {
 		this(null, zoom);
 	}
 
-	public DirectRobot(final Dimension d) throws AWTException {
+	public AWTRobot(final Dimension d) throws AWTException {
 		this(Robot.calculateZoom(Robot.getScreenBounds(), d));
 	}
 
@@ -175,8 +175,8 @@ public final class DirectRobot extends Robot {
 	}
 
 	@Override
-	public byte[] getBytePixels() {
-		final int[] pix = peer.getRGBPixels(getBounds());
+	public byte[] getPixels() {
+		final int[] pix = peer.getRGBPixels(getCaptureBounds());
 		System.arraycopy(pix, 0, unscaledPix, 0, unscaledPix.length);
 		return JPEGImageWriter.getImageBytes(unscaled, targetSize);
 	}

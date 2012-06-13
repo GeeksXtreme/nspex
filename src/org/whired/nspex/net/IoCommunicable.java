@@ -3,6 +3,7 @@ package org.whired.nspex.net;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 
@@ -14,6 +15,7 @@ public abstract class IoCommunicable extends Communicable {
 	private final Socket socket;
 
 	public IoCommunicable(final Socket socket) throws IOException {
+		super(((InetSocketAddress) socket.getRemoteSocketAddress()).getAddress().getHostAddress());
 		this.socket = socket;
 		dis = new DataInputStream(socket.getInputStream());
 		dos = new DataOutputStream(socket.getOutputStream());
@@ -30,11 +32,11 @@ public abstract class IoCommunicable extends Communicable {
 						final byte[] toFill = new byte[fillLen];
 						if (toFill.length > 0) {
 							dis.readFully(toFill);
-							Log.l.config("Packet recevied=" + op + " length=" + toFill.length);
+							Log.l.config("[" + IoCommunicable.this + "] Packet recevied=" + op + " length=" + toFill.length);
 							handle(op, ByteBuffer.wrap(toFill).asReadOnlyBuffer());
 						}
 						else {
-							Log.l.config("Packet recevied=" + op + " length=0");
+							Log.l.config("[" + IoCommunicable.this + "] Packet recevied=" + op + " length=0");
 							handle(op);
 						}
 						socket.setSoTimeout(60000 * 30);
@@ -49,7 +51,7 @@ public abstract class IoCommunicable extends Communicable {
 
 	@Override
 	public final void send(final int id) {
-		Log.l.fine("Sending packet=" + id + " length=0");
+		Log.l.config("[" + this + "] Sending packet=" + id + " length=0");
 		try {
 			dos.write(id);
 		}
@@ -69,7 +71,7 @@ public abstract class IoCommunicable extends Communicable {
 			if (payload.position() > 0) {
 				payload.flip();
 			}
-			Log.l.fine("Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
+			Log.l.config("[" + this + "] Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
 			dos.write(id);
 			final byte[] raw = new byte[payload.capacity()];
 			dos.writeInt(raw.length);
@@ -84,6 +86,7 @@ public abstract class IoCommunicable extends Communicable {
 	@Override
 	public final void disconnect() {
 		if (connected) {
+			Log.l.config("[" + this + "] Disconnected");
 			connected = false;
 			try {
 				socket.close();
