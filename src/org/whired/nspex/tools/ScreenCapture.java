@@ -3,6 +3,7 @@ package org.whired.nspex.tools;
 import java.util.HashSet;
 
 import org.whired.nspex.slave.ImageConsumer;
+import org.whired.nspex.tools.logging.Log;
 
 /**
  * Captures the screen
@@ -59,13 +60,14 @@ public class ScreenCapture implements ImageConsumer {
 	 * @param listener the listener to add
 	 */
 	public synchronized void addListener(final ImageConsumer listener) {
+
 		// Restart the capping process if we have a viewer
 		if (listeners.size() == 0) {
 			running = true;
 			capThread = new Thread(captureTask);
 			capThread.start();
 		}
-		listeners.add(listener);
+		Log.l.fine("Adding listener=" + listener.hashCode() + "=" + listeners.add(listener));
 	}
 
 	/**

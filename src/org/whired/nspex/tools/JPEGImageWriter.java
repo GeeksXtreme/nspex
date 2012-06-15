@@ -16,25 +16,47 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
 
+/**
+ * A JPEG compressor and stream writer
+ * @author Whired
+ */
 public class JPEGImageWriter {
-	private static final JPEGImageWriteParam iwparam = new JPEGImageWriteParam(new Locale("en"));
+	/** The format to write */
+	private static final String FORMAT_NAME = "jpg"; // TODO testing
+	/** The options for image writing */
+	private static final JPEGImageWriteParam iwparam = new JPEGImageWriteParam(Locale.getDefault());
+	/** The image writer */
 	private static ImageWriter writer;
+	/** The byte stream to write to */
 	private static final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 	static {
+		// Set options
 		iwparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 		iwparam.setCompressionQuality(.75F);
-		final Iterator<ImageWriter> iter = ImageIO.getImageWritersByFormatName("jpg");
+		//iwparam.setOptimizeHuffmanTables(true); // TODO testing
+
+		// Get writer
+		final Iterator<ImageWriter> iter = ImageIO.getImageWritersByFormatName(FORMAT_NAME);
 		if (iter.hasNext()) {
 			writer = iter.next();
+		}
+		else {
+			throw new ExceptionInInitializerError("No available writer for format: " + FORMAT_NAME);
 		}
 		try {
 			writer.setOutput(ImageIO.createImageOutputStream(bos));
 		}
-		catch (final IOException e1) {
-			e1.printStackTrace();
+		catch (IOException e) {
+			throw new ExceptionInInitializerError(e);
 		}
 	}
 
+	/**
+	 * Scales, compresses, and gets the bytes of the specified image
+	 * @param image the image to scale and compress
+	 * @param targetSize the size to scale to
+	 * @return the bytes
+	 */
 	public synchronized static byte[] getImageBytes(final BufferedImage image, final Dimension targetSize) {
 		if (writer.getOriginatingProvider().canEncodeImage(image)) {
 			BufferedImage bufferedImage;
@@ -89,7 +111,12 @@ public class JPEGImageWriter {
 		}
 	}
 
-	public synchronized static byte[] getImageBytes(final BufferedImage image) {
+	/**
+	 * Gets the compressed bytes for the specified image
+	 * @param image the image to compress and get the bytes of
+	 * @return the bytes
+	 */
+	public static byte[] getImageBytes(final BufferedImage image) {
 		return getImageBytes(image, null);
 	}
 }

@@ -156,13 +156,13 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				EventQueue.invokeAndWait(run);
 			}
 			catch (final Throwable t) {
+				t.printStackTrace();
 			}
 		}
 	}
 
 	@Override
 	public void imageResized(final int width, final int height) {
-		Log.l.config("");
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {

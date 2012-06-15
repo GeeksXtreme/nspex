@@ -15,68 +15,83 @@ import com.sun.jna.platform.win32.WinGDI;
 import com.sun.jna.platform.win32.WinGDI.BITMAPINFO;
 
 /**
- * A native windows implementation of a Robot
+ * A native windows implementation of a robot
  * @author Whired
  */
 public class WinRobot extends Robot {
-
 	private static final HWND desktop = User32.INSTANCE.GetDesktopWindow();
 	private final HDC hdcWindow = User32.INSTANCE.GetDC(desktop);
 	private final HDC hdcMemDC = GDI32.INSTANCE.CreateCompatibleDC(hdcWindow);
 	private final RECT wBounds = new RECT();
-	private final BufferedImage unscaled = new BufferedImage(getBounds().width, getBounds().height, BufferedImage.TYPE_INT_RGB);
+	private final BufferedImage unscaled = new BufferedImage(getCaptureBounds().width, getCaptureBounds().height, BufferedImage.TYPE_INT_RGB);
 	private final int[] unscaledPix = ((DataBufferInt) unscaled.getRaster().getDataBuffer()).getData();
-	private final Dimension targetSize = new Dimension(getZoom(getBounds().width), getZoom(getBounds().height));
-	private final HBITMAP hBitmap = GDI32.INSTANCE.CreateCompatibleBitmap(hdcWindow, getBounds().width, getBounds().height);
+	private final Dimension targetSize = new Dimension(scale(getCaptureBounds().width), scale(getCaptureBounds().height));
+	private final HBITMAP hBitmap = GDI32.INSTANCE.CreateCompatibleBitmap(hdcWindow, getCaptureBounds().width, getCaptureBounds().height);
 	private final BITMAPINFO bmi = new BITMAPINFO();
-	private final Memory buffer = new Memory(getBounds().width * getBounds().height * 4);
+	private final Memory buffer = new Memory(getCaptureBounds().width * getCaptureBounds().height * 4);
 
-	public WinRobot(final Rectangle captureBounds, final Dimension produceBounds) {
-		this(captureBounds, Robot.calculateZoom(captureBounds, produceBounds));
-	}
-
-	public WinRobot(final Dimension produceBounds) {
-		this(Robot.getScreenBounds(), produceBounds);
+	/**
+	 * Creates a new windows robot with the specified capture bound and target bounds
+	 * @param captureBounds the bounds to capture
+	 * @param targetBounds the bounds to scale to
+	 */
+	public WinRobot(final Rectangle captureBounds, final Dimension targetBounds) {
+		this(captureBounds, Robot.calculateZoom(captureBounds, targetBounds));
 	}
 
 	/**
-	 * Creates a new windows robot with the specified bounds and zoom
-	 * @param bounds the bounds to capture pixels from
-	 * @param zoom original bounds will be scaled by this value
+	 * Creates a new windows robot with a fullscreen capture bounds and the specified target bounds
+	 * @param targetBounds the bounds to scale to
 	 */
-	public WinRobot(final Rectangle bounds, final double zoom) {
-		super(bounds, zoom);
-		wBounds.right = getBounds().x + getBounds().width;
-		wBounds.left = getBounds().x;
-		wBounds.top = getBounds().y;
-		wBounds.bottom = getBounds().y + getBounds().height;
+	public WinRobot(final Dimension targetBounds) {
+		this(Robot.getScreenBounds(), targetBounds);
+	}
+
+	/**
+	 * Creates a new windows robot with the specified bounds bounds and zoom
+	 * @param captureBounds the bounds to capture pixels from
+	 * @param zoom the zoom to scale to (0.0-1)
+	 */
+	public WinRobot(final Rectangle captureBounds, final double zoom) {
+		super(captureBounds, zoom);
+		wBounds.right = getCaptureBounds().x + getCaptureBounds().width;
+		wBounds.left = getCaptureBounds().x;
+		wBounds.top = getCaptureBounds().y;
+		wBounds.bottom = getCaptureBounds().y + getCaptureBounds().height;
 		GDI32.INSTANCE.SelectObject(hdcMemDC, hBitmap);
-		bmi.bmiHeader.biWidth = getBounds().width;
-		bmi.bmiHeader.biHeight = -getBounds().height;
+		bmi.bmiHeader.biWidth = getCaptureBounds().width;
+		bmi.bmiHeader.biHeight = -getCaptureBounds().height;
 		bmi.bmiHeader.biPlanes = 1;
 		bmi.bmiHeader.biBitCount = 32;
 		bmi.bmiHeader.biCompression = WinGDI.BI_RGB;
 	}
 
 	/**
-	 * Creates a new windows robot with the default (screen size) bounds and specified zoom
-	 * @param zoom original bounds will be scaled by this value
+	 * Creates a new windows robot with fullscreen capture bounds and specified zoom
+	 * @param zoom the zoom to scale to (0.0-1)
 	 */
 	public WinRobot(final double zoom) {
 		this(null, zoom);
 	}
 
-	@Override
-	public byte[] getBytePixels() {
-		// Copy native
-		GDI32.INSTANCE.BitBlt(hdcMemDC, 0, 0, getBounds().width, getBounds().height, hdcWindow, 0, 0, GDI32.SRCCOPY);
-		GDI32.INSTANCE.GetDIBits(hdcWindow, hBitmap, 0, getBounds().height, buffer, bmi, WinGDI.DIB_RGB_COLORS);
+	/**
+	 * Creates a new windows robot with fullscreen capture bounds and 100% zoom
+	 */
+	public WinRobot() {
+		this(1D);
+	}
 
-		// Nonnative copy
-		final int[] toCompress = buffer.getIntArray(0, getBounds().width * getBounds().height);
+	@Override
+	public byte[] getPixels() {
+		// Copy native
+		GDI32.INSTANCE.BitBlt(hdcMemDC, 0, 0, getCaptureBounds().width, getCaptureBounds().height, hdcWindow, 0, 0, GDI32.SRCCOPY);
+		GDI32.INSTANCE.GetDIBits(hdcWindow, hBitmap, 0, getCaptureBounds().height, buffer, bmi, WinGDI.DIB_RGB_COLORS);
+
+		// Copy non-native
+		final int[] toCompress = buffer.getIntArray(0, getCaptureBounds().width * getCaptureBounds().height);
 		System.arraycopy(toCompress, 0, unscaledPix, 0, toCompress.length);
 
-		// Scale and compress
+		// Compress
 		return JPEGImageWriter.getImageBytes(unscaled, targetSize);
 	}
 
@@ -96,13 +111,25 @@ public class WinRobot extends Robot {
 
 	@Override
 	protected void finalize() throws Throwable {
+		// Release native resources
 		try {
 			GDI32.INSTANCE.DeleteDC(hdcMemDC);
+		}
+		catch (Throwable t1) {
+			t1.printStackTrace();
+		}
+		try {
 			User32.INSTANCE.ReleaseDC(desktop, hdcWindow);
+		}
+		catch (Throwable t2) {
+			t2.printStackTrace();
+		}
+		try {
 			GDI32.INSTANCE.DeleteObject(hBitmap);
 		}
-		finally {
-			super.finalize();
+		catch (Throwable t3) {
+			t3.printStackTrace();
 		}
+		super.finalize();
 	}
 }

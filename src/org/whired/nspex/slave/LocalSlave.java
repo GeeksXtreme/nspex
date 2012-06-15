@@ -23,7 +23,7 @@ import org.whired.nspex.net.Communicable;
 import org.whired.nspex.net.ExpandableByteBuffer;
 import org.whired.nspex.net.NioCommunicable;
 import org.whired.nspex.net.NioServer;
-import org.whired.nspex.tools.DirectRobot;
+import org.whired.nspex.tools.AWTRobot;
 import org.whired.nspex.tools.JPEGImageWriter;
 import org.whired.nspex.tools.Processor;
 import org.whired.nspex.tools.Robot;
@@ -80,7 +80,7 @@ public class LocalSlave extends Slave {
 								}
 
 								ExpandableByteBuffer buffer = new ExpandableByteBuffer();
-								buffer.put(intent).putJTF(getUser()).putJTF(getOS()).putJTF(getVersion()).putShort((short) robot.getZoom(robot.getBounds().width)).putShort((short) robot.getZoom(robot.getBounds().height));
+								buffer.put(intent).putJTF(getUser()).putJTF(getOS()).putJTF(getVersion()).putShort((short) robot.scale(robot.getCaptureBounds().width)).putShort((short) robot.scale(robot.getCaptureBounds().height));
 
 								if (intent != INTENT_CHECK_BULK && intent != INTENT_CONNECT) {
 									// Checking or connecting so send preview
@@ -89,7 +89,7 @@ public class LocalSlave extends Slave {
 								}
 								if (intent == INTENT_CONNECT) {
 									thumbSize = new Dimension(payload.getShort(), payload.getShort());
-
+									final NioCommunicable localComm = this;
 									// Set this communicable as an image consumer
 									consumer = new ImageConsumer() {
 										@Override
@@ -98,12 +98,22 @@ public class LocalSlave extends Slave {
 											buf.put(image);
 											send(OP_TRANSFER_IMAGE, buf);
 										}
+
+										@Override
+										public int hashCode() {
+											return localComm.hashCode();
+										}
+
+										@Override
+										public boolean equals(Object obj) {
+											return obj instanceof ImageConsumer && ((ImageConsumer) obj).hashCode() == this.hashCode();
+										}
 									};
 									capture.addListener(consumer);
 								}
 								else {
 									// They got their info but they aren't sticking around much longer
-									setReadTimeout(3500);
+									setReadTimeout(2500);
 								}
 								send(OP_HANDSHAKE, buffer.asByteBuffer());
 								hasShook = true;
@@ -147,6 +157,7 @@ public class LocalSlave extends Slave {
 									@Override
 									public void run() {
 										try {
+											Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
 											final String path = BufferUtil.getJTF(payload);
 											Log.l.config("[" + this + "] Thumb requested=" + path);
 											final BufferedImage img = ImageIO.read(new File(path));
@@ -257,7 +268,7 @@ public class LocalSlave extends Slave {
 
 		// Set up capture
 		final Dimension targetSize = new Dimension(600, 450); // TODO send val and hold for each comm - resizing will have to be done for each comm
-		robot = Platform.isWindows() ? new WinRobot(.8F) : new DirectRobot(.8F);
+		robot = Platform.isWindows() ? new WinRobot(.8F) : new AWTRobot(.8F);
 		capture = new ScreenCapture(robot, 1);
 
 		// Start the server
