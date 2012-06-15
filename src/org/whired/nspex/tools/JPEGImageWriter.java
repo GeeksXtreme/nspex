@@ -8,7 +8,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Locale;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -24,7 +23,7 @@ public class JPEGImageWriter {
 	/** The format to write */
 	private static final String FORMAT_NAME = "jpg"; // TODO testing
 	/** The options for image writing */
-	private static final JPEGImageWriteParam iwparam = new JPEGImageWriteParam(Locale.getDefault());
+	private static final JPEGImageWriteParam iwparam = new JPEGImageWriteParam(null);
 	/** The image writer */
 	private static ImageWriter writer;
 	/** The byte stream to write to */
@@ -32,8 +31,7 @@ public class JPEGImageWriter {
 	static {
 		// Set options
 		iwparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-		iwparam.setCompressionQuality(.75F);
-		//iwparam.setOptimizeHuffmanTables(true); // TODO testing
+		iwparam.setCompressionQuality(.7F);
 
 		// Get writer
 		final Iterator<ImageWriter> iter = ImageIO.getImageWritersByFormatName(FORMAT_NAME);
@@ -55,7 +53,7 @@ public class JPEGImageWriter {
 	 * Scales, compresses, and gets the bytes of the specified image
 	 * @param image the image to scale and compress
 	 * @param targetSize the size to scale to
-	 * @return the bytes
+	 * @return the bytes, or {@code null} if the bytes could not be compressed
 	 */
 	public synchronized static byte[] getImageBytes(final BufferedImage image, final Dimension targetSize) {
 		if (writer.getOriginatingProvider().canEncodeImage(image)) {
@@ -114,7 +112,7 @@ public class JPEGImageWriter {
 	/**
 	 * Gets the compressed bytes for the specified image
 	 * @param image the image to compress and get the bytes of
-	 * @return the bytes
+	 * @return the bytes, or {@code null} if the image could not be compressed
 	 */
 	public static byte[] getImageBytes(final BufferedImage image) {
 		return getImageBytes(image, null);
