@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.logging.Level;
 
 import org.whired.nspex.tools.logging.Log;
 
@@ -130,6 +131,7 @@ public abstract class NioCommunicable extends Communicable {
 
 		try {
 			while (packet.hasRemaining()) {
+				// TODO penetration vulnerability -- not sure about outside, but locally we can be frozen by full buffers
 				channel.write(packet);
 			}
 		}
@@ -137,6 +139,8 @@ public abstract class NioCommunicable extends Communicable {
 			disconnect();
 		}
 	}
+
+	public abstract void log(final Level level, final String message);
 
 	@Override
 	public final void send(final int id, final ByteBuffer payload) {
@@ -155,6 +159,7 @@ public abstract class NioCommunicable extends Communicable {
 
 		try {
 			while (packet.hasRemaining()) {
+				// TODO penetration vulnerability -- not sure about outside, but locally we can be frozen by full buffers
 				channel.write(packet);
 			}
 		}

@@ -10,11 +10,12 @@ import org.whired.nspex.master.ImageConsumer;
  */
 public interface SlaveModel extends ImageConsumer {
 	/**
-	 * Invoked when a thumbnail is requested for the specified file path
+	 * Invoked when an action is requested for the specified file path
+	 * @param action the action to perform
 	 * @param filePath the path of the file on the slave machine
 	 * @throws IOException
 	 */
-	void requestThumbnail(final String filePath) throws IOException;
+	void requestFileAction(final int action, final String filePath) throws IOException;
 
 	/**
 	 * Requests a list of children files of the specified directory

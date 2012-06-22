@@ -21,7 +21,7 @@ import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
  */
 public class JPEGImageWriter {
 	/** The format to write */
-	private static final String FORMAT_NAME = "jpg"; // TODO testing
+	private static final String FORMAT_NAME = "jpg";
 	/** The options for image writing */
 	private static final JPEGImageWriteParam iwparam = new JPEGImageWriteParam(null);
 	/** The image writer */
@@ -42,6 +42,7 @@ public class JPEGImageWriter {
 			throw new ExceptionInInitializerError("No available writer for format: " + FORMAT_NAME);
 		}
 		try {
+			// Write to byte array stream
 			writer.setOutput(ImageIO.createImageOutputStream(bos));
 		}
 		catch (IOException e) {
@@ -81,6 +82,7 @@ public class JPEGImageWriter {
 				bufferedImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_RGB);
 			}
 			else {
+				// No target size, scale 1:1
 				bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
 			}
 			final Graphics2D g2 = bufferedImage.createGraphics();

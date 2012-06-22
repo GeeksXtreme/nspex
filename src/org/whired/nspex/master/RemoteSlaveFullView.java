@@ -84,9 +84,9 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				fileChooser = new RemoteFileChooserPanel() {
 
 					@Override
-					protected void requestThumbnail(final String path) {
+					protected void requestFileAction(final int action, final String path) {
 						try {
-							slave.requestThumbnail(path);
+							slave.requestFileAction(action, path);
 						}
 						catch (final IOException e) {
 							e.printStackTrace();

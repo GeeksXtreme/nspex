@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 
 import sun.awt.ComponentFactory;
 
+//TODO doc
 public final class AWTRobot extends Robot {
 	private final BufferedImage unscaled;
 	private final int[] unscaledPix;

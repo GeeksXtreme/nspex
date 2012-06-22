@@ -176,6 +176,12 @@ public class AuthenticationServer {
 						Log.l.fine("[" + this + "] disconnected");
 					}
 
+					@Override
+					public void log(Level level, String message) {
+						// TODO Auto-generated method stub
+
+					}
+
 				};
 			}
 		};

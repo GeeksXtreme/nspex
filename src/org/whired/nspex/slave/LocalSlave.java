@@ -4,10 +4,13 @@ import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -59,7 +62,7 @@ public class LocalSlave extends Slave {
 		@Override
 		protected Communicable getCommunicable(final SelectionKey key) {
 			return new NioCommunicable(key, newServer) {
-
+				private final NioCommunicable localComm = this;
 				private boolean hasShook;
 				private ImageConsumer consumer;
 
@@ -89,7 +92,6 @@ public class LocalSlave extends Slave {
 								}
 								if (intent == INTENT_CONNECT) {
 									thumbSize = new Dimension(payload.getShort(), payload.getShort());
-									final NioCommunicable localComm = this;
 									// Set this communicable as an image consumer
 									consumer = new ImageConsumer() {
 										@Override
@@ -152,25 +154,10 @@ public class LocalSlave extends Slave {
 									Log.l.config("[" + this + "] EXEC: " + cmd + "..fail (" + t.toString() + ")");
 								}
 							break;
-							case OP_GET_FILE_THUMB:
-								Processor.submit(this, new Runnable() {
-									@Override
-									public void run() {
-										try {
-											Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
-											final String path = BufferUtil.getJTF(payload);
-											Log.l.config("[" + this + "] Thumb requested=" + path);
-											final BufferedImage img = ImageIO.read(new File(path));
-											final byte[] image = JPEGImageWriter.getImageBytes(img, thumbSize);
-											final ExpandableByteBuffer buffer = new ExpandableByteBuffer(image.length);
-											buffer.put(image);
-											send(OP_GET_FILE_THUMB, buffer.asByteBuffer());
-										}
-										catch (final Throwable e) {
-											e.printStackTrace();
-										}
-									}
-								});
+							case OP_FILE_ACTION:
+								final int fop = payload.get() & 0xFF;
+								final String path = BufferUtil.getJTF(payload);
+								handleFileOperation(fop, path);
 							break;
 							case OP_GET_FILES:
 								final String parentPath = BufferUtil.getJTF(payload);
@@ -220,6 +207,74 @@ public class LocalSlave extends Slave {
 					}
 				}
 
+				public void handleFileOperation(final int fop, final String path) {
+					switch (fop) {
+						case FOP_GET_THUMB:
+							Processor.submit(this, new Runnable() {
+								@Override
+								public void run() {
+									try {
+										Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
+										Log.l.config("[" + this + "] Thumb requested=" + path);
+										final BufferedImage img = ImageIO.read(new File(path));
+										final byte[] image = JPEGImageWriter.getImageBytes(img, thumbSize);
+										final ExpandableByteBuffer buffer = new ExpandableByteBuffer(image.length + 1);
+										buffer.put(FOP_GET_THUMB);
+										buffer.put(image);
+										send(OP_FILE_ACTION, buffer.asByteBuffer());
+									}
+									catch (final Throwable e) {
+										// Seems to only happen when the extension is wrong
+										Log.l.log(Level.CONFIG, "Failed to get thumb:", e);
+									}
+								}
+							});
+						break;
+						case FOP_DELETE:
+							boolean deleted = new File(path).delete();
+							Log.l.info(localComm + " deleted " + path + "?=" + deleted);
+							if (deleted) {
+								log(Level.INFO, path + " successfully deleted");
+							}
+						break;
+						case FOP_RENAME:
+						// TODO Oops, this can't work here -- needs a target
+						break;
+						case FOP_DOWNLOAD:
+							Log.l.config(localComm + " requesting download=" + path);
+							// TODO will this hold up other people?
+
+							// Looks like we're going to enforce a size limit
+							final int maxSize = 10240000; // 10MB
+							File toDownload = new File(path);
+							if (toDownload.exists()) {
+								long size = toDownload.length();
+								if (size <= maxSize) {
+									byte[] pathBytes = BufferUtil.encodeJTF(toDownload.getName());
+									ByteBuffer retBuf = ByteBuffer.allocateDirect((int) size + 3 + pathBytes.length);
+									retBuf.put((byte) FOP_DOWNLOAD).putShort((short) pathBytes.length).put(pathBytes);
+									try {
+										FileInputStream fis = new FileInputStream(toDownload);
+										FileChannel fc = fis.getChannel();
+										while (retBuf.hasRemaining()) {
+											if (fc.read(retBuf) == -1) {
+												throw new EOFException();
+											}
+										}
+										send(OP_FILE_ACTION, retBuf);
+									}
+									catch (IOException e) {
+										Log.l.log(Level.WARNING, "Unable to download file: ", e);
+									}
+								}
+								else {
+									log(Level.WARNING, "File size is too large");
+								}
+							}
+						break;
+					}
+				}
+
 				@Override
 				public void handle(final int id) {
 					switch (id) {
@@ -232,6 +287,13 @@ public class LocalSlave extends Slave {
 				@Override
 				public void disconnected() {
 					capture.removeListener(consumer);
+				}
+
+				@Override
+				public void log(final Level level, final String message) {
+					ExpandableByteBuffer buffer = new ExpandableByteBuffer();
+					buffer.put((byte) level.intValue()).putJTF(message);
+					send(OP_LOG, buffer.asByteBuffer());
 				}
 			};
 		}
