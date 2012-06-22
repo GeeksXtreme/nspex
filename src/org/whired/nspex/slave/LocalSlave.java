@@ -234,7 +234,7 @@ public class LocalSlave extends Slave {
 							boolean deleted = new File(path).delete();
 							Log.l.info(localComm + " deleted " + path + "?=" + deleted);
 							if (deleted) {
-								log(Level.INFO, path + " successfully deleted");
+								remoteLog(Level.INFO, path + " successfully deleted");
 							}
 						break;
 						case FOP_RENAME:
@@ -268,7 +268,7 @@ public class LocalSlave extends Slave {
 									}
 								}
 								else {
-									log(Level.WARNING, "File size is too large");
+									remoteLog(Level.WARNING, "File size is too large");
 								}
 							}
 						break;
@@ -290,7 +290,7 @@ public class LocalSlave extends Slave {
 				}
 
 				@Override
-				public void log(final Level level, final String message) {
+				public void remoteLog(final Level level, final String message) {
 					ExpandableByteBuffer buffer = new ExpandableByteBuffer();
 					buffer.put((byte) level.intValue()).putJTF(message);
 					send(OP_LOG, buffer.asByteBuffer());

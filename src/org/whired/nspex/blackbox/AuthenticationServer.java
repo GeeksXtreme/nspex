@@ -13,8 +13,10 @@ import java.util.logging.Level;
 import org.whired.nspex.blackbox.sql.SQLiteDatabase;
 import org.whired.nspex.net.BufferUtil;
 import org.whired.nspex.net.Communicable;
+import org.whired.nspex.net.ExpandableByteBuffer;
 import org.whired.nspex.net.NioCommunicable;
 import org.whired.nspex.net.NioServer;
+import org.whired.nspex.tools.Slave;
 import org.whired.nspex.tools.logging.Log;
 
 /**
@@ -177,9 +179,10 @@ public class AuthenticationServer {
 					}
 
 					@Override
-					public void log(Level level, String message) {
-						// TODO Auto-generated method stub
-
+					public void remoteLog(Level level, String message) {
+						ExpandableByteBuffer buffer = new ExpandableByteBuffer();
+						buffer.put((byte) level.intValue()).putJTF(message);
+						send(Slave.OP_LOG, buffer.asByteBuffer());
 					}
 
 				};

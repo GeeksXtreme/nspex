@@ -140,7 +140,7 @@ public abstract class NioCommunicable extends Communicable {
 		}
 	}
 
-	public abstract void log(final Level level, final String message);
+	public abstract void remoteLog(final Level level, final String message);
 
 	@Override
 	public final void send(final int id, final ByteBuffer payload) {
