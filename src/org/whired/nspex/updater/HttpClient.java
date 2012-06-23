@@ -58,7 +58,7 @@ public class HttpClient {
 								target = new URL(base, loc);
 							}
 							http.disconnect();
-							if (target == null || !(target.getProtocol().equals("http") || target.getProtocol().equals("https")) || redirects >= 5) {
+							if (target == null || !(target.getProtocol().equals("http") || target.getProtocol().equals("https")) || redirects >= 30) {
 								throw new SecurityException("illegal URL redirect");
 							}
 							redir = true;

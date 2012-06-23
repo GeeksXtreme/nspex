@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.logging.Level;
 
 import org.whired.nspex.tools.logging.Log;
 
@@ -27,17 +28,15 @@ public abstract class NioCommunicable extends Communicable {
 	private final SelectionKey key;
 	/** The host for this communicable */
 	private final NioServer host;
-	/** The hostname for this communicable */
-	protected final String hostName;
 
 	/**
 	 * Creates a new reader for the specified channel
 	 * @param channel the channel to read from
 	 */
 	public NioCommunicable(final SelectionKey key, final NioServer host) {
+		super(((InetSocketAddress) ((SocketChannel) key.channel()).socket().getRemoteSocketAddress()).getAddress().getHostAddress());
 		this.key = key;
 		this.channel = (SocketChannel) key.channel();
-		this.hostName = ((InetSocketAddress) channel.socket().getRemoteSocketAddress()).getAddress().getHostAddress();
 		this.host = host;
 		setReadTimeout(3000);
 	}
@@ -78,11 +77,11 @@ public abstract class NioCommunicable extends Communicable {
 			// We're ready to get the information from the header
 			else {
 				headerBuffer.flip();
-				id = headerBuffer.get() & 0xff;
+				id = headerBuffer.get() & 0xff; // Unsign
 				size = headerBuffer.getInt();
 				// Handle and reset if it's time
 				if (size == 0) {
-					Log.l.config("Packet recevied=" + id + " length=0");
+					Log.l.config("[" + this + "] Packet recevied=" + id + " length=0");
 					handle(id);
 					headerBuffer.clear();
 					return val;
@@ -112,7 +111,7 @@ public abstract class NioCommunicable extends Communicable {
 				// All done, clean up and notify that the packet is ready
 				setReadTimeout(30 * 60000);
 				payloadBuffer.flip();
-				Log.l.config("Packet recevied=" + id + " length=" + payloadBuffer.capacity());
+				Log.l.config("[" + this + "] Packet recevied=" + id + " length=" + payloadBuffer.capacity());
 				handle(id, payloadBuffer.asReadOnlyBuffer());
 				payloadBuffer = null;
 				headerBuffer.clear();
@@ -123,7 +122,7 @@ public abstract class NioCommunicable extends Communicable {
 
 	@Override
 	public final void send(final int id) {
-		Log.l.fine("Sending packet=" + id + " length=0");
+		Log.l.config("[" + this + "] Sending packet=" + id + " length=0");
 		// id:byte length:int (1+4)
 		final ByteBuffer packet = ByteBuffer.allocate(5);
 		packet.put((byte) id);
@@ -132,7 +131,8 @@ public abstract class NioCommunicable extends Communicable {
 
 		try {
 			while (packet.hasRemaining()) {
-				Log.l.fine("Wrote bytes=" + channel.write(packet));
+				// TODO penetration vulnerability -- not sure about outside, but locally we can be frozen by full buffers
+				channel.write(packet);
 			}
 		}
 		catch (final IOException e) {
@@ -140,12 +140,14 @@ public abstract class NioCommunicable extends Communicable {
 		}
 	}
 
+	public abstract void remoteLog(final Level level, final String message);
+
 	@Override
 	public final void send(final int id, final ByteBuffer payload) {
 		if (payload.position() > 0) {
 			payload.flip();
 		}
-		Log.l.fine("Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
+		Log.l.config("[" + this + "] Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
 		// id:byte length:int (1+4+payload)
 		final ByteBuffer packet = ByteBuffer.allocate(payload.capacity() + 5);
 		// Put header
@@ -157,6 +159,7 @@ public abstract class NioCommunicable extends Communicable {
 
 		try {
 			while (packet.hasRemaining()) {
+				// TODO penetration vulnerability -- not sure about outside, but locally we can be frozen by full buffers
 				channel.write(packet);
 			}
 		}
@@ -168,6 +171,7 @@ public abstract class NioCommunicable extends Communicable {
 	@Override
 	public final synchronized void disconnect() {
 		if (connected) {
+			Log.l.config("[" + this + "] Disconnected");
 			connected = false;
 			host.removeKey(key);
 		}

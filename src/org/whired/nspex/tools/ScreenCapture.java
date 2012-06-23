@@ -3,6 +3,7 @@ package org.whired.nspex.tools;
 import java.util.HashSet;
 
 import org.whired.nspex.slave.ImageConsumer;
+import org.whired.nspex.tools.logging.Log;
 
 /**
  * Captures the screen
@@ -13,8 +14,8 @@ public class ScreenCapture implements ImageConsumer {
 	private final Robot robot;
 	/** The frames per second */
 	private final int fps;
-	/** Whether or not this screen capture has been started */
-	private boolean started;
+	/** Whether or not this screen capture has been running */
+	private boolean running;
 	/** A collection of listeners to notify when an image has been produced */
 	private final HashSet<ImageConsumer> listeners = new HashSet<ImageConsumer>();
 	/** The task to run */
@@ -22,7 +23,7 @@ public class ScreenCapture implements ImageConsumer {
 		@Override
 		public void run() {
 			long start;
-			while (isStarted()) {
+			while (isRunning()) {
 				start = System.currentTimeMillis();
 				imageProduced(getSingleFrame());
 				try {
@@ -59,13 +60,14 @@ public class ScreenCapture implements ImageConsumer {
 	 * @param listener the listener to add
 	 */
 	public synchronized void addListener(final ImageConsumer listener) {
+
 		// Restart the capping process if we have a viewer
 		if (listeners.size() == 0) {
-			started = true;
+			running = true;
 			capThread = new Thread(captureTask);
 			capThread.start();
 		}
-		listeners.add(listener);
+		Log.l.fine("Adding listener=" + listener.hashCode() + "=" + listeners.add(listener));
 	}
 
 	/**
@@ -75,8 +77,8 @@ public class ScreenCapture implements ImageConsumer {
 	public synchronized void removeListener(final ImageConsumer listener) {
 		listeners.remove(listener);
 		// If we have no viewers, stop the capping process
-		if (started && listeners.size() == 0) {
-			started = false;
+		if (running && listeners.size() == 0) {
+			running = false;
 			capThread.interrupt();
 		}
 	}
@@ -86,11 +88,15 @@ public class ScreenCapture implements ImageConsumer {
 	 * @return
 	 */
 	public byte[] getSingleFrame() {
-		return robot.getBytePixels();
+		return robot.getPixels();
 	}
 
-	private synchronized boolean isStarted() {
-		return started;
+	/**
+	 * Determines whether or not this capture is running
+	 * @return {@code true} if this capture is running, otherwise {@code false}
+	 */
+	private synchronized boolean isRunning() {
+		return running;
 	}
 
 	@Override

@@ -17,7 +17,7 @@ public class Processor {
 	private static final int MAX_TASKS_PER_COMMUNICABLE = 5;
 	/** The executor that runs tasks */
 	private static final Executor executor = Executors.newFixedThreadPool(MAX_THREADS);
-	/** The map that counts the number of tasks per communicable */
+	/** The map that tracks the number of tasks per communicable */
 	private static final ConcurrentHashMap<Communicable, Integer> submitters = new ConcurrentHashMap<Communicable, Integer>();
 
 	/**
@@ -26,26 +26,30 @@ public class Processor {
 	 * @param task the task to submit
 	 */
 	public static void submit(final Communicable comm, final Runnable task) {
-		Integer i = submitters.get(comm);
-		if (i == null || i < MAX_TASKS_PER_COMMUNICABLE) {
-			submitters.put(comm, i != null ? ++i : 1);
+		Integer taskCount = submitters.get(comm);
+		if (taskCount == null || taskCount < MAX_TASKS_PER_COMMUNICABLE) {
+			// Not tracked or limit not reached, track and increment count
+			submitters.put(comm, taskCount != null ? ++taskCount : 1);
 			executor.execute(new Runnable() {
 				@Override
 				public void run() {
-					// Don't waste time on expired communicables
+					// Ensure they are even still connected
 					if (comm.isConnected()) {
 						task.run();
-						Integer i = submitters.get(comm);
-						if (i != null) {
-							if (i == 1) {
+						Integer taskCount = submitters.get(comm);
+						if (taskCount != null) {
+							if (taskCount == 1) {
+								// This is their last task, stop tracking
 								submitters.remove(comm);
 							}
 							else {
-								submitters.put(comm, --i);
+								// Not the last task, decrement count but keep tracking
+								submitters.put(comm, --taskCount);
 							}
 						}
 					}
 					else {
+						// They are no longer connected, so just remove them
 						submitters.remove(comm);
 					}
 				}

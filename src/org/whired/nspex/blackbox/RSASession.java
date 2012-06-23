@@ -62,12 +62,6 @@ public class RSASession {
 	 * @throws GeneralSecurityException when the bytes can't be encrypted for any reason
 	 */
 	public final ByteBuffer encrpyt(final ByteBuffer plainText) throws GeneralSecurityException {
-		// TODO this sucks for obvious reasons
-		if (remotePublicKey == null) {
-			// There's no way to guarantee that we have a key
-			// Should be asked for in parameters but exceptions make it just as messy..
-			throw new NullPointerException("Cannot encrpyt without remote key (generateRemotePublicKey())");
-		}
 		cipher.init(Cipher.ENCRYPT_MODE, remotePublicKey);
 		if (plainText.position() > 0) {
 			plainText.flip();

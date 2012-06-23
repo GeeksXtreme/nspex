@@ -13,8 +13,10 @@ import java.util.logging.Level;
 import org.whired.nspex.blackbox.sql.SQLiteDatabase;
 import org.whired.nspex.net.BufferUtil;
 import org.whired.nspex.net.Communicable;
+import org.whired.nspex.net.ExpandableByteBuffer;
 import org.whired.nspex.net.NioCommunicable;
 import org.whired.nspex.net.NioServer;
+import org.whired.nspex.tools.Slave;
 import org.whired.nspex.tools.logging.Log;
 
 /**
@@ -36,7 +38,7 @@ public class AuthenticationServer {
 	 * @throws ClassNotFoundException
 	 * @throws SQLException
 	 */
-	public AuthenticationServer(final int port) throws IOException, GeneralSecurityException, SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+	public AuthenticationServer(final int port) throws GeneralSecurityException, SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
 		Log.l.setLevel(Level.ALL);
 		// Set up rsa session
 		Log.l.info("Generating RSA keys..");
@@ -101,7 +103,7 @@ public class AuthenticationServer {
 										sb.append(Integer.toHexString(array[i] & 0xFF | 0x100).substring(1, 3));
 									}
 									pass = sb.toString();
-									Log.l.config("[" + hostName + "] userid: " + userid + " userpass: " + pass);
+									Log.l.config("[" + this + "] userid: " + userid + " userpass: " + pass);
 
 									// Okay, so we have the basics..
 									// Now we can use the details
@@ -110,9 +112,9 @@ public class AuthenticationServer {
 										if (rs.next() && rs.getString(1).equals(pass)) {
 											// Password is right, let's compare the ip
 											final String lastHost = rs.getString(2);
-											if (!isSameIsp(lastHost, hostName)) {
+											if (!isSameIsp(lastHost, this.toString())) {
 												final long lastChange = rs.getLong(3);
-												Log.l.config("IP has changed too drastically (" + hostName + "!=" + lastHost + ") lastChange=" + lastChange);
+												Log.l.config("IP has changed too drastically (" + this + "!=" + lastHost + ") lastChange=" + lastChange);
 												// Check if client is allowed a mulligan
 												if (System.currentTimeMillis() - IP_CHANGE_TIMEOUT > lastChange) {
 													// Warn client that he can change, but at a cost
@@ -146,7 +148,8 @@ public class AuthenticationServer {
 										}
 										else {
 											// No matches found/password mismatch
-											Log.l.info("[" + hostName + "]: Invalid login");
+											Log.l.info("[" + this + "]: Invalid login");
+											// Send response code
 											disconnect();
 											return;
 										}
@@ -172,15 +175,22 @@ public class AuthenticationServer {
 					@Override
 					protected void disconnected() {
 						// We don't really care
+						Log.l.fine("[" + this + "] disconnected");
 					}
 
+					@Override
+					public void remoteLog(Level level, String message) {
+						ExpandableByteBuffer buffer = new ExpandableByteBuffer();
+						buffer.put((byte) level.intValue()).putJTF(message);
+						send(Slave.OP_LOG, buffer.asByteBuffer());
+					}
 				};
 			}
 		};
 		server.startListening();
 	}
 
-	public static boolean isSameIsp(final String ip1, final String ip2) {
+	private static boolean isSameIsp(final String ip1, final String ip2) {
 		// TODO ..this has some obvious flaws..
 		return get512(ip1).equals(get512(ip2));
 	}
@@ -195,7 +205,7 @@ public class AuthenticationServer {
 		}
 	}
 
-	public static void main(final String[] args) throws IOException, GeneralSecurityException, SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+	public static void main(final String[] args) throws Throwable {
 		new AuthenticationServer(43597);
 	}
 }

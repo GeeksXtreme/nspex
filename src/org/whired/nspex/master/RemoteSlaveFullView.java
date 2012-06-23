@@ -41,16 +41,18 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	 * @param slave the slave to create the view for
 	 */
 	public RemoteSlaveFullView(final SlaveView mainView, final RemoteSlave slave) {
-		super(slave.getUser() + "@" + slave.getHost() + " (" + slave.getOS() + ")");
+		super(slave.getUser() + "@" + slave.getHost() + " (" + slave.getOS() + ") v" + slave.getVersion());
 		this.mainView = mainView;
 		panel = new JPanel() {
 			@Override
-			public void paint(final Graphics g) {
+			public void paintComponent(final Graphics g) {
 				if (image == null) {
 					return;
 				}
 				final Graphics2D g2 = (Graphics2D) g;
+				g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 				g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 				g2.drawImage(image, 0, 0, this);
 				g.dispose();
 			}
@@ -82,9 +84,9 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				fileChooser = new RemoteFileChooserPanel() {
 
 					@Override
-					protected void requestThumbnail(final String path) {
+					protected void requestFileAction(final int action, final String path) {
 						try {
-							slave.requestThumbnail(path);
+							slave.requestFileAction(action, path);
 						}
 						catch (final IOException e) {
 							e.printStackTrace();
@@ -154,13 +156,13 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				EventQueue.invokeAndWait(run);
 			}
 			catch (final Throwable t) {
+				t.printStackTrace();
 			}
 		}
 	}
 
 	@Override
 	public void imageResized(final int width, final int height) {
-		Log.l.config("");
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {

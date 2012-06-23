@@ -26,8 +26,6 @@ public class AuthenticationClient {
 
 			@Override
 			public void handle(final int id) {
-				// TODO Auto-generated method stub
-
 			}
 
 			@Override

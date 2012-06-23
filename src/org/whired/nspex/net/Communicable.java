@@ -11,6 +11,11 @@ public abstract class Communicable {
 	private long lastReadTime = System.currentTimeMillis();
 	private int readTimeout;
 	boolean connected = true;
+	final String hostName;
+
+	public Communicable(String hostName) {
+		this.hostName = hostName;
+	}
 
 	/**
 	 * Packages and sends a packet with the specified id
@@ -27,7 +32,7 @@ public abstract class Communicable {
 	/**
 	 * Packages and sends a packet with the specified id and payload
 	 * @param id the id of the packet
-	 * @param payload the NON-{@code flip()}PED payload of the packet
+	 * @param payload the payload of the packet
 	 */
 	public abstract void send(int id, ByteBuffer payload);
 
@@ -84,5 +89,10 @@ public abstract class Communicable {
 	 */
 	long getLastReadTime() {
 		return lastReadTime;
+	}
+
+	@Override
+	public String toString() {
+		return hostName;
 	}
 }

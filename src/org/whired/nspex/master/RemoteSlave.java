@@ -3,12 +3,18 @@ package org.whired.nspex.master;
 import java.awt.Dimension;
 import java.awt.Image;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.logging.Level;
+import java.util.zip.GZIPInputStream;
 
 import javax.imageio.ImageIO;
+import javax.swing.JFileChooser;
+import javax.swing.SwingUtilities;
 
 import org.whired.nspex.net.BufferUtil;
 import org.whired.nspex.net.Communicable;
@@ -57,7 +63,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 								final byte[] buf = new byte[imgLen];
 								payload.get(buf);
 								try {
-									imageProduced(ImageIO.read(new ByteArrayInputStream(buf)));
+									imageProduced(ImageIO.read(new GZIPInputStream(new ByteArrayInputStream(buf))));
 								}
 								catch (final IOException e) {
 									e.printStackTrace();
@@ -70,7 +76,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 							byte[] image = new byte[payload.capacity()];
 							payload.get(image);
 							try {
-								imageProduced(ImageIO.read(new ByteArrayInputStream(image)));
+								imageProduced(ImageIO.read(new GZIPInputStream(new ByteArrayInputStream(image))));
 							}
 							catch (final IOException e) {
 								e.printStackTrace();
@@ -86,14 +92,60 @@ public class RemoteSlave extends Slave implements SlaveModel {
 							}
 							view.addChildFiles(fs, parentPath, rf);
 						break;
-						case OP_GET_FILE_THUMB:
-							image = new byte[payload.capacity()];
-							payload.get(image);
-							try {
-								view.setThumbnail(ImageIO.read(new ByteArrayInputStream(image)));
-							}
-							catch (final IOException e) {
-								e.printStackTrace();
+						case OP_LOG:
+							Log.l.log(Level.parse("" + (payload.get() & 0xFF)), "REMOTE: " + BufferUtil.getJTF(payload));
+						break;
+						case OP_FILE_ACTION:
+							switch (payload.get() & 0xFF) {
+								case FOP_GET_THUMB:
+									image = new byte[payload.capacity() - 1];
+									payload.get(image);
+									try {
+										view.setThumbnail(ImageIO.read(new ByteArrayInputStream(image)));
+									}
+									catch (final IOException e) {
+										e.printStackTrace();
+									}
+								break;
+								case FOP_DOWNLOAD:
+									final String fileName = BufferUtil.getJTF(payload);
+									final byte[] fileBytes = new byte[payload.remaining()];
+									payload.get(fileBytes);
+									// Looks like we aren't invoking a timeout, this could
+									// be a server-side problem
+
+									SwingUtilities.invokeLater(new Runnable() {
+										@Override
+										public void run() {
+											final JFileChooser chooser = new JFileChooser();
+											chooser.setDialogTitle("Saving '" + fileName + "'");
+											chooser.setSelectedFile(new File(fileName));
+											final int returnVal = chooser.showSaveDialog(null);
+											FileOutputStream fos = null;
+											if (returnVal == JFileChooser.APPROVE_OPTION) {
+												final File file = chooser.getSelectedFile();
+												try {
+													file.createNewFile();
+													fos = new FileOutputStream(file);
+													fos.write(fileBytes);
+												}
+												catch (IOException e) {
+													Log.l.log(Level.INFO, "Unable to save file=" + file.getName(), e);
+												}
+												finally {
+													if (fos != null) {
+														try {
+															fos.close();
+														}
+														catch (IOException e) {
+														}
+													}
+												}
+											}
+										}
+									});
+
+								break;
 							}
 						break;
 						default:
@@ -141,11 +193,12 @@ public class RemoteSlave extends Slave implements SlaveModel {
 	}
 
 	@Override
-	public void requestThumbnail(final String path) throws IOException {
+	public void requestFileAction(final int action, final String path) throws IOException {
 		final IoCommunicable ioc = connectToRemote();
 		final ExpandableByteBuffer buf = new ExpandableByteBuffer();
+		buf.put(action);
 		buf.putJTF(path);
-		ioc.send(OP_GET_FILE_THUMB, buf.asByteBuffer());
+		ioc.send(OP_FILE_ACTION, buf.asByteBuffer());
 	}
 
 	@Override

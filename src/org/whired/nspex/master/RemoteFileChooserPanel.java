@@ -8,9 +8,15 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.Enumeration;
 
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
@@ -23,11 +29,14 @@ import javax.swing.event.TreeWillExpandListener;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.ExpandVetoException;
 import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 
 import org.whired.nspex.tools.LazyTreeNode;
 import org.whired.nspex.tools.RemoteFile;
+import org.whired.nspex.tools.Slave;
 import org.whired.nspex.tools.logging.Log;
 
+// TODO refresh, download, delete '..', information panel (size, date modified, etc)							?
 public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillExpandListener, TreeSelectionListener {
 
 	private final LazyTreeNode root = new LazyTreeNode("", true);
@@ -69,6 +78,85 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 		fl_pnlPreview.setHgap(10);
 		fl_pnlPreview.setVgap(80);
 		add(pnlPreview, BorderLayout.SOUTH);
+
+		JMenuItem jmiRefresh = new JMenuItem("Refresh");
+		jmiRefresh.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				LazyTreeNode node = (LazyTreeNode) treeFiles.getLastSelectedPathComponent();
+				if (node != null) {
+					final String path = pathToString(node.getPath());
+					if (node.isLeaf()) {
+
+						// Node is a child, get parent and refresh
+						node = (LazyTreeNode) node.getParent();
+					}
+					Log.l.info("Requesting refresh of folder=" + path);
+					node.removeAllChildren();
+					requestChildren(pathToString(node.getPath()));
+				}
+			}
+		});
+
+		JMenuItem jmiDownload = new JMenuItem("Download");
+		jmiDownload.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				final LazyTreeNode node = (LazyTreeNode) treeFiles.getLastSelectedPathComponent();
+				if (node != null) {
+					final String path = pathToString(node.getPath());
+					if (node.isLeaf()) {
+						Log.l.info("Requesting download of file=" + path);
+						requestFileAction(Slave.FOP_DOWNLOAD, path);
+					}
+					else {
+						// TODO download folder
+						Log.l.info("Requesting download of folder=" + path);
+					}
+				}
+			}
+		});
+
+		JMenuItem jmiDelete = new JMenuItem("Delete");
+		jmiDelete.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				final LazyTreeNode node = (LazyTreeNode) treeFiles.getLastSelectedPathComponent();
+				if (node != null) {
+					final String path = pathToString(node.getPath());
+					Log.l.info("Requesting deletion of file=" + path);
+					requestFileAction(Slave.FOP_DELETE, path);
+				}
+			}
+		});
+
+		JMenuItem jmiRename = new JMenuItem("Rename");
+		jmiRename.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Request file rename
+			}
+		});
+
+		final JPopupMenu fileMenu = new JPopupMenu();
+		fileMenu.add(jmiRefresh);
+		fileMenu.add(jmiDownload);
+		fileMenu.add(jmiRename);
+		fileMenu.add(jmiDelete);
+
+		// Show right-click menu when treeFiles is right-clicked
+		treeFiles.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				if (e.getButton() == MouseEvent.BUTTON3) {
+					TreePath clickedPath;
+					if ((clickedPath = treeFiles.getPathForLocation(e.getX(), e.getY())) != null) {
+						treeFiles.setSelectionPath(clickedPath);
+						fileMenu.show(treeFiles, e.getX(), e.getY());
+					}
+				}
+			}
+		});
 		treeFiles.setScrollsOnExpand(false);
 		treeFiles.setShowsRootHandles(true);
 		treeFiles.getSelectionModel().addTreeSelectionListener(this);
@@ -85,9 +173,9 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 		treeFiles.collapseRow(0);
 	}
 
-	protected abstract void requestChildren(String parentPath);
+	protected abstract void requestFileAction(int type, String path);
 
-	protected abstract void requestThumbnail(String path);
+	protected abstract void requestChildren(String parentPath);
 
 	public void addChildren(final char fs, final String parentPath, final RemoteFile[] children) {
 		Log.l.fine("addChildren(), fs=" + fs + " parentPath=" + parentPath + " children.length=" + children.length);
@@ -108,7 +196,7 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 					Enumeration e;
 					for (int i = 0; i < goodNodes.length; i++) {
 						if (i > 0) {
-							goodNodes[i] += fs; // Maybe not..
+							goodNodes[i] += fs;
 						}
 						e = ltn.children();
 						while (e.hasMoreElements()) {
@@ -144,7 +232,7 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 			final String name = node.toString().toLowerCase();
 			if (name.endsWith("jpeg") || name.endsWith("jpg") || name.endsWith("bmp") || name.endsWith("png") || name.endsWith("gif")) {
 				String fname = pathToString(node.getPath());
-				requestThumbnail(fname);
+				requestFileAction(Slave.FOP_GET_THUMB, fname);
 			}
 		}
 	}
@@ -174,7 +262,7 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 	}
 
 	public Dimension getThumbSize() {
-		invalidate();
+		invalidate(); // TODO why?
 		return pnlPreview.getSize();
 	}
 }
