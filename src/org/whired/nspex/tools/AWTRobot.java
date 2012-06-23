@@ -18,12 +18,30 @@ import java.lang.reflect.Method;
 
 import sun.awt.ComponentFactory;
 
-//TODO doc
+/**
+ * A lower level AWT robot
+ * @author Whired
+ */
 public final class AWTRobot extends Robot {
+	/** The unscaled image */
 	private final BufferedImage unscaled;
+	/** The unscaled pixels backing {@link #unscaled} */
 	private final int[] unscaledPix;
+	/** The target size to scale to */
 	private final Dimension targetSize;
+	/** The default screen device */
+	private static final GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+	private Method getRGBPixelsMethod;
+	private final RobotPeer peer;
+	private static boolean hasMouseInfoPeer;
+	private static MouseInfoPeer mouseInfoPeer;
 
+	/**
+	 * Creates a new awt robot with the specified capture bounds and desired zoom level
+	 * @param bounds the bounds to capture
+	 * @param zoom the zoom to scale to, between .1 and 1.0 inclusive
+	 * @throws AWTException if the robot can't be created
+	 */
 	public AWTRobot(final Rectangle bounds, final double zoom) throws AWTException {
 		super(bounds, zoom);
 		final Toolkit toolkit = Toolkit.getDefaultToolkit();
@@ -84,20 +102,28 @@ public final class AWTRobot extends Robot {
 
 		if (methodType >= 0 && method != null && (methodType <= 1 || methodParam != null)) {
 			getRGBPixelsMethod = method;
-			getRGBPixelsMethodType = methodType;
-			getRGBPixelsMethodParam = methodParam;
 		}
 		unscaled = new BufferedImage(getCaptureBounds().width, getCaptureBounds().height, BufferedImage.TYPE_INT_RGB);
 		unscaledPix = ((DataBufferInt) unscaled.getRaster().getDataBuffer()).getData();
 		targetSize = new Dimension(scale(getCaptureBounds().width), scale(getCaptureBounds().height));
 	}
 
+	/**
+	 * Creates a new awt robot with default screen bounds and the specified zoom to scale to
+	 * @param zoom the zoom to scale to, between .1 and 1.0 inclusive
+	 * @throws AWTException if the robot can't be created
+	 */
 	public AWTRobot(final double zoom) throws AWTException {
 		this(null, zoom);
 	}
 
-	public AWTRobot(final Dimension d) throws AWTException {
-		this(Robot.calculateZoom(Robot.getScreenBounds(), d));
+	/**
+	 * Creates a new awt robot with the default screen bounds and the specified target size
+	 * @param targetSize the target size to scale to
+	 * @throws AWTException if the robot can't be created
+	 */
+	public AWTRobot(final Dimension targetSize) throws AWTException {
+		this(Robot.calculateZoom(Robot.getScreenBounds(), targetSize));
 	}
 
 	public static GraphicsDevice getMouseInfo(final Point point) {
@@ -131,10 +157,16 @@ public final class AWTRobot extends Robot {
 		return info.getDevice();
 	}
 
+	/**
+	 * Gets the number of mouse buttons, as specified by {@link MouseInfo#getNumberOfButtons()}
+	 */
 	public static int getNumberOfMouseButtons() {
 		return MouseInfo.getNumberOfButtons();
 	}
 
+	/**
+	 * Gets the default screen device, as specified by {@link GraphicsEnvironment#getDefaultScreenDevice()}
+	 */
 	public static GraphicsDevice getDefaultScreenDevice() {
 		return GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 	}
@@ -143,34 +175,70 @@ public final class AWTRobot extends Robot {
 		return getMouseInfo(null);
 	}
 
+	/**
+	 * Moves the mouse to the specified x and y locations
+	 * @param x the x-coordinate to move to
+	 * @param y the y-coordinate to move to
+	 */
 	public void mouseMove(final int x, final int y) {
 		peer.mouseMove(x, y);
 	}
 
+	/**
+	 * Presses the specified mouse buttons
+	 * @param buttons the (OR'd) buttons to press
+	 */
 	public void mousePress(final int buttons) {
 		peer.mousePress(buttons);
 	}
 
+	/**
+	 * Releases the specified mouse buttons
+	 * @param buttons the (OR'd) buttons to release
+	 */
 	public void mouseRelease(final int buttons) {
 		peer.mouseRelease(buttons);
 	}
 
+	/**
+	 * Moves the mouse wheel by the specified amount
+	 * @param wheelAmt the amount to move
+	 */
 	public void mouseWheel(final int wheelAmt) {
 		peer.mouseWheel(wheelAmt);
 	}
 
+	/**
+	 * Presses the specified key
+	 * @param keycode the key to press
+	 */
 	public void keyPress(final int keycode) {
 		peer.keyPress(keycode);
 	}
 
+	/**
+	 * Releases the specified key
+	 * @param keycode the key to release
+	 */
 	public void keyRelease(final int keycode) {
 		peer.keyRelease(keycode);
 	}
 
+	/**
+	 * Gets the RGB value of the pixel at the specified x and y coordinates
+	 * @param x the x-coordinate of the pixel
+	 * @param y the y-coordinate of the pixel
+	 * @return the RGB value
+	 */
 	public int getRGBPixel(final int x, final int y) {
 		return peer.getRGBPixel(x, y);
 	}
 
+	/**
+	 * Gets the RGB values of the pixels within the specified rectangle
+	 * @param bounds the bounds of the pixels whose values to get
+	 * @return the values
+	 */
 	public int[] getRGBPixels(final Rectangle bounds) {
 		return peer.getRGBPixels(bounds);
 	}
@@ -182,35 +250,10 @@ public final class AWTRobot extends Robot {
 		return JPEGImageWriter.getImageBytes(unscaled, targetSize);
 	}
 
-	public boolean getRGBPixels(final int x, final int y, final int width, final int height, final int[] pixels) {
-		if (getRGBPixelsMethod != null) {
-			try {
-				if (getRGBPixelsMethodType == 0) {
-					getRGBPixelsMethod.invoke(peer, new Object[] { Integer.valueOf(x), Integer.valueOf(y), Integer.valueOf(width), Integer.valueOf(height), pixels });
-				}
-				else if (getRGBPixelsMethodType == 1) {
-					getRGBPixelsMethod.invoke(peer, new Object[] { new Rectangle(x, y, width, height), pixels });
-				}
-				else if (getRGBPixelsMethodType == 2) {
-					getRGBPixelsMethod.invoke(peer, new Object[] { getRGBPixelsMethodParam, new Rectangle(x, y, width, height), pixels });
-				}
-				else {
-					getRGBPixelsMethod.invoke(peer, new Object[] { getRGBPixelsMethodParam, Integer.valueOf(x), Integer.valueOf(y), Integer.valueOf(width), Integer.valueOf(height), pixels });
-				}
-
-				return true;
-			}
-			catch (final Exception ex) {
-			}
-		}
-
-		final int[] tmp = getRGBPixels(new Rectangle(x, y, width, height));
-		System.arraycopy(tmp, 0, pixels, 0, width * height);
-		return false;
-	}
-
-	public void dispose() {
-		getRGBPixelsMethodParam = null;
+	/**
+	 * Disposes of resources
+	 */
+	private final void dispose() {
 		final Method method = getRGBPixelsMethod;
 		if (method != null) {
 			getRGBPixelsMethod = null;
@@ -237,12 +280,4 @@ public final class AWTRobot extends Robot {
 			super.finalize();
 		}
 	}
-
-	private Object getRGBPixelsMethodParam;
-	private int getRGBPixelsMethodType;
-	private static final GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-	private Method getRGBPixelsMethod;
-	private final RobotPeer peer;
-	private static boolean hasMouseInfoPeer;
-	private static MouseInfoPeer mouseInfoPeer;
 }

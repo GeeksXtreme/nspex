@@ -7,7 +7,9 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.zip.Deflater;
+import java.util.zip.GZIPOutputStream;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -15,13 +17,15 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
 
+import org.whired.nspex.tools.logging.Log;
+
 /**
  * A JPEG compressor and stream writer
  * @author Whired
  */
 public class JPEGImageWriter {
 	/** The format to write */
-	private static final String FORMAT_NAME = "jpg";
+	private static final String FORMAT_NAME = "JPEG";
 	/** The options for image writing */
 	private static final JPEGImageWriteParam iwparam = new JPEGImageWriteParam(null);
 	/** The image writer */
@@ -31,14 +35,13 @@ public class JPEGImageWriter {
 	static {
 		// Set options
 		iwparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-		iwparam.setCompressionQuality(.7F);
+		iwparam.setCompressionQuality(.65F);
 
 		// Get writer
-		final Iterator<ImageWriter> iter = ImageIO.getImageWritersByFormatName(FORMAT_NAME);
-		if (iter.hasNext()) {
-			writer = iter.next();
+		try {
+			writer = ImageIO.getImageWritersByFormatName(FORMAT_NAME).next();
 		}
-		else {
+		catch (NoSuchElementException e) {
 			throw new ExceptionInInitializerError("No available writer for format: " + FORMAT_NAME);
 		}
 		try {
@@ -92,8 +95,24 @@ public class JPEGImageWriter {
 
 			g2.drawImage(image, 0, 0, bufferedImage.getWidth(), bufferedImage.getHeight(), Color.BLACK, null);
 			try {
+				// Write to bos
 				writer.write(null, new IIOImage(bufferedImage, null, null), iwparam);
-				return bos.toByteArray();
+
+				// GZIP
+				byte[] raw = bos.toByteArray();
+				ByteArrayOutputStream gzos = new ByteArrayOutputStream();
+				GZIPOutputStream gzo = new GZIPOutputStream(gzos) {
+					{
+						def.setLevel(Deflater.BEST_COMPRESSION);
+					}
+				};
+				gzo.write(raw);
+				gzo.close();
+				byte[] compressed = gzos.toByteArray();
+
+				Log.l.finest("Image compression: before=" + raw.length + " after=" + compressed.length);
+
+				return compressed;
 			}
 			catch (final IOException e) {
 				e.printStackTrace();

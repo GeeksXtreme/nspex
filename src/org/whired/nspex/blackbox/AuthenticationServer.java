@@ -184,7 +184,6 @@ public class AuthenticationServer {
 						buffer.put((byte) level.intValue()).putJTF(message);
 						send(Slave.OP_LOG, buffer.asByteBuffer());
 					}
-
 				};
 			}
 		};

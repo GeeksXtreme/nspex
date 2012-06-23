@@ -7,3 +7,4 @@
 0.0.7 - Networking fix
 0.0.8 - NIO/Remote file browse
 0.0.9 - Stop sending image on connect
+0.1.0 - GZip images

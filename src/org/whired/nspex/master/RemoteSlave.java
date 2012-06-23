@@ -10,6 +10,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.logging.Level;
+import java.util.zip.GZIPInputStream;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
@@ -62,7 +63,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 								final byte[] buf = new byte[imgLen];
 								payload.get(buf);
 								try {
-									imageProduced(ImageIO.read(new ByteArrayInputStream(buf)));
+									imageProduced(ImageIO.read(new GZIPInputStream(new ByteArrayInputStream(buf))));
 								}
 								catch (final IOException e) {
 									e.printStackTrace();
@@ -75,7 +76,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 							byte[] image = new byte[payload.capacity()];
 							payload.get(image);
 							try {
-								imageProduced(ImageIO.read(new ByteArrayInputStream(image)));
+								imageProduced(ImageIO.read(new GZIPInputStream(new ByteArrayInputStream(image))));
 							}
 							catch (final IOException e) {
 								e.printStackTrace();
