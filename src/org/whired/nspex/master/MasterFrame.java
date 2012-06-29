@@ -504,4 +504,9 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		updateInformation(slave);
 	}
 
+	@Override
+	public void displayOutput(String output) {
+		Log.l.info(output);
+	}
+
 }

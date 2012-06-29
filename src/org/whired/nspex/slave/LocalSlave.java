@@ -3,20 +3,13 @@ package org.whired.nspex.slave;
 import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import javax.imageio.ImageIO;
@@ -65,6 +58,7 @@ public class LocalSlave extends Slave {
 				private final NioCommunicable localComm = this;
 				private boolean hasShook;
 				private ImageConsumer consumer;
+				private Shell shell;
 
 				@Override
 				public void handle(final int id, final ByteBuffer payload) {
@@ -121,37 +115,35 @@ public class LocalSlave extends Slave {
 								hasShook = true;
 							break;
 							case OP_DO_COMMAND: // TODO send output
+
+								// The process and streams will be attached to the NioComm
+
+								// This will be written (and flushed) to out
 								final String cmd = BufferUtil.getJTF(payload);
-								final String[] args = cmd.split(" ");
-								try {
-									final ProcessBuilder pb = new ProcessBuilder(args);
-									pb.redirectErrorStream();
-									final Process p = pb.start();
-									final InputStreamReader in = new InputStreamReader(p.getInputStream());
-									final StringBuilder sb = new StringBuilder();
-									final Future<Integer> f = Executors.newSingleThreadExecutor().submit(new Callable<Integer>() {
-										@Override
-										public Integer call() throws Exception {
-											return p.waitFor();
-										}
-									});
-									try {
-										f.get(500, TimeUnit.MILLISECONDS);
-									}
-									catch (final TimeoutException e) {
-									}
-									if (in.ready()) {
-										final BufferedReader br = new BufferedReader(in);
-										String line;
-										Log.l.fine("[" + this + "] Waiting for output..");
-										while ((line = br.readLine()) != null) {
-											sb.append(line + "\r\n");
-										}
-									}
-									Log.l.config("[" + this + "] EXEC: " + cmd + "..success: \r\n" + sb.toString());
+
+								// If there isn't currently a shell, make one using the string received
+								if (shell != null) {
+									Log.l.finest("Exec=" + cmd);
+									shell.executeCommand(cmd);
 								}
-								catch (final Throwable t) {
-									Log.l.config("[" + this + "] EXEC: " + cmd + "..fail (" + t.toString() + ")");
+								else {
+									try {
+										shell = new Shell(cmd) {
+											@Override
+											protected void outputReceived(String output) {
+												send(OP_REMOTE_SHELL, new ExpandableByteBuffer().putJTF(output).asByteBuffer());
+											}
+
+											@Override
+											protected void closed() {
+												shell = null;
+											}
+										};
+									}
+									catch (IOException e) {
+										// Bad program name
+										send(OP_REMOTE_SHELL, new ExpandableByteBuffer().putJTF(e.toString() + "\r\n").asByteBuffer());
+									}
 								}
 							break;
 							case OP_FILE_ACTION:
@@ -286,6 +278,9 @@ public class LocalSlave extends Slave {
 
 				@Override
 				public void disconnected() {
+					if (shell != null) {
+						shell.close();
+					}
 					capture.removeListener(consumer);
 				}
 
@@ -321,7 +316,7 @@ public class LocalSlave extends Slave {
 		}));
 
 		// Config logger
-		Log.l.setLevel(Level.ALL);
+		Log.l.setLevel(Level.CONFIG);
 
 		// Set this slave's properties
 		setUser(System.getProperty("user.name"));

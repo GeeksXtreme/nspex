@@ -148,6 +148,10 @@ public class RemoteSlave extends Slave implements SlaveModel {
 								break;
 							}
 						break;
+						case OP_REMOTE_SHELL:
+							// Send to the view
+							view.displayOutput(BufferUtil.getJTF(payload));
+						break;
 						default:
 							Log.l.warning("Unhandled packet=" + id + " payload=" + payload.capacity() + " local=" + Slave.VERSION + " remote=" + getVersion());
 						break;

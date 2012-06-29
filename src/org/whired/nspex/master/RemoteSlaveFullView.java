@@ -32,9 +32,13 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	private Image image;
 	/** The panel to draw on */
 	private final JPanel panel;
+	/** The remote file chooser */
 	private RemoteFileChooserPanel fileChooser;
 	private JScrollPane scrollPane;
+	/** The main view that created this view */
 	private final SlaveView mainView;
+	/** The console used for controlling the remote slave */
+	private JConsole console;
 
 	/**
 	 * Creates a new full view for the specified slave
@@ -67,7 +71,7 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				scrollPane.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane.getVerticalScrollBar()));
 				scrollPane.setViewportBorder(null);
 
-				final JConsole console = new JConsole(slave.getUser());
+				console = new JConsole();
 				console.addCommandListener(new CommandListener() {
 					@Override
 					public void doCommand(final String command) {
@@ -208,5 +212,10 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 
 	@Override
 	public void connected(final Slave slave) {
+	}
+
+	@Override
+	public void displayOutput(String output) {
+		console.append(output);
 	}
 }

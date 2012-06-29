@@ -32,11 +32,11 @@ public abstract class IoCommunicable extends Communicable {
 						final byte[] toFill = new byte[fillLen];
 						if (toFill.length > 0) {
 							dis.readFully(toFill);
-							Log.l.config("[" + IoCommunicable.this + "] Packet recevied=" + op + " length=" + toFill.length);
+							Log.l.fine("[" + IoCommunicable.this + "] Packet recevied=" + op + " length=" + toFill.length);
 							handle(op, ByteBuffer.wrap(toFill).asReadOnlyBuffer());
 						}
 						else {
-							Log.l.config("[" + IoCommunicable.this + "] Packet recevied=" + op + " length=0");
+							Log.l.fine("[" + IoCommunicable.this + "] Packet recevied=" + op + " length=0");
 							handle(op);
 						}
 						socket.setSoTimeout(60000 * 30);
@@ -51,7 +51,7 @@ public abstract class IoCommunicable extends Communicable {
 
 	@Override
 	public final void send(final int id) {
-		Log.l.config("[" + this + "] Sending packet=" + id + " length=0");
+		Log.l.fine("[" + this + "] Sending packet=" + id + " length=0");
 		try {
 			dos.write(id);
 		}
@@ -71,7 +71,7 @@ public abstract class IoCommunicable extends Communicable {
 			if (payload.position() > 0) {
 				payload.flip();
 			}
-			Log.l.config("[" + this + "] Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
+			Log.l.fine("[" + this + "] Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
 			dos.write(id);
 			final byte[] raw = new byte[payload.capacity()];
 			dos.writeInt(raw.length);
