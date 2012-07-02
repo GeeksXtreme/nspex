@@ -316,7 +316,7 @@ public class LocalSlave extends Slave {
 		}));
 
 		// Config logger
-		Log.l.setLevel(Level.CONFIG);
+		Log.l.setLevel(Level.ALL);
 
 		// Set this slave's properties
 		setUser(System.getProperty("user.name"));

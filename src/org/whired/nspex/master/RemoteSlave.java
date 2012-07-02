@@ -101,7 +101,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 									image = new byte[payload.capacity() - 1];
 									payload.get(image);
 									try {
-										view.setThumbnail(ImageIO.read(new ByteArrayInputStream(image)));
+										view.setThumbnail(ImageIO.read(new GZIPInputStream(new ByteArrayInputStream(image))));
 									}
 									catch (final IOException e) {
 										e.printStackTrace();
