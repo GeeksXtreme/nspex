@@ -181,10 +181,21 @@ public class JConsole extends JTextArea {
 	}
 
 	private void fireCommand(final String cmd) {
-		// TODO check for cls/clear
-		synchronized (this) {
-			for (final CommandListener l : listeners) {
-				l.doCommand(cmd);
+		// Check for clear commands
+		final String lwc = cmd.toLowerCase();
+		if (lwc.equals("cls") || lwc.equals("clear")) {
+			try {
+				getDocument().remove(0, getDocument().getLength());
+			}
+			catch (BadLocationException e) {
+				// Seriously, why is this even checked..
+			}
+		}
+		else {
+			synchronized (this) {
+				for (final CommandListener l : listeners) {
+					l.doCommand(cmd);
+				}
 			}
 		}
 	}
