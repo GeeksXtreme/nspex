@@ -10,20 +10,23 @@ public class BufferUtil {
 	 * @return the encoded bytes
 	 */
 	public static byte[] encodeJTF(final String string) {
-		int len = 0;
+
+		// Skip the linear-time counting iteration
+		//int len = 0;
+		// Skip this linear iteration
 		final char[] chrArr = string.toCharArray();
-		for (final char c : chrArr) {
-			if (c < 0x80) {
-				len++;
-			}
-			else if (c < 0x3fff) {
-				len += 2;
-			}
-			else {
-				len += 3;
-			}
-		}
-		final byte[] encoded = new byte[len];
+		//		for (final char c : chrArr) {
+		//			if (c < 0x80) {
+		//				len++;
+		//			}
+		//			else if (c < 0x3fff) {
+		//				len += 2;
+		//			}
+		//			else {
+		//				len += 3;
+		//			}
+		//		}
+		final byte[] encoded = new byte[string.length() * 3];//len];
 		int idx = 0;
 		for (final int chr : chrArr) {
 			if (chr < 0x80) {
@@ -39,7 +42,11 @@ public class BufferUtil {
 				encoded[idx++] = (byte) (chr >>> 14);
 			}
 		}
-		return encoded;
+
+		// Should be faster
+		final byte[] sizedEncoded = new byte[idx];
+		System.arraycopy(encoded, 0, sizedEncoded, 0, idx);
+		return sizedEncoded;
 	}
 
 	/**
