@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
 import sun.awt.ComponentFactory;
 
 /**
- * A lower level AWT robot
+ * TODO just wrap A lower level AWT robot
  * @author Whired
  */
 public final class AWTRobot extends Robot {

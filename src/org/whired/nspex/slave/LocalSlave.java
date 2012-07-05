@@ -245,8 +245,10 @@ public class LocalSlave extends Slave {
 									byte[] pathBytes = BufferUtil.encodeJTF(toDownload.getName());
 									ByteBuffer retBuf = ByteBuffer.allocateDirect((int) size + 3 + pathBytes.length);
 									retBuf.put((byte) FOP_DOWNLOAD).putShort((short) pathBytes.length).put(pathBytes);
+									FileInputStream fis = null;
 									try {
-										FileInputStream fis = new FileInputStream(toDownload);
+										long start = System.currentTimeMillis();
+										fis = new FileInputStream(toDownload);
 										FileChannel fc = fis.getChannel();
 										while (retBuf.hasRemaining()) {
 											if (fc.read(retBuf) == -1) {
@@ -254,9 +256,19 @@ public class LocalSlave extends Slave {
 											}
 										}
 										send(OP_FILE_ACTION, retBuf);
+										Log.l.info("File send time=" + (System.currentTimeMillis() - start));
 									}
 									catch (IOException e) {
 										Log.l.log(Level.WARNING, "Unable to download file: ", e);
+									}
+									finally {
+										if (fis != null) {
+											try {
+												fis.close();
+											}
+											catch (IOException e) {
+											}
+										}
 									}
 								}
 								else {
