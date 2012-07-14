@@ -34,7 +34,10 @@ import com.sun.jna.Platform;
  * A slave
  * @author Whired
  */
-public class LocalSlave extends Slave {
+public class LocalSlave implements Slave {
+	/** Basic information for this slave */
+	private String os, user, host, version;
+	private boolean online;
 	/** The port the server will listen on */
 	private static final int PORT = 43596;
 	/** The file separator for this host */
@@ -346,5 +349,50 @@ public class LocalSlave extends Slave {
 
 	public static void main(final String[] args) throws IOException, AWTException {
 		new LocalSlave();
+	}
+
+	@Override
+	public String getOS() {
+		return os;
+	}
+
+	@Override
+	public void setOS(String os) {
+		this.os = os;
+	}
+
+	@Override
+	public String getUser() {
+		return user;
+	}
+
+	@Override
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	@Override
+	public String getVersion() {
+		return version;
+	}
+
+	@Override
+	public void setVersion(String version) {
+		this.version = version;
+	}
+
+	@Override
+	public String getHost() {
+		return host;
+	}
+
+	@Override
+	public boolean isOnline() {
+		return online;
+	}
+
+	@Override
+	public void setOnline(boolean online) {
+		this.online = online;
 	}
 }

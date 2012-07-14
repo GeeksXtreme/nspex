@@ -20,13 +20,14 @@ import org.whired.nspex.net.BufferUtil;
 import org.whired.nspex.net.Communicable;
 import org.whired.nspex.net.ExpandableByteBuffer;
 import org.whired.nspex.net.IoCommunicable;
+import org.whired.nspex.tools.DefaultSlave;
 import org.whired.nspex.tools.RemoteFile;
 import org.whired.nspex.tools.Slave;
 import org.whired.nspex.tools.SlaveModel;
 import org.whired.nspex.tools.SlaveView;
 import org.whired.nspex.tools.logging.Log;
 
-public class RemoteSlave extends Slave implements SlaveModel {
+public class RemoteSlave extends DefaultSlave implements SlaveModel {
 	private Socket socket = new Socket();
 	private SlaveView view;
 	private IoCommunicable comm;
