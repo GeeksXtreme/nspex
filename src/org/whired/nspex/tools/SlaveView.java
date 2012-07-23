@@ -1,7 +1,6 @@
 package org.whired.nspex.tools;
 
 import java.awt.Dimension;
-import java.awt.Image;
 
 import org.whired.nspex.master.ImageConsumer;
 
@@ -11,10 +10,10 @@ import org.whired.nspex.master.ImageConsumer;
  */
 public interface SlaveView extends ImageConsumer {
 	/**
-	 * Sets the thumbnail for a remote slave
-	 * @param thumb the thumb to set
+	 * Sets the selected file for a remote slave
+	 * @param file the file to set
 	 */
-	void setThumbnail(final Image thumb);
+	void setFile(final RemoteFile file);
 
 	/**
 	 * Used for displaying a remote slave's filesystem

@@ -480,7 +480,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	}
 
 	@Override
-	public void setThumbnail(final Image thumb) {
+	public void setFile(final RemoteFile file) {
 		Log.l.config("");
 	}
 

@@ -10,7 +10,7 @@ public interface Slave {
 	int INTENT_CHECK = 0, INTENT_CONNECT = 1, INTENT_CHECK_BULK = 2, INTENT_REBUILD = 8;
 	int OP_HANDSHAKE = 0, OP_TRANSFER_IMAGE = 1, OP_DO_COMMAND = 2, OP_GET_FILES = 3, OP_FILE_ACTION = 4, OP_LOG = 5, OP_REMOTE_SHELL = 6;
 	/** File manipulation opcodes */
-	int FOP_GET_THUMB = 0, FOP_DOWNLOAD = 1, FOP_RENAME = 2, FOP_DELETE = 3;
+	int FOP_GET_INFO = 0, FOP_DOWNLOAD = 1, FOP_RENAME = 2, FOP_DELETE = 3;
 
 	/**
 	 * Gets the current operating system for this slave

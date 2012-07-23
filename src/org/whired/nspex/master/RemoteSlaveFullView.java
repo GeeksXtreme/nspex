@@ -188,8 +188,8 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	}
 
 	@Override
-	public void setThumbnail(final Image thumb) {
-		fileChooser.setThumbnail(thumb);
+	public void setFile(final RemoteFile file) {
+		fileChooser.setSelectedFile(file);
 	}
 
 	@Override

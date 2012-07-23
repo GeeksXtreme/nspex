@@ -182,24 +182,47 @@ public class DefaultSlaveCommunicable extends NioCommunicable {
 
 	public void handleFileOperation(final int fop, final String path) {
 		switch (fop) {
-			case Slave.FOP_GET_THUMB:
+			case Slave.FOP_GET_INFO:
 				Processor.submit(this, new Runnable() {
 					@Override
 					public void run() {
-						try {
-							Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
-							Log.l.config("[" + this + "] Thumb requested=" + path);
-							final BufferedImage img = ImageIO.read(new File(path));
-							final byte[] image = JPEGImageWriter.getImageBytes(img, slave.thumbSize);
-							final ExpandableByteBuffer buffer = new ExpandableByteBuffer(image.length + 1);
-							buffer.put(Slave.FOP_GET_THUMB);
-							buffer.put(image);
-							send(Slave.OP_FILE_ACTION, buffer.asByteBuffer());
+						Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
+						Log.l.config("[" + this + "] Info requested=" + path);
+
+						// Set up the response
+						final ExpandableByteBuffer buffer = new ExpandableByteBuffer();
+						buffer.put(Slave.FOP_GET_INFO);
+
+						// Load up the file & info
+						File f = new File(path);
+						final String name = f.getName();
+						final long size = f.length();
+						final String uname = name.toLowerCase();
+
+						// Drop it in
+						buffer.putJTF(name);
+						buffer.putLong(size);
+
+						if (uname.endsWith("jpeg") || uname.endsWith("jpg") || uname.endsWith("bmp") || uname.endsWith("png") || uname.endsWith("gif")) {
+							byte[] image = null;
+							try {
+								final BufferedImage img = ImageIO.read(new File(path));
+								image = JPEGImageWriter.getImageBytes(img, slave.thumbSize);
+							}
+							catch (final Throwable e) {
+								// Seems to only happen when the extension is wrong
+								Log.l.log(Level.CONFIG, "Failed to get thumb:", e);
+							}
+							if (image != null) {
+								buffer.put(1);
+								buffer.put(image);
+							}
+
 						}
-						catch (final Throwable e) {
-							// Seems to only happen when the extension is wrong
-							Log.l.log(Level.CONFIG, "Failed to get thumb:", e);
+						else {
+							buffer.put(0);
 						}
+						send(Slave.OP_FILE_ACTION, buffer.asByteBuffer());
 					}
 				});
 			break;

@@ -98,21 +98,29 @@ public class RemoteSlave extends DefaultSlave implements SlaveModel {
 						break;
 						case OP_FILE_ACTION:
 							switch (payload.get() & 0xFF) {
-								case FOP_GET_THUMB:
+								case FOP_GET_INFO:
+									final String name = BufferUtil.getJTF(payload);
+									final long size = payload.getLong();
+									final boolean hasThumb = payload.get() != 0;
+									Image thumb = null;
+									if (hasThumb) {
+										image = new byte[payload.remaining()];
+										payload.get(image);
+										try {
+											thumb = ImageIO.read(new GZIPInputStream(new ByteArrayInputStream(image)));
+										}
+										catch (IOException e) {
+											Log.l.log(Level.INFO, "", e);
+										}
+									}
 									image = new byte[payload.capacity() - 1];
-									payload.get(image);
-									try {
-										view.setThumbnail(ImageIO.read(new GZIPInputStream(new ByteArrayInputStream(image))));
-									}
-									catch (final IOException e) {
-										e.printStackTrace();
-									}
+									view.setFile(new RemoteFile(name, false, thumb));
 								break;
 								case FOP_DOWNLOAD:
 									final String fileName = BufferUtil.getJTF(payload);
 									final byte[] fileBytes = new byte[payload.remaining()];
 									payload.get(fileBytes);
-									// Looks like we aren't invoking a timeout, this could
+									// TODO Looks like we aren't invoking a timeout, this could
 									// be a server-side problem
 
 									SwingUtilities.invokeLater(new Runnable() {

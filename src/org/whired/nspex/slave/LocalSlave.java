@@ -4,6 +4,7 @@ import java.awt.AWTException;
 import java.awt.Dimension;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
+import java.util.logging.Level;
 
 import org.whired.nspex.net.Communicable;
 import org.whired.nspex.net.NioServer;
@@ -12,11 +13,12 @@ import org.whired.nspex.tools.Robot;
 import org.whired.nspex.tools.ScreenCapture;
 import org.whired.nspex.tools.Slave;
 import org.whired.nspex.tools.WinRobot;
+import org.whired.nspex.tools.logging.Log;
 
 import com.sun.jna.Platform;
 
 /**
- * A slave
+ * A slave whose responsibility is to host masters
  * @author Whired
  */
 public abstract class LocalSlave extends NioServer implements Slave {
@@ -48,7 +50,8 @@ public abstract class LocalSlave extends NioServer implements Slave {
 	}
 
 	public static void main(String[] args) throws IOException, AWTException {
-		// DI -- entire object graph is created here
+		Log.l.setLevel(Level.ALL);
+		// DI -- entire(+/-) object graph is created here
 		Robot robot = Platform.isWindows() ? new WinRobot(.8F) : new AWTRobot(.8F);
 		ScreenCapture capture = new ScreenCapture(robot, 1);
 		LocalSlave slave = new LocalSlave(43596, robot, capture) {
