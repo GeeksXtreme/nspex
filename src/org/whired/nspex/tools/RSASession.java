@@ -1,4 +1,4 @@
-package org.whired.nspex.blackbox;
+package org.whired.nspex.tools;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;

@@ -299,12 +299,4 @@ public class DefaultSlaveCommunicable extends NioCommunicable {
 		}
 		slave.capture.removeListener(consumer);
 	}
-
-	@Override
-	public void remoteLog(final Level level, final String message) {
-		ExpandableByteBuffer buffer = new ExpandableByteBuffer();
-		buffer.put((byte) level.intValue()).putJTF(message);
-		send(Slave.OP_LOG, buffer.asByteBuffer());
-	}
-
 }

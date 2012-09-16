@@ -8,6 +8,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
+import org.whired.nspex.tools.logging.Log;
+
 /**
  * Simplifies SQLite database operations
  * @author Whired
@@ -27,7 +29,7 @@ public class SQLiteDatabase {
 		connectionProperties.put("password", "program");
 		this.databaseName = databaseName;
 		this.connection = DriverManager.getConnection(PROTOCOL + workingDir + this.databaseName, connectionProperties);
-
+		Log.l.info("Database '" + databaseName + "' initialized");
 	}
 
 	/**

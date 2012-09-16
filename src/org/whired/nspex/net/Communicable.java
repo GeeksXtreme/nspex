@@ -2,6 +2,9 @@ package org.whired.nspex.net;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.logging.Level;
+
+import org.whired.nspex.tools.logging.Log;
 
 /**
  * Provides methods for communicating with a remote host
@@ -41,6 +44,29 @@ public abstract class Communicable {
 	 * @param id the id of the packet that was received
 	 */
 	public abstract void handle(int id);
+
+	/** The opcode dedicated to remote logging */
+	static final int REMOTE_LOG = 5;
+
+	/**
+	 * Logs a message to the remote
+	 * @param level the level of the message to log
+	 * @param message the message to log
+	 */
+	public void remoteLog(final Level level, final String message) {
+		ExpandableByteBuffer buffer = new ExpandableByteBuffer();
+		buffer.putInt(level.intValue()).putJTF(message);
+		send(REMOTE_LOG, buffer.asByteBuffer());
+	}
+
+	/**
+	 * Invoked when a message from the remote has been logged
+	 * @param level the level of the message that was logged
+	 * @param message the message that was logged
+	 */
+	public void remoteLogged(final Level level, final String message) {
+		Log.l.log(level, message);
+	}
 
 	/**
 	 * Invoked when a packet has been fully received

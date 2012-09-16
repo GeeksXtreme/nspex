@@ -26,7 +26,6 @@ import java.util.logging.LogRecord;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -73,6 +72,12 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	};
 	/** A preview image for the selected slave */
 	private Image previewImage;
+	/** The connect button */
+	final JButton btnConnect;
+	/** The refresh button */
+	final JButton btnRefresh;
+	/** The build button */
+	final JButton btnBuild;
 
 	/**
 	 * Creates a new frame for the specified controller event listener
@@ -126,7 +131,6 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		final TableRowSorter<TableModel> trs = new TableRowSorter<TableModel>(model);
 		trs.setSortsOnUpdates(true);
 		table.setRowSorter(trs);
-
 		table.setBorder(null);
 		table.getTableHeader().setFont(font);
 		table.getTableHeader().setReorderingAllowed(false);
@@ -134,7 +138,11 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			@Override
 			public void valueChanged(final ListSelectionEvent e) {
 				if (!e.getValueIsAdjusting()) {
-					if (table.getSelectionModel().isSelectionEmpty()) {
+					boolean selectionEmpty = table.getSelectionModel().isSelectionEmpty();
+					btnConnect.setEnabled(!selectionEmpty);
+					btnRefresh.setEnabled(!selectionEmpty);
+					btnBuild.setEnabled(!selectionEmpty);
+					if (selectionEmpty) {
 						updatePreviewImage(null);
 					}
 					else {
@@ -144,7 +152,9 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			}
 		});
 
-		final JButton btnConnect = new JButton("Connect");
+		btnConnect = new JButton("");
+		btnConnect.setEnabled(false);
+		btnConnect.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/connect.png")));
 		btnConnect.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
@@ -165,7 +175,8 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		gbc_btnConnect.gridy = 1;
 		contentPane.add(btnConnect, gbc_btnConnect);
 
-		final JButton btnRefresh = new JButton("");
+		btnRefresh = new JButton("");
+		btnRefresh.setEnabled(false);
 		btnRefresh.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
@@ -177,7 +188,8 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			}
 		});
 
-		final JButton btnBuild = new JButton("");
+		btnBuild = new JButton("");
+		btnBuild.setEnabled(false);
 		btnBuild.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent e) {
@@ -191,33 +203,29 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			}
 		});
 
-		final JButton btnAdd = new JButton("");
-		btnAdd.addActionListener(new ActionListener() {
+		final JButton btnDownload = new JButton("");
+		btnDownload.setToolTipText("Download slave list");
+		btnDownload.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
-				String ip;
-				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter host:")) != null && ip.length() > 0) {
-					final RemoteSlave[] slv = new RemoteSlave[] { new RemoteSlave(ip) };
-					refresh(slv);
-					updateInformation(slv);
-				}
+				downloadSlaves();
 			}
 		});
-		btnAdd.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/plus.gif")));
+		btnDownload.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/download.png")));
 		final GridBagConstraints gbc_btnAdd = new GridBagConstraints();
 		gbc_btnAdd.anchor = GridBagConstraints.EAST;
 		gbc_btnAdd.fill = GridBagConstraints.VERTICAL;
 		gbc_btnAdd.gridx = 1;
 		gbc_btnAdd.gridy = 1;
-		contentPane.add(btnAdd, gbc_btnAdd);
-		btnBuild.setToolTipText("Rebuild");
-		btnBuild.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/rebuild.gif")));
+		contentPane.add(btnDownload, gbc_btnAdd);
+		btnBuild.setToolTipText("Rebuild slave");
+		btnBuild.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/build.png")));
 		final GridBagConstraints gbc_btnBuild = new GridBagConstraints();
 		gbc_btnBuild.fill = GridBagConstraints.VERTICAL;
 		gbc_btnBuild.gridx = 2;
 		gbc_btnBuild.gridy = 1;
 		contentPane.add(btnBuild, gbc_btnBuild);
-		btnRefresh.setToolTipText("Refresh list");
+		btnRefresh.setToolTipText("Refresh information");
 		btnRefresh.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/refresh.png")));
 		final GridBagConstraints gbc_btnRefresh = new GridBagConstraints();
 		gbc_btnRefresh.fill = GridBagConstraints.VERTICAL;
@@ -507,6 +515,11 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	@Override
 	public void displayOutput(String output) {
 		Log.l.info(output);
+	}
+
+	@Override
+	public void downloadSlaves() {
+		listener.downloadSlaves();
 	}
 
 }

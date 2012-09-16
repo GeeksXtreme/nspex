@@ -1,4 +1,4 @@
-package org.whired.nspex.blackbox;
+package org.whired.nspex.tools;
 
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
@@ -29,7 +29,7 @@ public class RSAKeySet {
 		Log.l.info("RSA keys generated (" + (System.currentTimeMillis() - start) + "ms)");
 	}
 
-	protected final ByteBuffer getPublicKeySpec() {
+	public final ByteBuffer getPublicKeySpec() {
 		final byte[] mod = localPublicKeySpec.getModulus().toByteArray();
 		final byte[] exp = localPublicKeySpec.getPublicExponent().toByteArray();
 		final ByteBuffer buf = ByteBuffer.allocate(mod.length + exp.length + 8);

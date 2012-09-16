@@ -16,7 +16,7 @@ import java.net.URLConnection;
 import java.net.UnknownHostException;
 
 /**
- * Acts as a client for HTTP
+ * Acts as a client for the HTTP protocol
  * @author Whired
  */
 public class HttpClient {
@@ -79,7 +79,7 @@ public class HttpClient {
 				if (e instanceof UnknownHostException || e instanceof NoRouteToHostException) {
 					if (!ping("http://www.google.com")) {
 						System.out.println("No Internet connection, retrying download in 30 seconds.");
-						// internet is probably disconnected, try forever
+						// Internet is probably disconnected, try forever
 						try {
 							Thread.sleep(30000);
 						}
@@ -146,9 +146,19 @@ public class HttpClient {
 			}
 		}
 		while (redir);
+		c.getInputStream().close();
 		return stat;
 	}
 
+	/**
+	 * Downloads the file at the specified URL to the local disk
+	 * @param path the path to save to on the local disk
+	 * @param url the URL of the file to download
+	 * @return the File that was saved
+	 * @throws MalformedURLException when the URL is bad
+	 * @throws FileNotFoundException when the save location is bad
+	 * @throws IOException
+	 */
 	public static File saveToDisk(final String path, final String url) throws MalformedURLException, FileNotFoundException, IOException {
 		final BufferedInputStream in = new BufferedInputStream(new URL(url).openStream());
 		final FileOutputStream fos = new java.io.FileOutputStream(path);
@@ -163,6 +173,11 @@ public class HttpClient {
 		return new File(path);
 	}
 
+	/**
+	 * Tests whether or not a connection to a URL can be made
+	 * @param url the URL to test
+	 * @return {@code true} if the server could be reached, otherwise {@code false}
+	 */
 	public static boolean ping(final String url) {
 		int stat = -1;
 		try {
@@ -172,6 +187,7 @@ public class HttpClient {
 			con.setReadTimeout(5000);
 			con.setRequestMethod("HEAD");
 			stat = con.getResponseCode();
+			con.getInputStream().close();
 			con.disconnect();
 			System.out.println("Ping status: " + stat);
 			return stat != -1;

@@ -112,7 +112,12 @@ public abstract class NioCommunicable extends Communicable {
 				setReadTimeout(30 * 60000);
 				payloadBuffer.flip();
 				Log.l.fine("[" + this + "] Packet recevied=" + id + " length=" + payloadBuffer.capacity());
-				handle(id, payloadBuffer.asReadOnlyBuffer());
+				if (id != REMOTE_LOG) {
+					handle(id, payloadBuffer.asReadOnlyBuffer());
+				}
+				else {
+					remoteLogged(Level.parse("" + payloadBuffer.getInt()), BufferUtil.getJTF(payloadBuffer));
+				}
 				payloadBuffer = null;
 				headerBuffer.clear();
 			}
@@ -139,8 +144,6 @@ public abstract class NioCommunicable extends Communicable {
 			disconnect();
 		}
 	}
-
-	public abstract void remoteLog(final Level level, final String message);
 
 	@Override
 	public final void send(final int id, final ByteBuffer payload) {

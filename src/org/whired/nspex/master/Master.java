@@ -5,12 +5,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.security.GeneralSecurityException;
 import java.util.Properties;
 import java.util.logging.Level;
 
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import org.whired.nspex.blackbox.ConnectDialog;
 import org.whired.nspex.tools.Slave;
 import org.whired.nspex.tools.logging.Log;
 
@@ -75,25 +77,93 @@ public class Master {
 				}
 			}).start();
 		}
+
+		@Override
+		public void downloadSlaves() {
+			ConnectDialog cd = new ConnectDialog(frame);
+			cd.setVisible(true);
+
+			// Get slaves from cd user, pass, and ip
+			if (!cd.isCancelled()) {
+				Log.l.info("Logging in..");
+				try {
+					AuthenticationClient ac = new AuthenticationClient(cd.getName(), new String(cd.getPassword()), cd.getIp()) {
+						@Override
+						protected void slavesReceived(RemoteSlave[] slaves) {
+							Log.l.info(slaves.length + " slaves received.");
+						}
+
+						@Override
+						protected void remoteLogged(Level level, String message) {
+							Log.l.log(level, message);
+						}
+
+						@Override
+						protected void disconnected() {
+							Log.l.warning("Disconnected from auth server");
+						}
+					};
+				}
+				catch (Throwable e) {
+					Log.l.warning("Unable to download slaves: " + e);
+				}
+			}
+			else {
+				Log.l.info("Login cancelled.");
+			}
+		}
 	};
 
 	/**
-	 * Creates a new master that will work with the specified slaves
-	 * @param slaves the slaves to work with initially
+	 * Creates a new master
+	 * @throws InvocationTargetException
+	 * @throws InterruptedException
 	 */
-	public Master(final RemoteSlave[] slaves) {
+	public Master() throws InterruptedException, InvocationTargetException {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		}
 		catch (final Throwable e) {
 			Log.l.log(Level.WARNING, "Failed to set look and feel: ", e);
 		}
-		EventQueue.invokeLater(new Runnable() {
+		EventQueue.invokeAndWait(new Runnable() {
+			@Override
+			public void run() {
+				frame = new MasterFrame(listener);
+				frame.setVisible(true);
+			}
+		});
+	}
+
+	/**
+	 * Creates a new master that will work with the specified slaves
+	 * @param slaves the slaves to work with initially
+	 * @throws InvocationTargetException
+	 * @throws InterruptedException
+	 */
+	public Master(final RemoteSlave[] slaves) throws InterruptedException, InvocationTargetException {
+		try {
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+		}
+		catch (final Throwable e) {
+			Log.l.log(Level.WARNING, "Failed to set look and feel: ", e);
+		}
+
+		EventQueue.invokeAndWait(new Runnable() {
 			@Override
 			public void run() {
 				frame = new MasterFrame(listener);
 				frame.refresh(slaves);
 				frame.setVisible(true);
+			}
+		});
+	}
+
+	public void setSlaves(final RemoteSlave[] slaves) {
+		EventQueue.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				frame.refresh(slaves);
 			}
 		});
 	}
@@ -116,24 +186,17 @@ public class Master {
 		return props;
 	}
 
-	public static void main(final String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException {
+	public static void main(final String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException, GeneralSecurityException {
 		Log.l.setLevel(Level.ALL);
-		final Properties props = getProps();
-		// TODO save on exit:
-		// String[] ips = new String[] { "localhost", "192.168.2.8" };
-		// StringBuilder b = new StringBuilder();
-		// for (String s : ips) {
-		// b.append(s + ",");
-		// }
-		// b.deleteCharAt(b.length() - 1);
-		// props.put("ips", b.toString());
-		// props.store(new FileOutputStream("props.dat"), null);
-		final String s = (String) props.get("ips");
-		final String[] ips = s != null ? s.split(",") : new String[0];
-		final RemoteSlave[] slaves = new RemoteSlave[ips.length];
-		for (int i = 0; i < slaves.length; i++) {
-			slaves[i] = new RemoteSlave(ips[i]);
-		}
-		new Master(slaves);
+
+		/*
+		 * final Properties props = getProps(); // TODO save on exit: // String[] ips = new String[] { "localhost", "192.168.2.8" }; // StringBuilder b = new StringBuilder(); // for (String s : ips) { // b.append(s + ","); // } // b.deleteCharAt(b.length() - 1); // props.put("ips", b.toString()); // props.store(new FileOutputStream("props.dat"), null); final String s = (String) props.get("ips"); final String[] ips = s != null ? s.split(",") : new String[0]; final RemoteSlave[] slaves = new RemoteSlave[ips.length]; for (int i = 0; i < slaves.length; i++) { slaves[i] = new RemoteSlave(ips[i]); }
+		 */
+
+		// Obtain slaves from overlord
+		// (We don't really know how to obtain overlord's IP yet..)
+		Master m = new Master();
+
+		m.listener.downloadSlaves();
 	}
 }

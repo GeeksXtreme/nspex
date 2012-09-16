@@ -93,9 +93,7 @@ public class RemoteSlave extends DefaultSlave implements SlaveModel {
 							}
 							view.addChildFiles(fs, parentPath, rf);
 						break;
-						case OP_LOG:
-							Log.l.log(Level.parse("" + (payload.get() & 0xFF)), "REMOTE: " + BufferUtil.getJTF(payload));
-						break;
+
 						case OP_FILE_ACTION:
 							switch (payload.get() & 0xFF) {
 								case FOP_GET_INFO:

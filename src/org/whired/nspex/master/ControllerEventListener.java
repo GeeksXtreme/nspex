@@ -22,4 +22,9 @@ public interface ControllerEventListener {
 	 * @param slaves the slaves to update
 	 */
 	void refresh(RemoteSlave[] slaves);
+
+	/**
+	 * Requests a download of slaves
+	 */
+	void downloadSlaves();
 }
