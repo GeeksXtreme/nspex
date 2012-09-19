@@ -29,16 +29,8 @@ public class SQLiteDatabase {
 		connectionProperties.put("password", "program");
 		this.databaseName = databaseName;
 		this.connection = DriverManager.getConnection(PROTOCOL + workingDir + this.databaseName, connectionProperties);
+		connection.setAutoCommit(false);
 		Log.l.info("Database '" + databaseName + "' initialized");
-	}
-
-	/**
-	 * Sets whether or not changes automatically commit
-	 * @param autoCommit whether or not to autocommit--{@code false} is optimum for batch statements
-	 * @throws SQLException
-	 */
-	public void setAutoCommit(final boolean autoCommit) throws SQLException {
-		this.connection.setAutoCommit(autoCommit);
 	}
 
 	/**
@@ -74,8 +66,7 @@ public class SQLiteDatabase {
 	 */
 	public ResultSet executeQuery(final String query) throws SQLException {
 		final Statement s = connection.createStatement();
-		final ResultSet rs = s.executeQuery(query);
-		return rs;
+		return s.executeQuery(query);
 	}
 
 	@Override

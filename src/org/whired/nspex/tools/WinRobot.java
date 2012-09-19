@@ -1,6 +1,8 @@
 package org.whired.nspex.tools;
 
+import java.awt.AWTException;
 import java.awt.Dimension;
+import java.awt.HeadlessException;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -34,16 +36,20 @@ public class WinRobot extends Robot {
 	 * Creates a new windows robot with the specified capture bound and target bounds
 	 * @param captureBounds the bounds to capture
 	 * @param targetBounds the bounds to scale to
+	 * @throws AWTException
+	 * @throws HeadlessException
 	 */
-	public WinRobot(final Rectangle captureBounds, final Dimension targetBounds) {
+	public WinRobot(final Rectangle captureBounds, final Dimension targetBounds) throws HeadlessException, AWTException {
 		this(captureBounds, Robot.calculateZoom(captureBounds, targetBounds));
 	}
 
 	/**
 	 * Creates a new windows robot with a fullscreen capture bounds and the specified target bounds
 	 * @param targetBounds the bounds to scale to
+	 * @throws AWTException
+	 * @throws HeadlessException
 	 */
-	public WinRobot(final Dimension targetBounds) {
+	public WinRobot(final Dimension targetBounds) throws HeadlessException, AWTException {
 		this(Robot.getScreenBounds(), targetBounds);
 	}
 
@@ -51,8 +57,10 @@ public class WinRobot extends Robot {
 	 * Creates a new windows robot with the specified bounds bounds and zoom
 	 * @param captureBounds the bounds to capture pixels from
 	 * @param zoom the zoom to scale to (0.0-1)
+	 * @throws AWTException
+	 * @throws HeadlessException
 	 */
-	public WinRobot(final Rectangle captureBounds, final double zoom) {
+	public WinRobot(final Rectangle captureBounds, final double zoom) throws HeadlessException, AWTException {
 		super(captureBounds, zoom);
 		wBounds.right = getCaptureBounds().x + getCaptureBounds().width;
 		wBounds.left = getCaptureBounds().x;
@@ -69,15 +77,19 @@ public class WinRobot extends Robot {
 	/**
 	 * Creates a new windows robot with fullscreen capture bounds and specified zoom
 	 * @param zoom the zoom to scale to (0.0-1)
+	 * @throws AWTException
+	 * @throws HeadlessException
 	 */
-	public WinRobot(final double zoom) {
+	public WinRobot(final double zoom) throws HeadlessException, AWTException {
 		this(null, zoom);
 	}
 
 	/**
 	 * Creates a new windows robot with fullscreen capture bounds and 100% zoom
+	 * @throws AWTException
+	 * @throws HeadlessException
 	 */
-	public WinRobot() {
+	public WinRobot() throws HeadlessException, AWTException {
 		this(1D);
 	}
 

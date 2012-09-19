@@ -38,10 +38,10 @@ public class AuthenticationServer {
 	 * @throws SQLException
 	 */
 	public AuthenticationServer(final int port) throws GeneralSecurityException, SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
-		Log.l.setLevel(Level.ALL);
-		// Set up rsa session
+
+		// Set up RSA session
 		Log.l.info("Generating RSA keys..");
-		final RSAKeySet rsaKeys = new RSAKeySet();
+		final RSAKeySet rsaKeys = new RSAKeySet(1024);
 
 		Log.l.info("Initializing database..");
 		final SQLiteDatabase database = new SQLiteDatabase("", "ispx_db");
@@ -51,6 +51,9 @@ public class AuthenticationServer {
 			@Override
 			protected Communicable getCommunicable(final SelectionKey key) {
 				return new NioCommunicable(key, server) {
+
+					private String userid;
+
 					private RSASession rsaSess;
 					{
 						// These guys need to be quick
@@ -84,7 +87,6 @@ public class AuthenticationServer {
 									final ByteBuffer decPay = rsaSess.decrypt(payload);
 
 									// Get client's details
-									String userid;
 									String pass;
 
 									// Bake the cake
@@ -99,7 +101,9 @@ public class AuthenticationServer {
 										if (rs.next() && rs.getString(1).equals(pass)) {
 
 											// Password is right, grab the ISP from WHOIS db
-											final String lastHost = rs.getString(2);
+											String lastHost = rs.getString(2);
+
+											Log.l.config("[" + this + "] last host: " + lastHost);
 											WhoisInfo wii = WhoisInfo.fromARINJSON(WhoisInfoDownloader.getArinWhoisJson(lastHost));
 											Log.l.info("wii: " + wii.getName() + " start: " + wii.getStartAddress() + " end: " + wii.getEndAddress() + " +/-: " + (wii.getEndAddress() - wii.getStartAddress()));
 
@@ -107,16 +111,18 @@ public class AuthenticationServer {
 
 												// ISP has changed
 												long lastChange = rs.getLong(3);
+
 												Log.l.config("ISP region has changed. lastChange=" + lastChange);
 
 												// Check if client is allowed a mulligan
 												if (System.currentTimeMillis() - IP_CHANGE_TIMEOUT > lastChange) {
 
 													// Warn client that he can change, but at a cost
-													remoteLog(Level.WARNING, "Your ISP region is able to change once every 3 days.\nElect to change?");
+													send(Opcodes.CONFIRM_ISP_CHANGE, ByteBuffer.allocate(8).putLong(IP_CHANGE_TIMEOUT));
 
 													// Set timeout to 20s while we wait for a response
 													setReadTimeout(20000);
+													return;
 												}
 												else {
 													// Hasn't been long enough
@@ -132,23 +138,7 @@ public class AuthenticationServer {
 											}
 
 											// Everything is sorted, let's get this guy his slaves
-											rs = database.executeQuery("SELECT slave_ip FROM slave INNER JOIN owned_slave ON slave.slave_id = owned_slave.slave_id WHERE user_id = '" + userid + "'");
-
-											// Grab the count
-											rs.last();
-											int ct = rs.getRow();
-											rs.beforeFirst();
-
-											ExpandableByteBuffer buf = new ExpandableByteBuffer(ct == 0 ? 4 : 1024);
-											buf.putInt(ct);
-
-											while (rs.next()) {
-												buf.putJTF(rs.getString(1));
-											}
-											rs.close();
-											send(Opcodes.SLAVES_RECEIVED, buf.asByteBuffer());
-
-											Log.l.info("[" + this + "] Logged in successfully");
+											sendSlaves();
 										}
 										else {
 											// No matches found/password mismatch
@@ -168,7 +158,59 @@ public class AuthenticationServer {
 									disconnect();
 								}
 							break;
+							case Opcodes.CONFIRM_ISP_CHANGE:
+								boolean allow = payload.get() == 1;
+								if (allow) {
+									// Update database
+									try {
+										Log.l.info("Updating IP: " + this);
+										database.executeStatement("UPDATE user SET last_ip_change='" + System.currentTimeMillis() + "', user_ip='" + this + "' WHERE user_id='" + userid + "'");
+									}
+									catch (SQLException e) {
+										Log.l.log(Level.SEVERE, "Error while updating user info: ", e);
+										// Sucks for them, but we can't risk it
+										disconnect();
+									}
+									try {
+										sendSlaves();
+									}
+									catch (SQLException e) {
+										// Doesn't really affect us
+										Log.l.log(Level.WARNING, "Error while fetching slaves: ", e);
+									}
+								}
+								else {
+									// Cya!
+									remoteLog(Level.INFO, "Sorry for any inconvenience");
+									disconnect();
+								}
+							break;
 						}
+					}
+
+					private void sendSlaves() throws SQLException {
+						ResultSet rs = database.executeQuery("SELECT slave_ip FROM slave INNER JOIN owned_slave ON slave.slave_id = owned_slave.slave_id WHERE user_id = '" + userid + "'");
+
+						int ct = 0;
+
+						ExpandableByteBuffer buf = new ExpandableByteBuffer();
+
+						while (rs.next()) {
+							ct++;
+							buf.putJTF(rs.getString(1));
+						}
+						rs.close();
+
+						// Add count to front (SQLite supports forward_only)
+						ByteBuffer sbuf = buf.asByteBuffer();
+
+						ByteBuffer fbuf = ByteBuffer.allocate(4 + sbuf.capacity());
+						sbuf.flip();
+						fbuf.putInt(ct).put(sbuf);
+
+						send(Opcodes.SLAVES_RECEIVED, fbuf);
+						Log.l.info("[" + this + "] Logged in successfully");
+						disconnect();
 					}
 
 					@Override
@@ -188,6 +230,7 @@ public class AuthenticationServer {
 	}
 
 	public static void main(final String[] args) throws Throwable {
+		Log.l.setLevel(Level.ALL);
 		new AuthenticationServer(43597);
 	}
 }

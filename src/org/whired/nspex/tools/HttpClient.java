@@ -1,4 +1,4 @@
-package org.whired.nspex.updater;
+package org.whired.nspex.tools;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

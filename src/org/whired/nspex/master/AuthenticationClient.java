@@ -24,7 +24,7 @@ public abstract class AuthenticationClient {
 	/** The RSA session to use when communicating securely */
 	private RSASession rsaSess;
 	/** The RSA keys to use for this client */
-	private final RSAKeySet rsaKeys = new RSAKeySet();
+	private final RSAKeySet rsaKeys = new RSAKeySet(1024);
 	/** The communicable this client will use */
 	private final IoCommunicable comm;
 
@@ -49,9 +49,18 @@ public abstract class AuthenticationClient {
 							send(Opcodes.LOGIN, rsaSess.encrpyt(buf.asByteBuffer()));
 						break;
 						case Opcodes.SLAVES_RECEIVED:
-							for (int i = 0; i < payload.getInt(); i++) {
-								Log.l.info("I own slave: " + BufferUtil.getJTF(payload));
+							RemoteSlave[] slaves = new RemoteSlave[payload.getInt()];
+							Log.l.info("Slaves.length: " + slaves.length);
+							for (int i = 0; i < slaves.length; i++) {
+								slaves[i] = new RemoteSlave(BufferUtil.getJTF(payload));
+								Log.l.info("Adding slave: " + slaves[i].toString());
 							}
+							if (slaves.length > 0) {
+								slavesReceived(slaves);
+							}
+						break;
+						case Opcodes.CONFIRM_ISP_CHANGE:
+							promptISPChange(payload.getLong());
 						break;
 					}
 				}
@@ -64,30 +73,31 @@ public abstract class AuthenticationClient {
 			@Override
 			protected void disconnected() {
 				AuthenticationClient.this.disconnected();
-				//				SwingUtilities.invokeLater(new Runnable() {
-				//					@Override
-				//					public void run() {
-				//						JOptionPane.showMessageDialog(parent, "Disconnected from auth server", "nspex", JOptionPane.ERROR_MESSAGE);
-				//					}
-				//				});
 			}
 
 			@Override
 			public void remoteLogged(Level level, final String message) {
 				AuthenticationClient.this.remoteLogged(level, message);
-				//				final int type = level.intValue() <= Level.INFO.intValue() ? JOptionPane.PLAIN_MESSAGE : JOptionPane.ERROR_MESSAGE;
-				//				SwingUtilities.invokeLater(new Runnable() {
-				//					@Override
-				//					public void run() {
-				//						// TODO like these actually belong here..
-				//						JOptionPane.showMessageDialog(parent, message, "nspex", type);
-				//					}
-				//				});
 			}
 
 		};
-		// Send local public key
+
+		// Send local public key specification
 		comm.send(Opcodes.RSA_KEY_REQUEST, rsaKeys.getPublicKeySpec());
+	}
+
+	/**
+	 * Invoked when a user must decide to allow an ISP change
+	 * @param timeout the limitation on how often an ISP can change, in MS
+	 */
+	public abstract void promptISPChange(long timeout);
+
+	/**
+	 * Confirms a chnage of ISP
+	 * @param allow whether or not to allow the change
+	 */
+	public void confirmISPChange(boolean allow) {
+		comm.send(Opcodes.CONFIRM_ISP_CHANGE, ByteBuffer.allocate(1).put((byte) (allow ? 1 : 0)));
 	}
 
 	/**

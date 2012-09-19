@@ -31,11 +31,10 @@ public class RemoteSlave extends DefaultSlave implements SlaveModel {
 	private Socket socket = new Socket();
 	private SlaveView view;
 	private IoCommunicable comm;
-	private final InetSocketAddress endpoint;
+	private InetSocketAddress endpoint;
 
 	public RemoteSlave(final String ip) {
 		super(ip);
-		endpoint = new InetSocketAddress(ip, Slave.PORT);
 	}
 
 	/**
@@ -45,7 +44,11 @@ public class RemoteSlave extends DefaultSlave implements SlaveModel {
 	private IoCommunicable connectToRemote() throws IOException {
 		if (!socket.isConnected() || socket.isClosed()) {
 			socket = new Socket();
-			socket.connect(endpoint, 2000);
+			// Create endpoint if we haven't already (expensive operation!)
+			if (endpoint == null) {
+				endpoint = new InetSocketAddress(getHost(), Slave.PORT);
+			}
+			socket.connect(endpoint, 500);
 			return comm = new IoCommunicable(socket) {
 
 				@Override

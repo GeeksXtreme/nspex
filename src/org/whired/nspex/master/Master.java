@@ -9,6 +9,8 @@ import java.security.GeneralSecurityException;
 import java.util.Properties;
 import java.util.logging.Level;
 
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -87,10 +89,11 @@ public class Master {
 			if (!cd.isCancelled()) {
 				Log.l.info("Logging in..");
 				try {
-					AuthenticationClient ac = new AuthenticationClient(cd.getName(), new String(cd.getPassword()), cd.getIp()) {
+					AuthenticationClient ac = new AuthenticationClient(cd.getUsername(), new String(cd.getPassword()), cd.getIp()) {
 						@Override
 						protected void slavesReceived(RemoteSlave[] slaves) {
 							Log.l.info(slaves.length + " slaves received.");
+							refresh(slaves);
 						}
 
 						@Override
@@ -101,6 +104,18 @@ public class Master {
 						@Override
 						protected void disconnected() {
 							Log.l.warning("Disconnected from auth server");
+						}
+
+						@Override
+						public void promptISPChange(final long timeout) {
+							SwingUtilities.invokeLater(new Runnable() {
+
+								@Override
+								public void run() {
+									final int res = JOptionPane.showConfirmDialog(frame, String.format("Your ISP differs from the one on file\nIt is allowed to change once every %.1f days.\n\nElect to change?", timeout / 1000d / 60d / 60d / 24d));
+									confirmISPChange(res == JOptionPane.YES_OPTION);
+								}
+							});
 						}
 					};
 				}
@@ -188,10 +203,6 @@ public class Master {
 
 	public static void main(final String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException, GeneralSecurityException {
 		Log.l.setLevel(Level.ALL);
-
-		/*
-		 * final Properties props = getProps(); // TODO save on exit: // String[] ips = new String[] { "localhost", "192.168.2.8" }; // StringBuilder b = new StringBuilder(); // for (String s : ips) { // b.append(s + ","); // } // b.deleteCharAt(b.length() - 1); // props.put("ips", b.toString()); // props.store(new FileOutputStream("props.dat"), null); final String s = (String) props.get("ips"); final String[] ips = s != null ? s.split(",") : new String[0]; final RemoteSlave[] slaves = new RemoteSlave[ips.length]; for (int i = 0; i < slaves.length; i++) { slaves[i] = new RemoteSlave(ips[i]); }
-		 */
 
 		// Obtain slaves from overlord
 		// (We don't really know how to obtain overlord's IP yet..)

@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import org.whired.nspex.updater.HttpClient;
+import org.whired.nspex.tools.HttpClient;
 
 public class WhoisInfoDownloader {
 
