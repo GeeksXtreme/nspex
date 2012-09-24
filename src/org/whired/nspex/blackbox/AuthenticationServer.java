@@ -40,8 +40,7 @@ public class AuthenticationServer {
 	public AuthenticationServer(final int port) throws GeneralSecurityException, SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
 
 		// Set up RSA session
-		Log.l.info("Generating RSA keys..");
-		final RSAKeySet rsaKeys = new RSAKeySet(1024);
+		final RSAKeySet rsaKeys = RSAKeySet.generateKeys(1024);
 
 		Log.l.info("Initializing database..");
 		final SQLiteDatabase database = new SQLiteDatabase("", "ispx_db");

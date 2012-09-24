@@ -23,7 +23,7 @@ public abstract class AuthenticationClient {
 	/** The RSA session to use when communicating securely */
 	private RSASession rsaSess;
 	/** The RSA keys to use for this client */
-	private final RSAKeySet rsaKeys = new RSAKeySet(1024);
+	private final RSAKeySet rsaKeys = RSAKeySet.generateKeys(1024);
 	/** The communicable this client will use */
 	private final IoCommunicable comm;
 
