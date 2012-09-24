@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Calendar;
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import javax.swing.ImageIcon;
@@ -33,6 +34,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
@@ -81,6 +83,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	/** The build button */
 	final JButton btnBuild;
 	private final JPanel panel;
+	/** The bar for visually tracking slave polling */
 	private final JProgressBar progressBar;
 
 	/**
@@ -88,6 +91,14 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	 * @param listener the listener to notify of controller events
 	 */
 	public MasterFrame(final ControllerEventListener listener) {
+		try {
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+			// Hacky way to get rid of the fugly orange color
+			UIManager.getLookAndFeelDefaults().put("nimbusOrange", UIManager.getLookAndFeelDefaults().get("nimbusSelectionBackground"));
+		}
+		catch (final Throwable e) {
+			Log.l.log(Level.WARNING, "Failed to set look and feel: ", e);
+		}
 		this.listener = listener;
 		setTitle("nspex v" + Slave.VERSION);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -196,6 +207,8 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		btnConnect.setFont(font);
 
 		progressBar = new JProgressBar();
+		progressBar.setVisible(false);
+
 		GridBagConstraints gbc_progressBar = new GridBagConstraints();
 		gbc_progressBar.anchor = GridBagConstraints.EAST;
 		gbc_progressBar.gridx = 1;
@@ -368,6 +381,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			public void run() {
 				for (final Slave slv : slaves) {
 					for (int i = 0; i < model.getRowCount(); i++) {
+						// TODO this is not the responsibility of a frame
 						if (model.getValueAt(i, 0).toString().equals(slv.toString())) {
 							model.setValueAt(slv.getUser(), i, 1);
 							model.setValueAt(slv.getOS(), i, 2);
@@ -552,4 +566,31 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		listener.downloadSlaves();
 	}
 
+	@Override
+	public void setProgress(final int progress) {
+		runOnEdt(new Runnable() {
+			@Override
+			public void run() {
+				if (progress == 0 || progress == progressBar.getMaximum()) {
+					progressBar.setVisible(false);
+				}
+				else {
+					if (!progressBar.isVisible()) {
+						progressBar.setVisible(true);
+					}
+					progressBar.setValue(progress);
+				}
+			}
+		});
+	}
+
+	@Override
+	public void setMaxProgress(final int max) {
+		runOnEdt(new Runnable() {
+			@Override
+			public void run() {
+				progressBar.setMaximum(max);
+			}
+		});
+	}
 }

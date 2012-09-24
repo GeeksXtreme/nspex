@@ -13,7 +13,6 @@ import org.whired.nspex.net.ExpandableByteBuffer;
 import org.whired.nspex.net.IoCommunicable;
 import org.whired.nspex.tools.RSAKeySet;
 import org.whired.nspex.tools.RSASession;
-import org.whired.nspex.tools.logging.Log;
 
 /**
  * A client that connects to the authentication server
@@ -50,10 +49,8 @@ public abstract class AuthenticationClient {
 						break;
 						case Opcodes.SLAVES_RECEIVED:
 							RemoteSlave[] slaves = new RemoteSlave[payload.getInt()];
-							Log.l.info("Slaves.length: " + slaves.length);
 							for (int i = 0; i < slaves.length; i++) {
 								slaves[i] = new RemoteSlave(BufferUtil.getJTF(payload));
-								Log.l.info("Adding slave: " + slaves[i].toString());
 							}
 							if (slaves.length > 0) {
 								slavesReceived(slaves);

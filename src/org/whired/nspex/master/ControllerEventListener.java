@@ -27,4 +27,16 @@ public interface ControllerEventListener {
 	 * Requests a download of slaves
 	 */
 	void downloadSlaves();
+
+	/**
+	 * Sets the current progress of some task
+	 * @param progress the progress to set
+	 */
+	void setProgress(int progress);
+
+	/**
+	 * Sets the max progress of some task
+	 * @param max the max progress to set
+	 */
+	void setMaxProgress(int max);
 }

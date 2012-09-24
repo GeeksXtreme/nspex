@@ -39,6 +39,8 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	private final SlaveView mainView;
 	/** The console used for controlling the remote slave */
 	private JConsole console;
+	/** Whether or not a disconnect was forced by the user */
+	private boolean forcedDisconnect;
 
 	/**
 	 * Creates a new full view for the specified slave
@@ -120,6 +122,7 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				addWindowListener(new WindowAdapter() {
 					@Override
 					public void windowClosing(final WindowEvent e) {
+						forcedDisconnect = true;
 						Communicable c;
 						try {
 							if ((c = slave.getCommunicable()) != null) {
@@ -204,9 +207,11 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 
 	@Override
 	public void disconnected(final Slave slave) {
-		Log.l.warning("No connection with " + slave);
-		slave.setOnline(false);
-		mainView.disconnected(slave);
+		Log.l.warning("Disconnected from " + slave);
+		if (!forcedDisconnect) {
+			slave.setOnline(false);
+			mainView.disconnected(slave);
+		}
 		this.dispose();
 	}
 

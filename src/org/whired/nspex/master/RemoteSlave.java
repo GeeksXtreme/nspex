@@ -188,7 +188,7 @@ public class RemoteSlave extends DefaultSlave implements SlaveModel {
 		}
 	}
 
-	public void connect(final int intent) throws IOException {
+	public void connect(final int intent) {
 		try {
 			final IoCommunicable ioc = connectToRemote();
 			final ExpandableByteBuffer buf = new ExpandableByteBuffer();

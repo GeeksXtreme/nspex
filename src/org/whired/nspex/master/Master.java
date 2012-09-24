@@ -1,12 +1,10 @@
 package org.whired.nspex.master;
 
 import java.awt.EventQueue;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.security.GeneralSecurityException;
-import java.util.Properties;
 import java.util.logging.Level;
 
 import javax.swing.JOptionPane;
@@ -31,13 +29,8 @@ public class Master {
 		@Override
 		public void connect(final RemoteSlave[] slaves) {
 			for (final RemoteSlave rsm : slaves) {
-				try {
-					new RemoteSlaveFullView(frame, rsm);
-					rsm.connect(Slave.INTENT_CONNECT);
-				}
-				catch (final IOException t) {
-					Log.l.warning("Could not connect to " + rsm.getHost() + ".");
-				}
+				new RemoteSlaveFullView(frame, rsm);
+				rsm.connect(Slave.INTENT_CONNECT);
 			}
 		}
 
@@ -62,19 +55,19 @@ public class Master {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (final RemoteSlave rsm : slaves) {
-						try {
-							rsm.setView(frame);
-							if (slaves.length == 1) {
-								rsm.connect(Slave.INTENT_CHECK);
-							}
-							else {
-								rsm.connect(Slave.INTENT_CHECK_BULK);
-							}
-						}
-						catch (final Throwable t) {
+					if (slaves.length > 1) {
+						setMaxProgress(slaves.length);
+						for (int i = 0; i < slaves.length; i++) {
+							slaves[i].setView(frame);
+							slaves[i].connect(Slave.INTENT_CHECK_BULK);
+							setProgress(i + 1);
 						}
 					}
+					else if (slaves.length == 1) {
+						slaves[0].setView(frame);
+						slaves[0].connect(Slave.INTENT_CHECK);
+					}
+
 					Log.l.info("Queried " + slaves.length + " slave(s)");
 				}
 			}).start();
@@ -127,6 +120,16 @@ public class Master {
 				Log.l.info("Login cancelled.");
 			}
 		}
+
+		@Override
+		public void setProgress(int progress) {
+			frame.setProgress(progress);
+		}
+
+		@Override
+		public void setMaxProgress(int max) {
+			frame.setMaxProgress(max);
+		}
 	};
 
 	/**
@@ -135,12 +138,6 @@ public class Master {
 	 * @throws InterruptedException
 	 */
 	public Master() throws InterruptedException, InvocationTargetException {
-		try {
-			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
-		}
-		catch (final Throwable e) {
-			Log.l.log(Level.WARNING, "Failed to set look and feel: ", e);
-		}
 		EventQueue.invokeAndWait(new Runnable() {
 			@Override
 			public void run() {
@@ -183,26 +180,8 @@ public class Master {
 		});
 	}
 
-	/** The location of the properties file that has settings for this slave */
-	private static final String PROPS_FILE = "props.dat";
-
-	/**
-	 * Loads properties from the path specified in {@link #PROPS_FILE}, or a new {@code Properties} if none could be loaded
-	 * @return the properties
-	 */
-	public static Properties getProps() {
-		final Properties props = new Properties();
-		try {
-			props.load(new FileInputStream(PROPS_FILE));
-		}
-		catch (final Throwable t) {
-			t.printStackTrace();
-		}
-		return props;
-	}
-
 	public static void main(final String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException, GeneralSecurityException {
-		Log.l.setLevel(Level.ALL);
+		Log.l.setLevel(Level.INFO);
 
 		// Obtain slaves from overlord
 		// (We don't really know how to obtain overlord's IP yet..)
