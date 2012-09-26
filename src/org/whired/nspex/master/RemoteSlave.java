@@ -91,7 +91,7 @@ public class RemoteSlave extends DefaultSlave implements SlaveModel {
 							final String parentPath = BufferUtil.getJTF(payload);
 							final RemoteFile[] rf = new RemoteFile[payload.getInt()];
 							for (int i = 0; i < rf.length; i++) {
-								rf[i] = new RemoteFile(BufferUtil.getJTF(payload), payload.get() != 0);
+								rf[i] = new RemoteFile(BufferUtil.getJTF(payload), 0, payload.get() != 0);
 								Log.l.fine("parentfolder=" + parentPath + " child=" + rf[i]);
 							}
 							view.addChildFiles(fs, parentPath, rf);
@@ -115,7 +115,7 @@ public class RemoteSlave extends DefaultSlave implements SlaveModel {
 										}
 									}
 									image = new byte[payload.capacity() - 1];
-									view.setFile(new RemoteFile(name, false, thumb));
+									view.setFile(new RemoteFile(name, size, false, thumb));
 								break;
 								case FOP_DOWNLOAD:
 									final String fileName = BufferUtil.getJTF(payload);

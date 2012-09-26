@@ -24,6 +24,12 @@ public class Master {
 	/** The view for this master */
 	private MasterFrame frame;
 
+	/** The session id sent from the auth server */
+	private String sessionId;
+
+	/** The ip for the auth server */
+	private String authIp;
+
 	/** Listens for events fired by the view */
 	private final ControllerEventListener listener = new ControllerEventListener() {
 		@Override
@@ -73,52 +79,70 @@ public class Master {
 			}).start();
 		}
 
+		private AuthenticationClient ac;
+
 		@Override
 		public void downloadSlaves() {
-			ConnectDialog cd = new ConnectDialog(frame);
-			cd.setVisible(true);
+			try {
+				ac = new AuthenticationClient(new AuthenticationListener() {
 
-			// Get slaves from cd user, pass, and ip
-			if (!cd.isCancelled()) {
-				Log.l.info("Logging in..");
-				try {
-					AuthenticationClient ac = new AuthenticationClient(cd.getUsername(), new String(cd.getPassword()), cd.getIp()) {
-						@Override
-						protected void slavesReceived(RemoteSlave[] slaves) {
-							Log.l.info(slaves.length + " slaves received.");
-							refresh(slaves);
-						}
+					@Override
+					public void slavesReceived(RemoteSlave[] slaves) {
+						Log.l.info(slaves.length + " slaves received.");
+						refresh(slaves);
+					}
 
-						@Override
-						protected void remoteLogged(Level level, String message) {
-							Log.l.log(level, message);
-						}
+					@Override
+					public void remoteLogged(Level level, String message) {
+						Log.l.log(level, message);
+					}
 
-						@Override
-						protected void disconnected() {
-							Log.l.warning("Disconnected from auth server");
-						}
+					@Override
+					public void disconnected() {
+						Log.l.warning("Disconnected from auth server");
+					}
 
-						@Override
-						public void promptISPChange(final long timeout) {
-							SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void sessionIDReceived(final String lsessionId) {
+						sessionId = lsessionId;
+						Log.l.info("Received sessionId: " + sessionId);
+					}
 
-								@Override
-								public void run() {
-									final int res = JOptionPane.showConfirmDialog(frame, String.format("Your ISP differs from the one on file\nIt is allowed to change once every %.1f days.\n\nElect to change?", timeout / 1000d / 60d / 60d / 24d));
-									confirmISPChange(res == JOptionPane.YES_OPTION);
-								}
-							});
-						}
-					};
+					@Override
+					public void promptISPChange(final long timeout) {
+						SwingUtilities.invokeLater(new Runnable() {
+
+							@Override
+							public void run() {
+								final int res = JOptionPane.showConfirmDialog(frame, String.format("Your ISP differs from the one on file\nIt is allowed to change once every %.1f days.\n\nElect to change?", timeout / 1000d / 60d / 60d / 24d));
+								ac.confirmISPChange(res == JOptionPane.YES_OPTION);
+							}
+						});
+					}
+				});
+
+				if (sessionId == null) {
+					ConnectDialog cd = new ConnectDialog(frame);
+					cd.setVisible(true);
+
+					// Get slaves from cd user, pass, and ip
+					if (!cd.isCancelled()) {
+						Log.l.info("Logging in..");
+						ac.login((authIp = cd.getIp()), cd.getUsername(), new String(cd.getPassword()));
+					}
+					else {
+						Log.l.info("Login cancelled.");
+					}
 				}
-				catch (Throwable e) {
-					Log.l.warning("Unable to download slaves: " + e);
+				else {
+					// Attempt login with the sessionId
+					ac.login(authIp, sessionId);
 				}
 			}
-			else {
-				Log.l.info("Login cancelled.");
+			catch (Throwable e) {
+				Log.l.warning("Unable to download slaves: " + e);
 			}
+
 		}
 
 		@Override

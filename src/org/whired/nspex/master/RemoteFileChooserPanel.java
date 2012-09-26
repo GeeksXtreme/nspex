@@ -68,7 +68,7 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 				}
 
 				g2.setColor(Color.WHITE);
-				GraphicsUtil.drawStringDropShadow(g2, selectedFile.getName(), 3, getHeight() - 3, Color.BLACK);
+				GraphicsUtil.drawStringDropShadow(g2, selectedFile.getName() + " - " + selectedFile.getSize(), 3, getHeight() - 3, Color.BLACK);
 			}
 			g.setColor(grayBorder);
 			g.drawRect(0, 0, this.getWidth() - 1, this.getHeight() - 1);

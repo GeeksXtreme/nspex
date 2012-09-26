@@ -9,4 +9,5 @@ public interface Opcodes {
 	int LOGIN = 1;
 	int SLAVES_RECEIVED = 2;
 	int CONFIRM_ISP_CHANGE = 3;
+	int LOGIN_WITH_SESSION = 4;
 }

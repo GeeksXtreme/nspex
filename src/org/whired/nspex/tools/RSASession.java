@@ -67,7 +67,7 @@ public class RSASession {
 	 * @return the encrypted bytes
 	 * @throws GeneralSecurityException when the bytes can't be encrypted for any reason
 	 */
-	public final ByteBuffer encrpyt(final ByteBuffer plainText) throws GeneralSecurityException {
+	public final ByteBuffer encrypt(final ByteBuffer plainText) throws GeneralSecurityException {
 		cipher.init(Cipher.ENCRYPT_MODE, remotePublicKey);
 		if (plainText.position() > 0) {
 			plainText.flip();
