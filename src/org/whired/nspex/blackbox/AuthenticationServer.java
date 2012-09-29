@@ -6,11 +6,8 @@ import java.nio.channels.SelectionKey;
 import java.security.GeneralSecurityException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.whired.nspex.blackbox.sql.SQLiteDatabase;
 import org.whired.nspex.net.BufferUtil;
 import org.whired.nspex.net.Communicable;
@@ -29,7 +26,6 @@ import org.whired.nspex.tools.logging.Log;
 public class AuthenticationServer {
 	private final static long IP_CHANGE_TIMEOUT = 259200000; // 3 days
 	private NioServer server;
-	private long startLogin;
 
 	/**
 	 * Starts an authentication server on the specified port
@@ -46,8 +42,8 @@ public class AuthenticationServer {
 		// Set up RSA session
 		final RSAKeySet rsaKeys = RSAKeySet.generateKeys(1024);
 
-		// The sessions
-		final Map<String, String> sessions = new HashMap<String, String>();
+		// Set up session manager
+		final SessionManager sessionManager = new SessionManager();
 
 		Log.l.info("Initializing database..");
 		final SQLiteDatabase database = new SQLiteDatabase("", "ispx_db");
@@ -64,7 +60,6 @@ public class AuthenticationServer {
 					{
 						// These guys need to be quick
 						setReadTimeout(2000);
-						startLogin = System.nanoTime();
 					}
 
 					@Override
@@ -169,8 +164,7 @@ public class AuthenticationServer {
 									ByteBuffer decPay = rsaSess.decrypt(payload);
 									String v = BufferUtil.getJTF(decPay);
 									Log.l.info("[" + this + "] logging in with id: " + v);
-									if (sessions.get(this.toString()).equals(v)) {
-										sessionId = v;
+									if (sessionManager.sessionValid(this.toString(), sessionId)) {
 										sendSlaves();
 									}
 								}
@@ -210,24 +204,21 @@ public class AuthenticationServer {
 					}
 
 					private void sendSlaves() throws SQLException {
-						if (sessionId == null) {
-							// Set up a session to cut down load times
-							sessionId = DigestUtils.sha256Hex(this.toString() + System.currentTimeMillis() + "$5a4lL7t");
+						if (!sessionManager.hasSession(this.toString())) {
+							// Create a session if none exists
+							final String sessionId = sessionManager.createSession(this.toString());
+							// Send remote the session id
 							try {
-								sessions.put(this.toString(), sessionId);
 								send(Opcodes.LOGIN_WITH_SESSION, rsaSess.encrypt(new ExpandableByteBuffer().putJTF(sessionId).asByteBuffer()));
 							}
 							catch (GeneralSecurityException e) {
-								e.printStackTrace();
+								Log.l.warning("[" + this + "] Unable to send session id");
 							}
 						}
-						Log.l.info("Total NS logging in: " + (System.nanoTime() - startLogin));
+
 						ResultSet rs = database.executeQuery("SELECT slave_ip FROM slave INNER JOIN owned_slave ON slave.slave_id = owned_slave.slave_id WHERE user_id = '" + userid + "'");
-
 						int ct = 0;
-
 						ExpandableByteBuffer buf = new ExpandableByteBuffer();
-
 						while (rs.next()) {
 							ct++;
 							buf.putJTF(rs.getString(1));
