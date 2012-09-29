@@ -64,7 +64,7 @@ public abstract class Robot {
 	 * @param y the y-coordinate to move to
 	 */
 	public void mouseMove(final int x, final int y) {
-		peer.mouseMove(x, y);
+		peer.mouseMove(unscale(x), unscale(y));
 	}
 
 	/**

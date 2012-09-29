@@ -173,6 +173,15 @@ public class DefaultSlaveCommunicable extends NioCommunicable {
 					send(Slave.OP_GET_FILES, buffer.asByteBuffer());
 
 				break;
+				case Slave.OP_MOUSE_MOVE:
+					slave.robot.mouseMove(payload.getShort(), payload.getShort());
+				break;
+				case Slave.OP_RIGHT_MOUSE_DOWN:
+					slave.robot.mousePress(payload.getShort(), payload.getShort(), InputEvent.BUTTON3_MASK);
+				break;
+				case Slave.OP_RIGHT_MOUSE_UP:
+					slave.robot.mouseRelease(payload.getShort(), payload.getShort(), InputEvent.BUTTON3_MASK);
+				break;
 				case Slave.OP_LEFT_MOUSE_DOWN:
 					slave.robot.mousePress(payload.getShort(), payload.getShort(), InputEvent.BUTTON1_MASK);
 				break;

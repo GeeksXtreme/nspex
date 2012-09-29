@@ -231,23 +231,43 @@ public class RemoteSlave extends DefaultSlave implements SlaveModel {
 	}
 
 	/**
-	 * Requests that the slaves mouse is down at the specified location
+	 * Requests that the slave's left mouse is down at the specified location
 	 * @param p the location to mouse down
 	 * @throws IOException
 	 */
-	public void mouseDown(short x, short y) throws IOException {
+	public void leftMouseDown(short x, short y) throws IOException {
 		final IoCommunicable ioc = connectToRemote();
 		ioc.send(Slave.OP_LEFT_MOUSE_DOWN, ByteBuffer.allocate(4).putShort(x).putShort(y));
 	}
 
 	/**
-	 * Requests that the slaves mouse is down at the specified location
+	 * Requests that the slave's right mouse is down at the specified location
 	 * @param p the location to mouse down
 	 * @throws IOException
 	 */
-	public void mouseUp(short x, short y) throws IOException {
+	public void rightMouseDown(short x, short y) throws IOException {
+		final IoCommunicable ioc = connectToRemote();
+		ioc.send(Slave.OP_RIGHT_MOUSE_DOWN, ByteBuffer.allocate(4).putShort(x).putShort(y));
+	}
+
+	/**
+	 * Requests that the slave's left mouse is up at the specified location
+	 * @param p the location to mouse up
+	 * @throws IOException
+	 */
+	public void leftMouseUp(short x, short y) throws IOException {
 		final IoCommunicable ioc = connectToRemote();
 		ioc.send(Slave.OP_LEFT_MOUSE_UP, ByteBuffer.allocate(4).putShort(x).putShort(y));
+	}
+
+	/**
+	 * Requests that the slave's right mouse is up at the specified location
+	 * @param p the location to mouse up
+	 * @throws IOException
+	 */
+	public void rightMouseUp(short x, short y) throws IOException {
+		final IoCommunicable ioc = connectToRemote();
+		ioc.send(Slave.OP_RIGHT_MOUSE_UP, ByteBuffer.allocate(4).putShort(x).putShort(y));
 	}
 
 	@Override
@@ -277,4 +297,15 @@ public class RemoteSlave extends DefaultSlave implements SlaveModel {
 	public String toString() {
 		return getHost();
 	}
+
+	/**
+	 * Requests that the slave's mouse is moved to the specified location
+	 * @param p the location to move to
+	 * @throws IOException
+	 */
+	public void mouseMove(short x, short y) throws IOException {
+		final IoCommunicable ioc = connectToRemote();
+		ioc.send(Slave.OP_MOUSE_MOVE, ByteBuffer.allocate(4).putShort(x).putShort(y));
+	}
+
 }
