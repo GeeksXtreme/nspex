@@ -230,6 +230,26 @@ public class RemoteSlave extends DefaultSlave implements SlaveModel {
 		ioc.send(OP_DO_COMMAND, buf.asByteBuffer());
 	}
 
+	/**
+	 * Requests that the slaves mouse is down at the specified location
+	 * @param p the location to mouse down
+	 * @throws IOException
+	 */
+	public void mouseDown(short x, short y) throws IOException {
+		final IoCommunicable ioc = connectToRemote();
+		ioc.send(Slave.OP_LEFT_MOUSE_DOWN, ByteBuffer.allocate(4).putShort(x).putShort(y));
+	}
+
+	/**
+	 * Requests that the slaves mouse is down at the specified location
+	 * @param p the location to mouse down
+	 * @throws IOException
+	 */
+	public void mouseUp(short x, short y) throws IOException {
+		final IoCommunicable ioc = connectToRemote();
+		ioc.send(Slave.OP_LEFT_MOUSE_UP, ByteBuffer.allocate(4).putShort(x).putShort(y));
+	}
+
 	@Override
 	public void setView(final SlaveView view) {
 		this.view = view;

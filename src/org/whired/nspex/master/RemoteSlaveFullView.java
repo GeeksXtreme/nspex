@@ -7,6 +7,8 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -63,6 +65,27 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				g.dispose();
 			}
 		};
+		panel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				try {
+					slave.mouseDown((short) e.getPoint().x, (short) e.getPoint().y);
+				}
+				catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				try {
+					slave.mouseUp((short) e.getPoint().x, (short) e.getPoint().y);
+				}
+				catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {

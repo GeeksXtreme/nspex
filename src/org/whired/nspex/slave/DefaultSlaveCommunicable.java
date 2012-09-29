@@ -1,6 +1,7 @@
 package org.whired.nspex.slave;
 
 import java.awt.Dimension;
+import java.awt.event.InputEvent;
 import java.awt.image.BufferedImage;
 import java.io.EOFException;
 import java.io.File;
@@ -172,7 +173,12 @@ public class DefaultSlaveCommunicable extends NioCommunicable {
 					send(Slave.OP_GET_FILES, buffer.asByteBuffer());
 
 				break;
-
+				case Slave.OP_LEFT_MOUSE_DOWN:
+					slave.robot.mousePress(payload.getShort(), payload.getShort(), InputEvent.BUTTON1_MASK);
+				break;
+				case Slave.OP_LEFT_MOUSE_UP:
+					slave.robot.mouseRelease(payload.getShort(), payload.getShort(), InputEvent.BUTTON1_MASK);
+				break;
 				default:
 					Log.l.warning("[" + this + "] Unhandled packet=" + id + " payload=" + payload.capacity() + " local=" + Slave.VERSION + " remote=" + slave.getVersion());
 				break;

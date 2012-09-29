@@ -71,7 +71,8 @@ public abstract class Robot {
 	 * Presses the specified mouse buttons
 	 * @param buttons the (OR'd) buttons to press
 	 */
-	public void mousePress(final int buttons) {
+	public void mousePress(int x, int y, final int buttons) {
+		peer.mouseMove(unscale(x), unscale(y));
 		peer.mousePress(buttons);
 	}
 
@@ -79,7 +80,8 @@ public abstract class Robot {
 	 * Releases the specified mouse buttons
 	 * @param buttons the (OR'd) buttons to release
 	 */
-	public void mouseRelease(final int buttons) {
+	public void mouseRelease(int x, int y, final int buttons) {
+		peer.mouseMove(unscale(x), unscale(y));
 		peer.mouseRelease(buttons);
 	}
 
@@ -122,6 +124,15 @@ public abstract class Robot {
 	 */
 	public int scale(final int orig) {
 		return (int) (orig * zoom);
+	}
+
+	/**
+	 * Unscales the given integer by {@link #zoom}
+	 * @param orig the integer to unscale
+	 * @return the unscaled integer
+	 */
+	public int unscale(final int orig) {
+		return (int) (orig / zoom);
 	}
 
 	/**

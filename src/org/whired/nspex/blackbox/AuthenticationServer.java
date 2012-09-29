@@ -169,7 +169,6 @@ public class AuthenticationServer {
 									}
 								}
 								catch (Throwable e1) {
-									// TODO Auto-generated catch block
 									e1.printStackTrace();
 								}
 							break;
@@ -203,6 +202,10 @@ public class AuthenticationServer {
 						}
 					}
 
+					/**
+					 * Send the remote their slaves
+					 * @throws SQLException when a database error occurs
+					 */
 					private void sendSlaves() throws SQLException {
 						if (!sessionManager.hasSession(this.toString())) {
 							// Create a session if none exists
