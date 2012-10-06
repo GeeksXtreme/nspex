@@ -6,6 +6,7 @@ import java.nio.channels.SelectionKey;
 import java.security.GeneralSecurityException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.whired.nspex.blackbox.sql.SQLiteDatabase;
@@ -24,7 +25,7 @@ import org.whired.nspex.tools.logging.Log;
  * @author Whired
  */
 public class AuthenticationServer {
-	private final static long IP_CHANGE_TIMEOUT = 259200000; // 3 days
+	private final static long IP_CHANGE_TIMEOUT = TimeUnit.DAYS.toMillis(3);
 	private NioServer server;
 
 	/**
@@ -59,7 +60,7 @@ public class AuthenticationServer {
 					private RSASession rsaSess;
 					{
 						// These guys need to be quick
-						setReadTimeout(2000);
+						setReadTimeout(TimeUnit.SECONDS.toMillis(2));
 					}
 
 					@Override
@@ -121,8 +122,8 @@ public class AuthenticationServer {
 													// Warn client that he can change, but at a cost
 													send(Opcodes.CONFIRM_ISP_CHANGE, ByteBuffer.allocate(8).putLong(IP_CHANGE_TIMEOUT));
 
-													// Set timeout to 20s while we wait for a response
-													setReadTimeout(20000);
+													// Wait (shortly) for a response
+													setReadTimeout(TimeUnit.SECONDS.toMillis(20));
 													return;
 												}
 												else {

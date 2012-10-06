@@ -7,6 +7,8 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -66,6 +68,32 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				g.dispose();
 			}
 		};
+
+		final KeyAdapter kl = new KeyAdapter() {
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				try {
+					slave.releaseKey(e.getKeyCode());
+				}
+				catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+				try {
+					slave.pressKey(e.getKeyCode());
+				}
+				catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		};
+
 		final MouseAdapter ma = new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
@@ -84,6 +112,7 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 
 			@Override
 			public void mouseReleased(MouseEvent e) {
+				panel.requestFocusInWindow();
 				try {
 					if (SwingUtilities.isLeftMouseButton(e)) {
 						slave.leftMouseUp((short) e.getPoint().x, (short) e.getPoint().y);
@@ -107,6 +136,9 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				}
 			}
 		};
+		panel.setFocusable(true);
+		panel.requestFocusInWindow();
+		panel.addKeyListener(kl);
 		panel.addMouseListener(ma);
 		panel.addMouseMotionListener(ma);
 		runOnEdt(new Runnable() {

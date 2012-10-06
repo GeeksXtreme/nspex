@@ -17,6 +17,7 @@ public abstract class Shell {
 
 	private final BufferedReader reader;
 	private final BufferedWriter writer;
+	private final Process process;
 
 	/**
 	 * Creates a new shell
@@ -25,21 +26,23 @@ public abstract class Shell {
 	Shell(String program) throws IOException {
 		final ProcessBuilder pb = new ProcessBuilder(program);
 		pb.redirectErrorStream(true);
-		final Process p = pb.start();
-		reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-		writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
+		process = pb.start();
+		reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+		writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
 		readerThread.start();
 	}
 
 	private final Thread readerThread = new Thread(new Runnable() {
 		@Override
 		public void run() {
-			executeCommand("echo connected");
+			outputReceived("Connected.\r\n");
 			String line;
 			try {
-				while ((line = reader.readLine()) != null) {
-					// Pretty easy, just send whatever output there is
-					outputReceived(line + "\r\n");
+				synchronized (reader) {
+					while ((line = reader.readLine()) != null) {
+						// Pretty easy, just send whatever output there is
+						outputReceived(line + "\r\n");
+					}
 				}
 			}
 			catch (IOException e) {
@@ -61,7 +64,8 @@ public abstract class Shell {
 	 */
 	void close() {
 		try {
-			Log.l.finest("Closing shell");
+			Log.l.info("Closing shell");
+			process.destroy();
 			reader.close();
 			writer.close();
 		}
@@ -69,6 +73,7 @@ public abstract class Shell {
 			Log.l.log(Level.WARNING, "Error closing shell:", e);
 		}
 		finally {
+			outputReceived("Disconnected.\r\n");
 			closed();
 		}
 	}
@@ -78,14 +83,19 @@ public abstract class Shell {
 	 * @param command the command to execute
 	 */
 	public void executeCommand(String command) {
-		try {
-			writer.write(command);
-			writer.newLine();
-			writer.flush();
-		}
-		catch (IOException e) {
-			Log.l.log(Level.WARNING, "Error writing:", e);
+		if (command.toLowerCase().equals("exit")) {
 			close();
+		}
+		else {
+			try {
+				writer.write(command);
+				writer.newLine();
+				writer.flush();
+			}
+			catch (IOException e) {
+				Log.l.log(Level.WARNING, "Error writing:", e);
+				close();
+			}
 		}
 	}
 

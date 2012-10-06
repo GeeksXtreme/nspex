@@ -12,7 +12,7 @@ import org.whired.nspex.tools.logging.Log;
  */
 public abstract class Communicable {
 	private long lastReadTime = System.currentTimeMillis();
-	private int readTimeout;
+	private long readTimeout;
 	boolean connected = true;
 	final String hostName;
 
@@ -93,16 +93,16 @@ public abstract class Communicable {
 	 * Gets the amount of time (ms) that can pass between now and the next read and any consecutive reads a non-positive value is interpreted as an infinite timeout
 	 * @return the timeout, in milliseconds
 	 */
-	int getReadTimeout() {
+	long getReadTimeout() {
 		return readTimeout;
 	}
 
 	/**
 	 * Sets the amount of time (ms) that can pass between now and the next read and any consecutive reads a non-positive value is interpreted as an infinite timeout
-	 * @param timeout the timeout, in milliseconds, to set
+	 * @param l the timeout, in milliseconds, to set
 	 */
-	public void setReadTimeout(final int timeout) {
-		readTimeout = timeout;
+	public void setReadTimeout(final long l) {
+		readTimeout = l;
 	}
 
 	void setLastReadTime(final long time) {

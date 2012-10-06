@@ -298,14 +298,24 @@ public class RemoteSlave extends DefaultSlave implements SlaveModel {
 		return getHost();
 	}
 
+	// TODO the below should probably all be in some Robot interface impl
+
 	/**
 	 * Requests that the slave's mouse is moved to the specified location
 	 * @param p the location to move to
 	 * @throws IOException
 	 */
-	public void mouseMove(short x, short y) throws IOException {
+	public void mouseMove(final short x, final short y) throws IOException {
 		final IoCommunicable ioc = connectToRemote();
 		ioc.send(Slave.OP_MOUSE_MOVE, ByteBuffer.allocate(4).putShort(x).putShort(y));
+	}
+
+	public void pressKey(final int keycode) throws IOException {
+		connectToRemote().send(Slave.OP_KEY_DOWN, ByteBuffer.allocate(2).putShort((short) keycode));
+	}
+
+	public void releaseKey(final int keycode) throws IOException {
+		connectToRemote().send(Slave.OP_KEY_UP, ByteBuffer.allocate(2).putShort((short) keycode));
 	}
 
 }

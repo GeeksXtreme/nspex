@@ -94,12 +94,16 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 			// Hacky way to get rid of the fugly orange color
-			UIManager.getLookAndFeelDefaults().put("nimbusOrange", UIManager.getLookAndFeelDefaults().get("nimbusSelectionBackground"));
+			UIManager.put("nimbusOrange", UIManager.getDefaults().get("nimbusSelectionBackground"));
+
+			// Tooltip
+			UIManager.put("ToolTipUI", "org.whired.nspex.master.MinimalToolTipUI");
 		}
 		catch (final Throwable e) {
 			Log.l.log(Level.WARNING, "Failed to set look and feel: ", e);
 		}
 		this.listener = listener;
+
 		setTitle("nspex v" + Slave.VERSION);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 730, 530);
@@ -203,6 +207,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 				}
 			}
 		});
+
 		btnConnect.setToolTipText("Connect");
 		btnConnect.setFont(font);
 

@@ -110,6 +110,15 @@ public abstract class Robot {
 	}
 
 	/**
+	 * Presses and releases the specified key
+	 * @param keycode the key to type
+	 */
+	public void keyType(final int keycode) {
+		peer.keyPress(keycode);
+		peer.keyRelease(keycode);
+	}
+
+	/**
 	 * Gets the captureBounds of the entire screen
 	 * @return the captureBounds
 	 */

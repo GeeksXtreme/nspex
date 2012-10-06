@@ -33,7 +33,7 @@ public class JPEGImageWriter {
 	static {
 		// Set options
 		iwparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-		iwparam.setCompressionQuality(.65F);
+		iwparam.setCompressionQuality(.45F);
 
 		// Get writer
 		try {

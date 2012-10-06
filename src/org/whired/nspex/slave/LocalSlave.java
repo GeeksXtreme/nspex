@@ -50,7 +50,7 @@ public abstract class LocalSlave extends NioServer implements Slave {
 	}
 
 	public static void main(String[] args) throws IOException, AWTException {
-		Log.l.setLevel(Level.ALL);
+		Log.l.setLevel(Level.INFO);
 		// DI -- entire(+/-) object graph is created here
 		Robot robot = Platform.isWindows() ? new WinRobot(.8F) : new AWTRobot(.8F);
 		ScreenCapture capture = new ScreenCapture(robot, 1);

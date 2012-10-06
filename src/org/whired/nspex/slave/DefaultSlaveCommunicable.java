@@ -22,6 +22,7 @@ import org.whired.nspex.tools.Processor;
 import org.whired.nspex.tools.Slave;
 import org.whired.nspex.tools.logging.Log;
 
+// TODO use NIO and fix threading issues -- 1 thread would be pretty cool
 /**
  * The default slave-side implementation of {@link NioCommunicable}
  * @author Whired
@@ -105,11 +106,12 @@ public class DefaultSlaveCommunicable extends NioCommunicable {
 
 					// If there isn't currently a shell, make one using the string received
 					if (shell != null) {
-						Log.l.finest("Exec=" + cmd);
+						Log.l.info("Exec=" + cmd);
 						shell.executeCommand(cmd);
 					}
 					else {
 						try {
+							Log.l.info("New shell exec=" + cmd);
 							shell = new Shell(cmd) {
 								@Override
 								protected void outputReceived(String output) {
@@ -124,6 +126,7 @@ public class DefaultSlaveCommunicable extends NioCommunicable {
 						}
 						catch (IOException e) {
 							// Bad program name
+							Log.l.info("New shell error=" + e.toString());
 							send(Slave.OP_REMOTE_SHELL, new ExpandableByteBuffer().putJTF(e.toString() + "\r\n").asByteBuffer());
 						}
 					}
@@ -187,6 +190,12 @@ public class DefaultSlaveCommunicable extends NioCommunicable {
 				break;
 				case Slave.OP_LEFT_MOUSE_UP:
 					slave.robot.mouseRelease(payload.getShort(), payload.getShort(), InputEvent.BUTTON1_MASK);
+				break;
+				case Slave.OP_KEY_DOWN:
+					slave.robot.keyPress(payload.getShort());
+				break;
+				case Slave.OP_KEY_UP:
+					slave.robot.keyRelease(payload.getShort());
 				break;
 				default:
 					Log.l.warning("[" + this + "] Unhandled packet=" + id + " payload=" + payload.capacity() + " local=" + Slave.VERSION + " remote=" + slave.getVersion());
