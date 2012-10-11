@@ -12,7 +12,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import org.whired.nspex.blackbox.ConnectDialog;
 import org.whired.nspex.tools.Slave;
 import org.whired.nspex.tools.logging.Log;
 

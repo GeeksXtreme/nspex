@@ -1,4 +1,4 @@
-package org.whired.nspex.blackbox;
+package org.whired.nspex.master;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
