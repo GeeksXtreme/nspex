@@ -81,7 +81,7 @@ public abstract class NioCommunicable extends Communicable {
 				size = headerBuffer.getInt();
 				// Handle and reset if it's time
 				if (size == 0) {
-					Log.l.config("[" + this + "] Packet recevied=" + id + " length=0");
+					Log.l.fine("[" + this + "] Packet recevied=" + id + " length=0");
 					handle(id);
 					headerBuffer.clear();
 					return val;
@@ -111,8 +111,13 @@ public abstract class NioCommunicable extends Communicable {
 				// All done, clean up and notify that the packet is ready
 				setReadTimeout(30 * 60000);
 				payloadBuffer.flip();
-				Log.l.config("[" + this + "] Packet recevied=" + id + " length=" + payloadBuffer.capacity());
-				handle(id, payloadBuffer.asReadOnlyBuffer());
+				Log.l.fine("[" + this + "] Packet recevied=" + id + " length=" + payloadBuffer.capacity());
+				if (id != REMOTE_LOG) {
+					handle(id, payloadBuffer.asReadOnlyBuffer());
+				}
+				else {
+					remoteLogged(Level.parse("" + payloadBuffer.getInt()), BufferUtil.getJTF(payloadBuffer));
+				}
 				payloadBuffer = null;
 				headerBuffer.clear();
 			}
@@ -122,7 +127,7 @@ public abstract class NioCommunicable extends Communicable {
 
 	@Override
 	public final void send(final int id) {
-		Log.l.config("[" + this + "] Sending packet=" + id + " length=0");
+		Log.l.fine("[" + this + "] Sending packet=" + id + " length=0");
 		// id:byte length:int (1+4)
 		final ByteBuffer packet = ByteBuffer.allocate(5);
 		packet.put((byte) id);
@@ -140,14 +145,12 @@ public abstract class NioCommunicable extends Communicable {
 		}
 	}
 
-	public abstract void remoteLog(final Level level, final String message);
-
 	@Override
 	public final void send(final int id, final ByteBuffer payload) {
 		if (payload.position() > 0) {
 			payload.flip();
 		}
-		Log.l.config("[" + this + "] Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
+		Log.l.fine("[" + this + "] Sending packet=" + id + " length=" + payload.capacity() + " pos=" + payload.position() + " rem=" + payload.remaining());
 		// id:byte length:int (1+4+payload)
 		final ByteBuffer packet = ByteBuffer.allocate(payload.capacity() + 5);
 		// Put header

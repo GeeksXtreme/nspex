@@ -59,7 +59,7 @@ public abstract class NioServer {
 						final Communicable comm = connections.get(key);
 						// Not all keys are communicables
 						if (comm != null) {
-							final int to = comm.getReadTimeout();
+							final long to = comm.getReadTimeout();
 							if (to > 0 && System.currentTimeMillis() - comm.getLastReadTime() >= to) {
 								removeKey(key);
 							}
@@ -84,7 +84,7 @@ public abstract class NioServer {
 							final SocketChannel sc = ssc.accept();
 
 							// But we aren't going to add another reader for this host
-							final String ip = ((InetSocketAddress) sc.socket().getRemoteSocketAddress()).getHostName();
+							final String ip = ((InetSocketAddress) sc.socket().getRemoteSocketAddress()).getAddress().getHostAddress();
 							sc.configureBlocking(false);
 							currentKey = sc.register(selector, SelectionKey.OP_READ);
 							if (!connectedIps.contains(ip)) {
@@ -136,7 +136,7 @@ public abstract class NioServer {
 		catch (final IOException e) {
 		}
 		if ((comm = connections.remove(key)) != null) {
-			final String ip = ((InetSocketAddress) ((SocketChannel) key.channel()).socket().getRemoteSocketAddress()).getHostName();
+			final String ip = ((InetSocketAddress) ((SocketChannel) key.channel()).socket().getRemoteSocketAddress()).getAddress().getHostAddress();
 			Log.l.info("Removing [" + ip + "], size=" + connections.size());
 			connectedIps.remove(ip);
 			comm.disconnected();

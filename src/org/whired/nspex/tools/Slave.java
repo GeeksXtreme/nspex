@@ -1,105 +1,67 @@
 package org.whired.nspex.tools;
 
 /** A slave */
-public class Slave {
+public interface Slave {
 	/** The version */
-	public static String VERSION = "0.1.0";
+	String VERSION = "0.1.0";
 	/** The port */
-	public static int PORT = 43596;
+	int PORT = 43596;
 	/** Opcodes */
-	public static final int INTENT_CHECK = 0, INTENT_CONNECT = 1, INTENT_CHECK_BULK = 2, INTENT_REBUILD = 8;
-	public static final int OP_HANDSHAKE = 0, OP_TRANSFER_IMAGE = 1, OP_DO_COMMAND = 2, OP_GET_FILES = 3, OP_FILE_ACTION = 4, OP_LOG = 5;
+	int INTENT_CHECK = 0, INTENT_CONNECT = 1, INTENT_CHECK_BULK = 2, INTENT_REBUILD = 8;
+	int OP_HANDSHAKE = 0, OP_TRANSFER_IMAGE = 1, OP_DO_COMMAND = 2, OP_GET_FILES = 3, OP_FILE_ACTION = 4, OP_REMOTE_SHELL = 6, OP_MOUSE_MOVE = 7, OP_LEFT_MOUSE_DOWN = 8, OP_LEFT_MOUSE_UP = 9, OP_RIGHT_MOUSE_DOWN = 10, OP_RIGHT_MOUSE_UP = 11, OP_KEY_DOWN = 12, OP_KEY_UP = 13;
 	/** File manipulation opcodes */
-	public static final int FOP_GET_THUMB = 0, FOP_DOWNLOAD = 1, FOP_RENAME = 2, FOP_DELETE = 3;
-	/** Slave information */
-	private String user, os, version;
-	private String host;
-	private boolean online;
-
-	public Slave() {
-	}
-
-	/**
-	 * Creates a new slave with the specified ip
-	 * @param host the ip for this slave
-	 */
-	public Slave(final String host) {
-		this.host = host;
-	}
+	int FOP_GET_INFO = 0, FOP_DOWNLOAD = 1, FOP_RENAME = 2, FOP_DELETE = 3;
 
 	/**
 	 * Gets the current operating system for this slave
 	 * @return the operating system and architecture
 	 */
-	public String getOS() {
-		return os;
-	}
+	String getOS();
 
 	/**
-	 * Sets the operating sytem for this slave
+	 * Sets the operating system for this slave
 	 * @param os
 	 */
-	public void setOS(final String os) {
-		this.os = os;
-	}
+	void setOS(final String os);
 
 	/**
 	 * Gets the name of the user for this slave
 	 * @return the name
 	 */
-	public String getUser() {
-		return user;
-	}
+	String getUser();
 
 	/**
 	 * Sets the name of the user for this slave
 	 * @param user the name to set
 	 */
-	public void setUser(final String user) {
-		this.user = user;
-	}
+	void setUser(final String user);
 
 	/**
 	 * Gets the version of this slave
 	 * @return the version
 	 */
-	public String getVersion() {
-		return version;
-	}
+	String getVersion();
 
 	/**
 	 * Sets the version for this slave
-	 * @param version the version to ddd
+	 * @param version the version to set
 	 */
-	public void setVersion(final String version) {
-		this.version = version;
-	}
+	void setVersion(final String version);
 
 	/**
 	 * Gets the host of this slave
 	 */
-	public String getHost() {
-		return this.host;
-	}
-
-	@Override
-	public String toString() {
-		return this.host;
-	}
+	String getHost();
 
 	/**
 	 * Determines whether or not this slave is online
 	 * @return {@code true} if the slave is online, otherwise {@code false}
 	 */
-	public boolean isOnline() {
-		return online;
-	}
+	boolean isOnline();
 
 	/**
 	 * Sets whether or not this slave is online
 	 * @param online
 	 */
-	public void setOnline(final boolean online) {
-		this.online = online;
-	}
+	void setOnline(final boolean online);
 }

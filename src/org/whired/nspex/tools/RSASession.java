@@ -1,4 +1,4 @@
-package org.whired.nspex.blackbox;
+package org.whired.nspex.tools;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -10,13 +10,15 @@ import java.security.spec.RSAPublicKeySpec;
 import javax.crypto.Cipher;
 
 /**
- * Maintains a RSA-encrypted session
+ * Maintains a RSA session
  * @author Whired
  */
 public class RSASession {
+	/** The public key that the remote is using */
 	private final PublicKey remotePublicKey;
+	/** A generic RSA cipher used for cryption */
 	private final Cipher cipher = Cipher.getInstance("RSA");
-	private final KeyFactory fact = KeyFactory.getInstance("RSA");
+	/** The keys to use for cryption */
 	private final RSAKeySet keys;
 
 	/**
@@ -28,14 +30,18 @@ public class RSASession {
 	public RSASession(final RSAKeySet keys, final ByteBuffer spec) throws GeneralSecurityException {
 		this.keys = keys;
 
+		// Get the modulus
 		byte[] buf = new byte[spec.getInt()];
 		spec.get(buf);
 		final BigInteger mod = new BigInteger(buf);
+
+		// Get the exponent
 		buf = new byte[spec.getInt()];
 		spec.get(buf);
 		final BigInteger exp = new BigInteger(buf);
 
-		remotePublicKey = fact.generatePublic(new RSAPublicKeySpec(mod, exp));
+		// Actually generate the key
+		remotePublicKey = KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(mod, exp));
 	}
 
 	/**
@@ -61,7 +67,7 @@ public class RSASession {
 	 * @return the encrypted bytes
 	 * @throws GeneralSecurityException when the bytes can't be encrypted for any reason
 	 */
-	public final ByteBuffer encrpyt(final ByteBuffer plainText) throws GeneralSecurityException {
+	public final ByteBuffer encrypt(final ByteBuffer plainText) throws GeneralSecurityException {
 		cipher.init(Cipher.ENCRYPT_MODE, remotePublicKey);
 		if (plainText.position() > 0) {
 			plainText.flip();

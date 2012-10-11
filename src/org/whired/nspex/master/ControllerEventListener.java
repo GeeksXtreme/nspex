@@ -22,4 +22,16 @@ public interface ControllerEventListener {
 	 * @param slaves the slaves to update
 	 */
 	void refresh(RemoteSlave[] slaves);
+
+	/**
+	 * Sets the current progress of some task
+	 * @param progress the progress to set
+	 */
+	void setProgress(int progress);
+
+	/**
+	 * Sets the max progress of some task
+	 * @param max the max progress to set
+	 */
+	void setMaxProgress(int max);
 }

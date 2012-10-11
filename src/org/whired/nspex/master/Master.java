@@ -1,11 +1,10 @@
 package org.whired.nspex.master;
 
 import java.awt.EventQueue;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Properties;
+import java.security.GeneralSecurityException;
 import java.util.logging.Level;
 
 import javax.swing.UIManager;
@@ -27,13 +26,8 @@ public class Master {
 		@Override
 		public void connect(final RemoteSlave[] slaves) {
 			for (final RemoteSlave rsm : slaves) {
-				try {
-					new RemoteSlaveFullView(frame, rsm);
-					rsm.connect(Slave.INTENT_CONNECT);
-				}
-				catch (final IOException t) {
-					Log.l.warning("Could not connect to " + rsm.getHost() + ".");
-				}
+				new RemoteSlaveFullView(frame, rsm);
+				rsm.connect(Slave.INTENT_CONNECT);
 			}
 		}
 
@@ -58,37 +52,65 @@ public class Master {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (final RemoteSlave rsm : slaves) {
-						try {
-							rsm.setView(frame);
-							if (slaves.length == 1) {
-								rsm.connect(Slave.INTENT_CHECK);
-							}
-							else {
-								rsm.connect(Slave.INTENT_CHECK_BULK);
-							}
-						}
-						catch (final Throwable t) {
+					if (slaves.length > 1) {
+						setMaxProgress(slaves.length);
+						for (int i = 0; i < slaves.length; i++) {
+							slaves[i].setView(frame);
+							slaves[i].connect(Slave.INTENT_CHECK_BULK);
+							setProgress(i + 1);
 						}
 					}
+					else if (slaves.length == 1) {
+						slaves[0].setView(frame);
+						slaves[0].connect(Slave.INTENT_CHECK);
+					}
+
 					Log.l.info("Queried " + slaves.length + " slave(s)");
 				}
 			}).start();
 		}
+
+		@Override
+		public void setProgress(int progress) {
+			frame.setProgress(progress);
+		}
+
+		@Override
+		public void setMaxProgress(int max) {
+			frame.setMaxProgress(max);
+		}
 	};
+
+	/**
+	 * Creates a new master
+	 * @throws InvocationTargetException
+	 * @throws InterruptedException
+	 */
+	public Master() throws InterruptedException, InvocationTargetException {
+		EventQueue.invokeAndWait(new Runnable() {
+			@Override
+			public void run() {
+				frame = new MasterFrame(listener);
+				frame.setVisible(true);
+			}
+		});
+	}
 
 	/**
 	 * Creates a new master that will work with the specified slaves
 	 * @param slaves the slaves to work with initially
+	 * @throws InvocationTargetException
+	 * @throws InterruptedException
 	 */
-	public Master(final RemoteSlave[] slaves) {
+	public Master(final RemoteSlave[] slaves) throws InterruptedException, InvocationTargetException {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		}
 		catch (final Throwable e) {
 			Log.l.log(Level.WARNING, "Failed to set look and feel: ", e);
 		}
-		EventQueue.invokeLater(new Runnable() {
+
+		EventQueue.invokeAndWait(new Runnable() {
 			@Override
 			public void run() {
 				frame = new MasterFrame(listener);
@@ -98,42 +120,17 @@ public class Master {
 		});
 	}
 
-	/** The location of the properties file that has settings for this slave */
-	private static final String PROPS_FILE = "props.dat";
-
-	/**
-	 * Loads properties from the path specified in {@link #PROPS_FILE}, or a new {@code Properties} if none could be loaded
-	 * @return the properties
-	 */
-	public static Properties getProps() {
-		final Properties props = new Properties();
-		try {
-			props.load(new FileInputStream(PROPS_FILE));
-		}
-		catch (final Throwable t) {
-			t.printStackTrace();
-		}
-		return props;
+	public void setSlaves(final RemoteSlave[] slaves) {
+		EventQueue.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				frame.refresh(slaves);
+			}
+		});
 	}
 
-	public static void main(final String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException {
-		Log.l.setLevel(Level.ALL);
-		final Properties props = getProps();
-		// TODO save on exit:
-		// String[] ips = new String[] { "localhost", "192.168.2.8" };
-		// StringBuilder b = new StringBuilder();
-		// for (String s : ips) {
-		// b.append(s + ",");
-		// }
-		// b.deleteCharAt(b.length() - 1);
-		// props.put("ips", b.toString());
-		// props.store(new FileOutputStream("props.dat"), null);
-		final String s = (String) props.get("ips");
-		final String[] ips = s != null ? s.split(",") : new String[0];
-		final RemoteSlave[] slaves = new RemoteSlave[ips.length];
-		for (int i = 0; i < slaves.length; i++) {
-			slaves[i] = new RemoteSlave(ips[i]);
-		}
-		new Master(slaves);
+	public static void main(final String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException, GeneralSecurityException {
+		Log.l.setLevel(Level.INFO);
+		new Master();
 	}
 }

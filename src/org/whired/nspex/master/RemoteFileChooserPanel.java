@@ -36,31 +36,39 @@ import org.whired.nspex.tools.RemoteFile;
 import org.whired.nspex.tools.Slave;
 import org.whired.nspex.tools.logging.Log;
 
-// TODO refresh, download, delete '..', information panel (size, date modified, etc)							?
 public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillExpandListener, TreeSelectionListener {
 
 	private final LazyTreeNode root = new LazyTreeNode("", true);
 	private final JTree treeFiles = new JTree(root);
-	private Image thumbnail;
 	private final Color grayBorder = new Color(146, 151, 161);
+	// The file that is currently selected
+	private RemoteFile selectedFile;
+
 	private final JPanel pnlPreview = new JPanel() {
 		@Override
 		protected void paintComponent(final Graphics g) {
 			g.setColor(this.getBackground());
 			g.fillRect(0, 0, this.getWidth(), this.getHeight());
-			if (thumbnail != null) {
+			if (selectedFile != null) {
+				final Image thumbnail = selectedFile.getThumbnail();
 				final Graphics2D g2 = (Graphics2D) g;
-				final int tWidth = thumbnail.getWidth(this);
-				final int tHeight = thumbnail.getHeight(this);
 
-				final int dx = this.getWidth() / 2 - tWidth / 2;
-				final int dy = this.getHeight() / 2 - tHeight / 2;
+				if (thumbnail != null) {
+					final int tWidth = thumbnail.getWidth(this);
+					final int tHeight = thumbnail.getHeight(this);
 
-				g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-				g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+					final int dx = this.getWidth() / 2 - tWidth / 2;
+					final int dy = this.getHeight() / 2 - tHeight / 2;
 
-				g2.drawImage(thumbnail, dx, dy, dx + tWidth, dy + tHeight, 0, 0, tWidth, tHeight, this);
+					g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+					g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+					g2.drawImage(thumbnail, dx, dy, dx + tWidth, dy + tHeight, 0, 0, tWidth, tHeight, this);
+				}
+
+				g2.setColor(Color.WHITE);
+				GraphicsUtil.drawStringDropShadow(g2, selectedFile.getName() + " - " + selectedFile.getSize(), 3, getHeight() - 3, Color.BLACK);
 			}
 			g.setColor(grayBorder);
 			g.drawRect(0, 0, this.getWidth() - 1, this.getHeight() - 1);
@@ -220,8 +228,12 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 
 	}
 
-	public void setThumbnail(final Image thumb) {
-		this.thumbnail = thumb;
+	/**
+	 * Sets the currently selected file
+	 * @param file the file to set
+	 */
+	public void setSelectedFile(final RemoteFile file) {
+		selectedFile = file;
 		pnlPreview.repaint();
 	}
 
@@ -229,11 +241,7 @@ public abstract class RemoteFileChooserPanel extends JPanel implements TreeWillE
 	public void valueChanged(final TreeSelectionEvent e) {
 		final LazyTreeNode node = (LazyTreeNode) treeFiles.getLastSelectedPathComponent();
 		if (node != null && node.isLeaf()) {
-			final String name = node.toString().toLowerCase();
-			if (name.endsWith("jpeg") || name.endsWith("jpg") || name.endsWith("bmp") || name.endsWith("png") || name.endsWith("gif")) {
-				String fname = pathToString(node.getPath());
-				requestFileAction(Slave.FOP_GET_THUMB, fname);
-			}
+			requestFileAction(Slave.FOP_GET_INFO, pathToString(node.getPath()));
 		}
 	}
 

@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -21,6 +22,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Calendar;
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import javax.swing.ImageIcon;
@@ -28,10 +30,12 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
@@ -73,24 +77,45 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	};
 	/** A preview image for the selected slave */
 	private Image previewImage;
+	/** The connect button */
+	final JButton btnConnect;
+	/** The refresh button */
+	final JButton btnRefresh;
+	/** The build button */
+	final JButton btnBuild;
+	private final JPanel panel;
+	/** The bar for visually tracking slave polling */
+	private final JProgressBar progressBar;
 
 	/**
 	 * Creates a new frame for the specified controller event listener
 	 * @param listener the listener to notify of controller events
 	 */
 	public MasterFrame(final ControllerEventListener listener) {
+		try {
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+			// Hacky way to get rid of the fugly orange color
+			UIManager.put("nimbusOrange", UIManager.getDefaults().get("nimbusSelectionBackground"));
+
+			// Tooltip
+			UIManager.put("ToolTipUI", "org.whired.nspex.master.MinimalToolTipUI");
+		}
+		catch (final Throwable e) {
+			Log.l.log(Level.WARNING, "Failed to set look and feel: ", e);
+		}
 		this.listener = listener;
+
 		setTitle("nspex v" + Slave.VERSION);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 700, 500);
+		setBounds(100, 100, 730, 530);
 		contentPane = new JPanel();
 		contentPane.setBorder(null);
 		setContentPane(contentPane);
 		final GridBagLayout gbl_contentPane = new GridBagLayout();
-		gbl_contentPane.columnWidths = new int[] { 494, 80, 27, 27, 0 };
-		gbl_contentPane.rowHeights = new int[] { 245, 1, 75, 0 };
-		gbl_contentPane.columnWeights = new double[] { 1.0, 1.0, 0.0, 0.0, Double.MIN_VALUE };
-		gbl_contentPane.rowWeights = new double[] { 1.0, 0.0, 1.0, Double.MIN_VALUE };
+		gbl_contentPane.columnWidths = new int[] { 494, 192, 0 };
+		gbl_contentPane.rowHeights = new int[] { 85, 23, 151, 0 };
+		gbl_contentPane.columnWeights = new double[] { 1.0, 0.0, Double.MIN_VALUE };
+		gbl_contentPane.rowWeights = new double[] { 1.0, 0.0, 0.0, Double.MIN_VALUE };
 		contentPane.setLayout(gbl_contentPane);
 
 		final JScrollPane scrollPane = new JScrollPane();
@@ -99,7 +124,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		scrollPane.setViewportBorder(null);
 		final GridBagConstraints gbc_scrollPane = new GridBagConstraints();
 		gbc_scrollPane.insets = new Insets(0, 0, -3, 0);
-		gbc_scrollPane.gridwidth = 4;
+		gbc_scrollPane.gridwidth = 2;
 		gbc_scrollPane.fill = GridBagConstraints.BOTH;
 		gbc_scrollPane.gridx = 0;
 		gbc_scrollPane.gridy = 0;
@@ -126,7 +151,6 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		final TableRowSorter<TableModel> trs = new TableRowSorter<TableModel>(model);
 		trs.setSortsOnUpdates(true);
 		table.setRowSorter(trs);
-
 		table.setBorder(null);
 		table.getTableHeader().setFont(font);
 		table.getTableHeader().setReorderingAllowed(false);
@@ -134,7 +158,11 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			@Override
 			public void valueChanged(final ListSelectionEvent e) {
 				if (!e.getValueIsAdjusting()) {
-					if (table.getSelectionModel().isSelectionEmpty()) {
+					boolean selectionEmpty = table.getSelectionModel().isSelectionEmpty();
+					btnConnect.setEnabled(!selectionEmpty);
+					btnRefresh.setEnabled(!selectionEmpty);
+					btnBuild.setEnabled(!selectionEmpty);
+					if (selectionEmpty) {
 						updatePreviewImage(null);
 					}
 					else {
@@ -144,7 +172,30 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			}
 		});
 
-		final JButton btnConnect = new JButton("Connect");
+		panel = new JPanel();
+		GridBagConstraints gbc_panel = new GridBagConstraints();
+		gbc_panel.fill = GridBagConstraints.HORIZONTAL;
+		gbc_panel.gridwidth = 2;
+		gbc_panel.anchor = GridBagConstraints.NORTH;
+		gbc_panel.gridx = 0;
+		gbc_panel.gridy = 1;
+		contentPane.add(panel, gbc_panel);
+		GridBagLayout gbl_panel = new GridBagLayout();
+		gbl_panel.columnWidths = new int[] { 34, 208, 19, 36, 23, 0 };
+		gbl_panel.rowHeights = new int[] { 25, 0 };
+		gbl_panel.columnWeights = new double[] { 0.0, 1.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
+		gbl_panel.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
+		panel.setLayout(gbl_panel);
+
+		btnConnect = new JButton("");
+		GridBagConstraints gbc_btnConnect = new GridBagConstraints();
+		gbc_btnConnect.anchor = GridBagConstraints.WEST;
+		gbc_btnConnect.fill = GridBagConstraints.VERTICAL;
+		gbc_btnConnect.gridx = 0;
+		gbc_btnConnect.gridy = 0;
+		panel.add(btnConnect, gbc_btnConnect);
+		btnConnect.setEnabled(false);
+		btnConnect.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/connect.png")));
 		btnConnect.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
@@ -157,27 +208,48 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 				}
 			}
 		});
+
 		btnConnect.setToolTipText("Connect");
 		btnConnect.setFont(font);
-		final GridBagConstraints gbc_btnConnect = new GridBagConstraints();
-		gbc_btnConnect.anchor = GridBagConstraints.SOUTHWEST;
-		gbc_btnConnect.gridx = 0;
-		gbc_btnConnect.gridy = 1;
-		contentPane.add(btnConnect, gbc_btnConnect);
 
-		final JButton btnRefresh = new JButton("");
-		btnRefresh.addActionListener(new ActionListener() {
+		progressBar = new JProgressBar();
+		progressBar.setVisible(false);
+
+		GridBagConstraints gbc_progressBar = new GridBagConstraints();
+		gbc_progressBar.anchor = GridBagConstraints.EAST;
+		gbc_progressBar.gridx = 1;
+		gbc_progressBar.gridy = 0;
+		panel.add(progressBar, gbc_progressBar);
+
+		final JButton btnDownload = new JButton("");
+		GridBagConstraints gbc_btnDownload = new GridBagConstraints();
+		gbc_btnDownload.anchor = GridBagConstraints.EAST;
+		gbc_btnDownload.fill = GridBagConstraints.VERTICAL;
+		gbc_btnDownload.gridx = 2;
+		gbc_btnDownload.gridy = 0;
+		panel.add(btnDownload, gbc_btnDownload);
+		btnDownload.setToolTipText("Download slave list");
+		btnDownload.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
-				RemoteSlave[] slaves = getSelectedSlaves();
-				if (slaves.length == 0) {
-					slaves = getAllSlaves();
+				String ip;
+				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter host:")) != null && ip.length() > 0) {
+					final RemoteSlave[] slv = new RemoteSlave[] { new RemoteSlave(ip) };
+					refresh(slv);
+					updateInformation(slv);
 				}
-				refresh(slaves);
 			}
 		});
+		btnDownload.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/download.png")));
 
-		final JButton btnBuild = new JButton("");
+		btnBuild = new JButton("");
+		GridBagConstraints gbc_btnBuild = new GridBagConstraints();
+		gbc_btnBuild.anchor = GridBagConstraints.EAST;
+		gbc_btnBuild.fill = GridBagConstraints.VERTICAL;
+		gbc_btnBuild.gridx = 3;
+		gbc_btnBuild.gridy = 0;
+		panel.add(btnBuild, gbc_btnBuild);
+		btnBuild.setEnabled(false);
 		btnBuild.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent e) {
@@ -190,40 +262,29 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 				}
 			}
 		});
+		btnBuild.setToolTipText("Rebuild slave");
+		btnBuild.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/build.png")));
 
-		final JButton btnAdd = new JButton("");
-		btnAdd.addActionListener(new ActionListener() {
+		btnRefresh = new JButton("");
+		GridBagConstraints gbc_btnRefresh = new GridBagConstraints();
+		gbc_btnRefresh.anchor = GridBagConstraints.EAST;
+		gbc_btnRefresh.fill = GridBagConstraints.VERTICAL;
+		gbc_btnRefresh.gridx = 4;
+		gbc_btnRefresh.gridy = 0;
+		panel.add(btnRefresh, gbc_btnRefresh);
+		btnRefresh.setEnabled(false);
+		btnRefresh.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent arg0) {
-				String ip;
-				if ((ip = JOptionPane.showInputDialog(MasterFrame.this, "Enter host:")) != null && ip.length() > 0) {
-					final RemoteSlave[] slv = new RemoteSlave[] { new RemoteSlave(ip) };
-					refresh(slv);
-					updateInformation(slv);
+				RemoteSlave[] slaves = getSelectedSlaves();
+				if (slaves.length == 0) {
+					slaves = getAllSlaves();
 				}
+				refresh(slaves);
 			}
 		});
-		btnAdd.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/plus.gif")));
-		final GridBagConstraints gbc_btnAdd = new GridBagConstraints();
-		gbc_btnAdd.anchor = GridBagConstraints.EAST;
-		gbc_btnAdd.fill = GridBagConstraints.VERTICAL;
-		gbc_btnAdd.gridx = 1;
-		gbc_btnAdd.gridy = 1;
-		contentPane.add(btnAdd, gbc_btnAdd);
-		btnBuild.setToolTipText("Rebuild");
-		btnBuild.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/rebuild.gif")));
-		final GridBagConstraints gbc_btnBuild = new GridBagConstraints();
-		gbc_btnBuild.fill = GridBagConstraints.VERTICAL;
-		gbc_btnBuild.gridx = 2;
-		gbc_btnBuild.gridy = 1;
-		contentPane.add(btnBuild, gbc_btnBuild);
-		btnRefresh.setToolTipText("Refresh list");
+		btnRefresh.setToolTipText("Refresh information");
 		btnRefresh.setIcon(new ImageIcon(this.getClass().getResource("/org/whired/nspex/master/resources/refresh.png")));
-		final GridBagConstraints gbc_btnRefresh = new GridBagConstraints();
-		gbc_btnRefresh.fill = GridBagConstraints.VERTICAL;
-		gbc_btnRefresh.gridx = 3;
-		gbc_btnRefresh.gridy = 1;
-		contentPane.add(btnRefresh, gbc_btnRefresh);
 
 		final JScrollPane scrollPane_1 = new JScrollPane();
 		final GridBagConstraints gbc_scrollPane_1 = new GridBagConstraints();
@@ -295,6 +356,8 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 				g.dispose();
 			}
 		};
+		FlowLayout flowLayout_1 = (FlowLayout) pnlPreview.getLayout();
+		flowLayout_1.setVgap(0);
 		pnlPreview.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(final MouseEvent e) {
@@ -308,7 +371,6 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		});
 		final GridBagConstraints gbc_pnlPreview = new GridBagConstraints();
 		gbc_pnlPreview.insets = new Insets(2, 0, 2, 2);
-		gbc_pnlPreview.gridwidth = 3;
 		gbc_pnlPreview.fill = GridBagConstraints.BOTH;
 		gbc_pnlPreview.gridx = 1;
 		gbc_pnlPreview.gridy = 2;
@@ -330,6 +392,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			public void run() {
 				for (final Slave slv : slaves) {
 					for (int i = 0; i < model.getRowCount(); i++) {
+						// TODO this is not the responsibility of a frame
 						if (model.getValueAt(i, 0).toString().equals(slv.toString())) {
 							model.setValueAt(slv.getUser(), i, 1);
 							model.setValueAt(slv.getOS(), i, 2);
@@ -480,7 +543,7 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 	}
 
 	@Override
-	public void setThumbnail(final Image thumb) {
+	public void setFile(final RemoteFile file) {
 		Log.l.config("");
 	}
 
@@ -504,4 +567,36 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 		updateInformation(slave);
 	}
 
+	@Override
+	public void displayOutput(String output) {
+		Log.l.info(output);
+	}
+
+	@Override
+	public void setProgress(final int progress) {
+		runOnEdt(new Runnable() {
+			@Override
+			public void run() {
+				if (progress == 0 || progress == progressBar.getMaximum()) {
+					progressBar.setVisible(false);
+				}
+				else {
+					if (!progressBar.isVisible()) {
+						progressBar.setVisible(true);
+					}
+					progressBar.setValue(progress);
+				}
+			}
+		});
+	}
+
+	@Override
+	public void setMaxProgress(final int max) {
+		runOnEdt(new Runnable() {
+			@Override
+			public void run() {
+				progressBar.setMaximum(max);
+			}
+		});
+	}
 }

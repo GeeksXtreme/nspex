@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.security.MessageDigest;
 
+import org.whired.nspex.tools.HttpClient;
+
 /**
  * Updates packages
  * @author Whired

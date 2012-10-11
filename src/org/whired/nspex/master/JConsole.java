@@ -13,35 +13,70 @@ import javax.swing.text.DefaultCaret;
 import javax.swing.text.Position.Bias;
 
 public class JConsole extends JTextArea {
-	private final String CMDC;// = "[" + System.getProperty("user.name") + "> ";
-	private final Caret caret;
+	/** The end of line command, used to prevent deletion of output */
+	private final String CMDC = "\r\n";
+	/** A custom caret that prevents insertion at points of output */
+	private final Caret caret = new DefaultCaret() {
+
+		@Override
+		public void setDot(final int dot) {
+			super.setDot(getValidPos(dot));
+		}
+
+		@Override
+		public void setDot(final int paramInt, final Bias paramBias) {
+			super.setDot(getValidPos(paramInt), paramBias);
+		}
+
+		/**
+		 * Gets the closest valid position to the specified point
+		 * @param orig the original position point
+		 * @return the closest valid position
+		 */
+		private int getValidPos(int orig) {
+			final int lastcmd = getText().lastIndexOf(CMDC) + CMDC.length();
+			if (orig < lastcmd) {
+				orig = lastcmd;
+			}
+			return orig;
+		}
+	};
+	/** The set of listeners subscribed to this console */
 	private final HashSet<CommandListener> listeners = new HashSet<CommandListener>();
-
+	/** The buffer of saved commands */
 	BufferQueue<String> savedCommands = new BufferQueue<String>(256);
-	private int pos = 0;
+	/** The current scroll index of {@link #savedCommands} */
+	private int savedCommandsIdx = 0;
 
-	public JConsole(final String username) {
-		CMDC = "[" + username + "> ";
-		caret = new DefaultCaret() {
+	/**
+	 * Creates a new console
+	 */
+	public JConsole() {
 
-			@Override
-			public void setDot(final int dot) {
-				super.setDot(getValidPos(dot));
-			}
+		// Add listeners that provide custom behavior
+		addListeners();
 
-			@Override
-			public void setDot(final int paramInt, final Bias paramBias) {
-				super.setDot(getValidPos(paramInt), paramBias);
-			}
+		// Set the custom caret that provides custom behavior
+		setCaret(caret);
 
-			private int getValidPos(int orig) {
-				final int lastcmd = getText().lastIndexOf(CMDC) + CMDC.length();
-				if (orig < lastcmd) {
-					orig = lastcmd;
-				}
-				return orig;
-			}
-		};
+		// The nimbus blue color
+		final Color nimBlue = new Color(57, 105, 138);
+
+		// Set some LaF
+		setBackground(Color.BLACK);
+		setForeground(nimBlue);
+		setSelectionColor(nimBlue);
+		setSelectedTextColor(Color.BLACK);
+		setFont(new Font("Monospaced", Font.PLAIN, 12));
+
+		//?
+		//append(CMDC);
+	}
+
+	/**
+	 * Adds listeners to this console
+	 */
+	private final void addListeners() {
 		addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(final KeyEvent k) {
@@ -63,12 +98,21 @@ public class JConsole extends JTextArea {
 					}
 				}
 				else if (c == KeyEvent.VK_ENTER) {
-					final String command = getText().substring(getText().lastIndexOf(CMDC) + CMDC.length());
-					append("\n" + CMDC);
+					int cmdcIdx = getText().lastIndexOf(CMDC);
+					// cmdc might not be present
+					cmdcIdx = cmdcIdx < 0 ? 0 : cmdcIdx + CMDC.length();
+					final String command = getText().substring(cmdcIdx);
+					// Remove from text because it will be echoed
+					try {
+						getDocument().remove(cmdcIdx, getText().length() - cmdcIdx);
+					}
+					catch (BadLocationException e) {
+						e.printStackTrace();
+					}
 					k.consume();
 					fireCommand(command);
 					savedCommands.offer(command);
-					pos = savedCommands.size() - 1;
+					savedCommandsIdx = savedCommands.size() - 1;
 				}
 				else if (c == KeyEvent.VK_UP) {
 					if (k.isShiftDown()) {
@@ -79,9 +123,9 @@ public class JConsole extends JTextArea {
 					else {
 						// Do command history stuff
 						k.consume();
-						replaceCurrent(savedCommands.get(pos));
-						if (pos > 0) {
-							pos--;
+						replaceCurrent(savedCommands.get(savedCommandsIdx));
+						if (savedCommandsIdx > 0) {
+							savedCommandsIdx--;
 						}
 					}
 				}
@@ -94,9 +138,9 @@ public class JConsole extends JTextArea {
 					else {
 						// Do command history stuff
 						k.consume();
-						if (pos < savedCommands.size() - 1) {
-							pos++;
-							replaceCurrent(savedCommands.get(pos));
+						if (savedCommandsIdx < savedCommands.size() - 1) {
+							savedCommandsIdx++;
+							replaceCurrent(savedCommands.get(savedCommandsIdx));
 						}
 						else {
 							replaceCurrent("");
@@ -113,14 +157,14 @@ public class JConsole extends JTextArea {
 				}
 			}
 		});
-		setCaret(caret);
-		setBackground(Color.BLACK);
-		final Color nimBlue = new Color(57, 105, 138);
-		setForeground(nimBlue);
-		setSelectionColor(nimBlue);
-		setSelectedTextColor(Color.BLACK);
-		setFont(new Font("Monospaced", Font.PLAIN, 12));
-		append(CMDC);
+	}
+
+	@Override
+	public void append(String str) {
+		super.append(str);
+
+		// Auto scroll
+		setCaretPosition(getDocument().getLength());
 	}
 
 	private void replaceCurrent(final String newCommand) {
@@ -137,9 +181,21 @@ public class JConsole extends JTextArea {
 	}
 
 	private void fireCommand(final String cmd) {
-		synchronized (this) {
-			for (final CommandListener l : listeners) {
-				l.doCommand(cmd);
+		// Check for clear commands
+		final String lwc = cmd.toLowerCase();
+		if (lwc.equals("cls") || lwc.equals("clear")) {
+			try {
+				getDocument().remove(0, getDocument().getLength());
+			}
+			catch (BadLocationException e) {
+				// Seriously, why is this even checked..
+			}
+		}
+		else {
+			synchronized (this) {
+				for (final CommandListener l : listeners) {
+					l.doCommand(cmd);
+				}
 			}
 		}
 	}

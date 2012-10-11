@@ -20,21 +20,21 @@ import org.whired.nspex.net.BufferUtil;
 import org.whired.nspex.net.Communicable;
 import org.whired.nspex.net.ExpandableByteBuffer;
 import org.whired.nspex.net.IoCommunicable;
+import org.whired.nspex.tools.DefaultSlave;
 import org.whired.nspex.tools.RemoteFile;
 import org.whired.nspex.tools.Slave;
 import org.whired.nspex.tools.SlaveModel;
 import org.whired.nspex.tools.SlaveView;
 import org.whired.nspex.tools.logging.Log;
 
-public class RemoteSlave extends Slave implements SlaveModel {
+public class RemoteSlave extends DefaultSlave implements SlaveModel {
 	private Socket socket = new Socket();
 	private SlaveView view;
 	private IoCommunicable comm;
-	private final InetSocketAddress endpoint;
+	private InetSocketAddress endpoint;
 
 	public RemoteSlave(final String ip) {
 		super(ip);
-		endpoint = new InetSocketAddress(ip, Slave.PORT);
 	}
 
 	/**
@@ -44,7 +44,11 @@ public class RemoteSlave extends Slave implements SlaveModel {
 	private IoCommunicable connectToRemote() throws IOException {
 		if (!socket.isConnected() || socket.isClosed()) {
 			socket = new Socket();
-			socket.connect(endpoint, 2000);
+			// Create endpoint if we haven't already (expensive operation!)
+			if (endpoint == null) {
+				endpoint = new InetSocketAddress(getHost(), Slave.PORT);
+			}
+			socket.connect(endpoint, 500);
 			return comm = new IoCommunicable(socket) {
 
 				@Override
@@ -87,31 +91,37 @@ public class RemoteSlave extends Slave implements SlaveModel {
 							final String parentPath = BufferUtil.getJTF(payload);
 							final RemoteFile[] rf = new RemoteFile[payload.getInt()];
 							for (int i = 0; i < rf.length; i++) {
-								rf[i] = new RemoteFile(BufferUtil.getJTF(payload), payload.get() != 0);
+								rf[i] = new RemoteFile(BufferUtil.getJTF(payload), 0, payload.get() != 0);
 								Log.l.fine("parentfolder=" + parentPath + " child=" + rf[i]);
 							}
 							view.addChildFiles(fs, parentPath, rf);
 						break;
-						case OP_LOG:
-							Log.l.log(Level.parse("" + (payload.get() & 0xFF)), "REMOTE: " + BufferUtil.getJTF(payload));
-						break;
+
 						case OP_FILE_ACTION:
 							switch (payload.get() & 0xFF) {
-								case FOP_GET_THUMB:
+								case FOP_GET_INFO:
+									final String name = BufferUtil.getJTF(payload);
+									final long size = payload.getLong();
+									final boolean hasThumb = payload.get() != 0;
+									Image thumb = null;
+									if (hasThumb) {
+										image = new byte[payload.remaining()];
+										payload.get(image);
+										try {
+											thumb = ImageIO.read(new GZIPInputStream(new ByteArrayInputStream(image)));
+										}
+										catch (IOException e) {
+											Log.l.log(Level.INFO, "", e);
+										}
+									}
 									image = new byte[payload.capacity() - 1];
-									payload.get(image);
-									try {
-										view.setThumbnail(ImageIO.read(new ByteArrayInputStream(image)));
-									}
-									catch (final IOException e) {
-										e.printStackTrace();
-									}
+									view.setFile(new RemoteFile(name, size, false, thumb));
 								break;
 								case FOP_DOWNLOAD:
 									final String fileName = BufferUtil.getJTF(payload);
 									final byte[] fileBytes = new byte[payload.remaining()];
 									payload.get(fileBytes);
-									// Looks like we aren't invoking a timeout, this could
+									// TODO Looks like we aren't invoking a timeout, this could
 									// be a server-side problem
 
 									SwingUtilities.invokeLater(new Runnable() {
@@ -148,6 +158,10 @@ public class RemoteSlave extends Slave implements SlaveModel {
 								break;
 							}
 						break;
+						case OP_REMOTE_SHELL:
+							// Send to the view
+							view.displayOutput(BufferUtil.getJTF(payload));
+						break;
 						default:
 							Log.l.warning("Unhandled packet=" + id + " payload=" + payload.capacity() + " local=" + Slave.VERSION + " remote=" + getVersion());
 						break;
@@ -174,7 +188,7 @@ public class RemoteSlave extends Slave implements SlaveModel {
 		}
 	}
 
-	public void connect(final int intent) throws IOException {
+	public void connect(final int intent) {
 		try {
 			final IoCommunicable ioc = connectToRemote();
 			final ExpandableByteBuffer buf = new ExpandableByteBuffer();
@@ -216,6 +230,46 @@ public class RemoteSlave extends Slave implements SlaveModel {
 		ioc.send(OP_DO_COMMAND, buf.asByteBuffer());
 	}
 
+	/**
+	 * Requests that the slave's left mouse is down at the specified location
+	 * @param p the location to mouse down
+	 * @throws IOException
+	 */
+	public void leftMouseDown(short x, short y) throws IOException {
+		final IoCommunicable ioc = connectToRemote();
+		ioc.send(Slave.OP_LEFT_MOUSE_DOWN, ByteBuffer.allocate(4).putShort(x).putShort(y));
+	}
+
+	/**
+	 * Requests that the slave's right mouse is down at the specified location
+	 * @param p the location to mouse down
+	 * @throws IOException
+	 */
+	public void rightMouseDown(short x, short y) throws IOException {
+		final IoCommunicable ioc = connectToRemote();
+		ioc.send(Slave.OP_RIGHT_MOUSE_DOWN, ByteBuffer.allocate(4).putShort(x).putShort(y));
+	}
+
+	/**
+	 * Requests that the slave's left mouse is up at the specified location
+	 * @param p the location to mouse up
+	 * @throws IOException
+	 */
+	public void leftMouseUp(short x, short y) throws IOException {
+		final IoCommunicable ioc = connectToRemote();
+		ioc.send(Slave.OP_LEFT_MOUSE_UP, ByteBuffer.allocate(4).putShort(x).putShort(y));
+	}
+
+	/**
+	 * Requests that the slave's right mouse is up at the specified location
+	 * @param p the location to mouse up
+	 * @throws IOException
+	 */
+	public void rightMouseUp(short x, short y) throws IOException {
+		final IoCommunicable ioc = connectToRemote();
+		ioc.send(Slave.OP_RIGHT_MOUSE_UP, ByteBuffer.allocate(4).putShort(x).putShort(y));
+	}
+
 	@Override
 	public void setView(final SlaveView view) {
 		this.view = view;
@@ -243,4 +297,25 @@ public class RemoteSlave extends Slave implements SlaveModel {
 	public String toString() {
 		return getHost();
 	}
+
+	// TODO the below should probably all be in some Robot interface impl
+
+	/**
+	 * Requests that the slave's mouse is moved to the specified location
+	 * @param p the location to move to
+	 * @throws IOException
+	 */
+	public void mouseMove(final short x, final short y) throws IOException {
+		final IoCommunicable ioc = connectToRemote();
+		ioc.send(Slave.OP_MOUSE_MOVE, ByteBuffer.allocate(4).putShort(x).putShort(y));
+	}
+
+	public void pressKey(final int keycode) throws IOException {
+		connectToRemote().send(Slave.OP_KEY_DOWN, ByteBuffer.allocate(2).putShort((short) keycode));
+	}
+
+	public void releaseKey(final int keycode) throws IOException {
+		connectToRemote().send(Slave.OP_KEY_UP, ByteBuffer.allocate(2).putShort((short) keycode));
+	}
+
 }

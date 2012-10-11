@@ -7,6 +7,10 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -15,6 +19,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
 import org.whired.nspex.net.Communicable;
@@ -32,9 +37,15 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	private Image image;
 	/** The panel to draw on */
 	private final JPanel panel;
+	/** The remote file chooser */
 	private RemoteFileChooserPanel fileChooser;
 	private JScrollPane scrollPane;
+	/** The main view that created this view */
 	private final SlaveView mainView;
+	/** The console used for controlling the remote slave */
+	private JConsole console;
+	/** Whether or not a disconnect was forced by the user */
+	private boolean forcedDisconnect;
 
 	/**
 	 * Creates a new full view for the specified slave
@@ -57,6 +68,79 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				g.dispose();
 			}
 		};
+
+		final KeyAdapter kl = new KeyAdapter() {
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				try {
+					slave.releaseKey(e.getKeyCode());
+				}
+				catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+				try {
+					slave.pressKey(e.getKeyCode());
+				}
+				catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		};
+
+		final MouseAdapter ma = new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				try {
+					if (SwingUtilities.isLeftMouseButton(e)) {
+						slave.leftMouseDown((short) e.getPoint().x, (short) e.getPoint().y);
+					}
+					else if (SwingUtilities.isRightMouseButton(e)) {
+						slave.rightMouseDown((short) e.getPoint().x, (short) e.getPoint().y);
+					}
+				}
+				catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				panel.requestFocusInWindow();
+				try {
+					if (SwingUtilities.isLeftMouseButton(e)) {
+						slave.leftMouseUp((short) e.getPoint().x, (short) e.getPoint().y);
+					}
+					else if (SwingUtilities.isRightMouseButton(e)) {
+						slave.rightMouseUp((short) e.getPoint().x, (short) e.getPoint().y);
+					}
+				}
+				catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+
+			@Override
+			public void mouseDragged(MouseEvent e) {
+				try {
+					slave.mouseMove((short) e.getPoint().x, (short) e.getPoint().y);
+				}
+				catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		};
+		panel.setFocusable(true);
+		panel.requestFocusInWindow();
+		panel.addKeyListener(kl);
+		panel.addMouseListener(ma);
+		panel.addMouseMotionListener(ma);
 		runOnEdt(new Runnable() {
 			@Override
 			public void run() {
@@ -67,7 +151,7 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				scrollPane.getVerticalScrollBar().setUI(new MinimalScrollBar(scrollPane.getVerticalScrollBar()));
 				scrollPane.setViewportBorder(null);
 
-				final JConsole console = new JConsole(slave.getUser());
+				console = new JConsole();
 				console.addCommandListener(new CommandListener() {
 					@Override
 					public void doCommand(final String command) {
@@ -116,6 +200,7 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 				addWindowListener(new WindowAdapter() {
 					@Override
 					public void windowClosing(final WindowEvent e) {
+						forcedDisconnect = true;
 						Communicable c;
 						try {
 							if ((c = slave.getCommunicable()) != null) {
@@ -184,8 +269,8 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 	}
 
 	@Override
-	public void setThumbnail(final Image thumb) {
-		fileChooser.setThumbnail(thumb);
+	public void setFile(final RemoteFile file) {
+		fileChooser.setSelectedFile(file);
 	}
 
 	@Override
@@ -200,13 +285,20 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 
 	@Override
 	public void disconnected(final Slave slave) {
-		Log.l.warning("No connection with " + slave);
-		slave.setOnline(false);
-		mainView.disconnected(slave);
+		Log.l.warning("Disconnected from " + slave);
+		if (!forcedDisconnect) {
+			slave.setOnline(false);
+			mainView.disconnected(slave);
+		}
 		this.dispose();
 	}
 
 	@Override
 	public void connected(final Slave slave) {
+	}
+
+	@Override
+	public void displayOutput(String output) {
+		console.append(output);
 	}
 }

@@ -17,8 +17,6 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
 
-import org.whired.nspex.tools.logging.Log;
-
 /**
  * A JPEG compressor and stream writer
  * @author Whired
@@ -35,7 +33,7 @@ public class JPEGImageWriter {
 	static {
 		// Set options
 		iwparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-		iwparam.setCompressionQuality(.65F);
+		iwparam.setCompressionQuality(.45F);
 
 		// Get writer
 		try {
@@ -109,8 +107,6 @@ public class JPEGImageWriter {
 				gzo.write(raw);
 				gzo.close();
 				byte[] compressed = gzos.toByteArray();
-
-				Log.l.finest("Image compression: before=" + raw.length + " after=" + compressed.length);
 
 				return compressed;
 			}
