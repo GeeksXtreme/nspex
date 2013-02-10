@@ -31,6 +31,23 @@ public class SessionManager {
 	}
 
 	/**
+	 * Gets a session id for the specified ip
+	 * @param ip the ip to get a session id for
+	 * @return the session id that was created
+	 */
+	public String getSessionId(final String ip) {
+		// Prune old sessions if necessary
+		pruneSessions();
+
+		Session session = sessions.get(ip);
+		if (session == null) {
+			session = new Session(DigestUtils.sha256Hex(this.toString() + System.currentTimeMillis() + "$5a4lL7t"));
+			sessions.put(ip, session);
+		}
+		return session.getSessionId();
+	}
+
+	/**
 	 * Checks whether or not an ip's session is valid
 	 * @param ip the ip to check
 	 * @param sessionId the session ip to check
@@ -39,19 +56,6 @@ public class SessionManager {
 	public boolean sessionValid(final String ip, final String sessionId) {
 		final Session session = sessions.get(ip);
 		return session != null && session.getSessionId().equals(sessionId);
-	}
-
-	/**
-	 * Creates a session for the specified ip
-	 * @param ip the ip to create a session for
-	 * @return the session id that was created
-	 */
-	public String createSession(final String ip) {
-		// Prune if necessary
-		pruneSessions();
-		final Session session = new Session(DigestUtils.sha256Hex(this.toString() + System.currentTimeMillis() + "$5a4lL7t"));
-		sessions.put(ip, session);
-		return session.getSessionId();
 	}
 
 	/**

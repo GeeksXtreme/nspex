@@ -140,7 +140,7 @@ public class AuthenticationServer {
 											}
 
 											// Everything is sorted, let's get this guy his slaves
-											sendSlaves();
+											sendSlaves(true);
 										}
 										else {
 											// No matches found/password mismatch
@@ -166,7 +166,7 @@ public class AuthenticationServer {
 									String v = BufferUtil.getJTF(decPay);
 									Log.l.info("[" + this + "] logging in with id: " + v);
 									if (sessionManager.sessionValid(this.toString(), sessionId)) {
-										sendSlaves();
+										sendSlaves(false);
 									}
 								}
 								catch (Throwable e1) {
@@ -179,7 +179,7 @@ public class AuthenticationServer {
 									// Update database
 									try {
 										Log.l.info("Updating IP: " + this);
-										database.executeStatement("UPDATE user SET last_ip_change='" + System.currentTimeMillis() + "', user_ip='" + this + "' WHERE user_id='" + userid + "'");
+										database.executeStatement("UPDATE user SET last_ip_change='" + System.currentTimeMillis() + "', user_ip='" + this + "' WHERE user_id='" + userid + "'", true);
 									}
 									catch (SQLException e) {
 										Log.l.log(Level.SEVERE, "Error while updating user info: ", e);
@@ -187,7 +187,7 @@ public class AuthenticationServer {
 										disconnect();
 									}
 									try {
-										sendSlaves();
+										sendSlaves(true);
 									}
 									catch (SQLException e) {
 										// Doesn't really affect us
@@ -207,11 +207,11 @@ public class AuthenticationServer {
 					 * Send the remote their slaves
 					 * @throws SQLException when a database error occurs
 					 */
-					private void sendSlaves() throws SQLException {
-						if (!sessionManager.hasSession(this.toString())) {
-							// Create a session if none exists
-							final String sessionId = sessionManager.createSession(this.toString());
-							// Send remote the session id
+					private void sendSlaves(boolean sendSessionId) throws SQLException {
+						sessionId = sessionManager.getSessionId(this.toString());
+
+						// Send remote the session id if they need it
+						if (sendSessionId) {
 							try {
 								send(Opcodes.LOGIN_WITH_SESSION, rsaSess.encrypt(new ExpandableByteBuffer().putJTF(sessionId).asByteBuffer()));
 							}

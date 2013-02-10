@@ -46,16 +46,22 @@ public class SQLiteDatabase {
 	 * @param statement the statement to execute
 	 * @throws SQLException when a statement fails to execute
 	 */
-	public void executeStatement(final String statement) throws SQLException {
+	public void executeStatement(final String statement, boolean commitNow) throws SQLException {
 		final Statement s = connection.createStatement();
 		s.execute(statement);
 		s.close();
+		if (commitNow) {
+			commit();
+		}
 	}
 
-	public void executePreparedStatement(final String statement) throws SQLException {
+	public void executePreparedStatement(final String statement, final boolean commitNow) throws SQLException {
 		final PreparedStatement ps = connection.prepareStatement(statement);
 		ps.executeUpdate();
 		ps.close();
+		if (commitNow) {
+			commit();
+		}
 	}
 
 	/**
