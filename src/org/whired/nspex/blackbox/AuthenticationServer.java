@@ -113,7 +113,6 @@ public class AuthenticationServer {
 
 												// ISP has changed
 												long lastChange = rs.getLong(3);
-
 												Log.l.config("ISP region has changed. lastChange=" + lastChange);
 
 												// Check if client is allowed a mulligan
@@ -124,6 +123,7 @@ public class AuthenticationServer {
 
 													// Wait (shortly) for a response
 													setReadTimeout(TimeUnit.SECONDS.toMillis(20));
+													rs.close();
 													return;
 												}
 												else {
@@ -147,7 +147,6 @@ public class AuthenticationServer {
 											Log.l.info("[" + this + "] Invalid login");
 											remoteLog(Level.SEVERE, "Invalid login");
 											disconnect();
-											return;
 										}
 										rs.close();
 									}
@@ -164,9 +163,14 @@ public class AuthenticationServer {
 								try {
 									ByteBuffer decPay = rsaSess.decrypt(payload);
 									String v = BufferUtil.getJTF(decPay);
-									Log.l.info("[" + this + "] logging in with id: " + v);
-									if (sessionManager.sessionValid(this.toString(), sessionId)) {
+									Log.l.info("[" + this + "] Logging in with id: " + v);
+									if (sessionManager.sessionValid(this.toString(), v)) {
 										sendSlaves(false);
+									}
+									else {
+										Log.l.warning("[" + this + "] Session invalid!");
+										send(Opcodes.INVALIDATE_SESSION);
+										disconnect();
 									}
 								}
 								catch (Throwable e1) {
@@ -196,7 +200,7 @@ public class AuthenticationServer {
 								}
 								else {
 									// Cya!
-									remoteLog(Level.INFO, "Sorry for any inconvenience");
+									remoteLog(Level.INFO, "Cancelling. Sorry for any inconvenience");
 									disconnect();
 								}
 							break;
@@ -238,6 +242,7 @@ public class AuthenticationServer {
 
 						send(Opcodes.SLAVES_RECEIVED, fbuf);
 						Log.l.info("[" + this + "] Logged in successfully");
+						remoteLog(Level.INFO, "Logged in successfully");
 						disconnect();
 					}
 

@@ -99,7 +99,9 @@ public class RemoteSlaveFullView extends JFrame implements SlaveView {
 			public void mousePressed(MouseEvent e) {
 				try {
 					if (SwingUtilities.isLeftMouseButton(e)) {
-						slave.leftMouseDown((short) e.getPoint().x, (short) e.getPoint().y);
+						short x = (short) e.getPoint().x;
+						short y = (short) e.getPoint().y;
+						slave.leftMouseDown(x, y);
 					}
 					else if (SwingUtilities.isRightMouseButton(e)) {
 						slave.rightMouseDown((short) e.getPoint().x, (short) e.getPoint().y);

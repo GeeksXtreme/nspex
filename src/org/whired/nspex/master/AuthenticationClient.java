@@ -38,6 +38,11 @@ public class AuthenticationClient implements AuthenticationListener {
 
 			@Override
 			public void handle(final int id) {
+				switch (id) {
+					case Opcodes.INVALIDATE_SESSION:
+						sessionInvalidated();
+					break;
+				}
 			}
 
 			@Override
@@ -96,6 +101,11 @@ public class AuthenticationClient implements AuthenticationListener {
 
 			@Override
 			public void handle(final int id) {
+				switch (id) {
+					case Opcodes.INVALIDATE_SESSION:
+						sessionInvalidated();
+					break;
+				}
 			}
 
 			@Override
@@ -181,5 +191,10 @@ public class AuthenticationClient implements AuthenticationListener {
 	@Override
 	public void promptISPChange(long timeout) {
 		listener.promptISPChange(timeout);
+	}
+
+	@Override
+	public void sessionInvalidated() {
+		listener.sessionInvalidated();
 	}
 }

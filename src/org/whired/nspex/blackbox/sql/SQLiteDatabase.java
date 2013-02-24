@@ -53,6 +53,7 @@ public class SQLiteDatabase {
 		if (commitNow) {
 			commit();
 		}
+
 	}
 
 	public void executePreparedStatement(final String statement, final boolean commitNow) throws SQLException {

@@ -3,6 +3,7 @@ package org.whired.nspex.blackbox;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.whired.nspex.tools.logging.Log;
@@ -17,9 +18,9 @@ public class SessionManager {
 	// The last time sessions were pruned
 	private long lastPruneTime = System.currentTimeMillis();
 	// The amount of time that should pass before sessions are pruned
-	private final static long TIME_BETWEEN_PRUNES_MS = 1000 * 60 * 10; // 10 minutes
+	private final static long TIME_BETWEEN_PRUNES_MS = TimeUnit.MINUTES.toMillis(10);
 	// The amount of time that is allowed to pass before a session is considered invalid
-	private final static long CONSIDERED_INVALID_MS = 1000 * 60 * 30; // 30 minutes
+	private final static long CONSIDERED_INVALID_MS = TimeUnit.MINUTES.toMillis(30);
 
 	/**
 	 * Checks whether or not the specified ip has a session
@@ -41,7 +42,7 @@ public class SessionManager {
 
 		Session session = sessions.get(ip);
 		if (session == null) {
-			session = new Session(DigestUtils.sha256Hex(this.toString() + System.currentTimeMillis() + "$5a4lL7t"));
+			session = new Session(DigestUtils.sha256Hex(ip + System.currentTimeMillis() + "$5a4lL7t"));
 			sessions.put(ip, session);
 		}
 		return session.getSessionId();

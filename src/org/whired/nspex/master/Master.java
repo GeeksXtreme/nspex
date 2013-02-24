@@ -82,7 +82,7 @@ public class Master {
 
 		@Override
 		public void downloadSlaves() {
-			refresh(new RemoteSlave[] { new RemoteSlave("192.168.1.71") });
+			// TODO Testing only!
 			refresh(new RemoteSlave[] { new RemoteSlave("localhost") });
 			try {
 				ac = new AuthenticationClient(new AuthenticationListener() {
@@ -120,20 +120,16 @@ public class Master {
 							}
 						});
 					}
+
+					@Override
+					public void sessionInvalidated() {
+						sessionId = null;
+						frame.loginWithCredentials(null, null, null); // TODO God, why
+					}
 				});
 
 				if (sessionId == null) {
-					ConnectDialog cd = new ConnectDialog(frame);
-					cd.setVisible(true);
-
-					// Get slaves from cd user, pass, and ip
-					if (!cd.isCancelled()) {
-						Log.l.info("Logging in..");
-						ac.login((authIp = cd.getIp()), cd.getUsername(), new String(cd.getPassword()));
-					}
-					else {
-						Log.l.info("Login cancelled.");
-					}
+					frame.loginWithCredentials(null, null, null); // TODO God, why
 				}
 				else {
 					// Attempt login with the sessionId
@@ -154,6 +150,16 @@ public class Master {
 		@Override
 		public void setMaxProgress(int max) {
 			frame.setMaxProgress(max);
+		}
+
+		@Override
+		public void loginWithCredentials(String ip, String user, String pass) {
+			try {
+				ac.login(authIp = ip, user, pass);
+			}
+			catch (Throwable e) {
+				Log.l.warning("Unable to login: " + e);
+			}
 		}
 	};
 

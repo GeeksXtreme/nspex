@@ -39,4 +39,6 @@ public interface ControllerEventListener {
 	 * @param max the max progress to set
 	 */
 	void setMaxProgress(int max);
+
+	void loginWithCredentials(String ip, String user, String pass);
 }

@@ -173,6 +173,7 @@ public abstract class NioCommunicable extends Communicable {
 
 	@Override
 	public final synchronized void disconnect() {
+		// TODO send any remaining data??
 		if (connected) {
 			Log.l.config("[" + this + "] Disconnected");
 			connected = false;

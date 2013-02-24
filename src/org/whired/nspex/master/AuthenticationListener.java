@@ -32,6 +32,11 @@ public interface AuthenticationListener {
 	void sessionIDReceived(String lsessionId);
 
 	/**
+	 * Invoked when a session id has been invalidated by the auth server
+	 */
+	void sessionInvalidated();
+
+	/**
 	 * Invoked when a user must decide to allow an ISP change
 	 * @param timeout the limitation on how often an ISP can change, in MS
 	 */

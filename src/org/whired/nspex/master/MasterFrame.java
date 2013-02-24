@@ -598,4 +598,24 @@ public class MasterFrame extends JFrame implements ControllerEventListener, Slav
 			}
 		});
 	}
+
+	@Override
+	public final void loginWithCredentials(String ip, String user, String pass) {
+		ConnectDialog cd = new ConnectDialog(this);
+		cd.setVisible(true);
+
+		// Get slaves from cd user, pass, and ip
+		if (!cd.isCancelled()) {
+			Log.l.info("Logging in..");
+			try {
+				listener.loginWithCredentials(cd.getIp(), cd.getUsername(), new String(cd.getPassword()));
+			}
+			catch (Throwable e) {
+				Log.l.warning("Unable to download slaves: " + e);
+			}
+		}
+		else {
+			Log.l.info("Login cancelled.");
+		}
+	}
 }
