@@ -199,7 +199,7 @@ public class AuthenticationServer {
 									}
 								}
 								else {
-									// Cya!
+									// Toodles!
 									remoteLog(Level.INFO, "Cancelling. Sorry for any inconvenience");
 									disconnect();
 								}
@@ -253,7 +253,7 @@ public class AuthenticationServer {
 
 					@Override
 					protected void disconnected() {
-						// We don't REALLY care..
+						// We don't exactly care at this point
 						Log.l.fine("[" + this + "] disconnected");
 					}
 				};
