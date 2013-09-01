@@ -41,7 +41,7 @@ public class MinimalToolTipUI extends BasicToolTipUI {
 		g.setFont(FONT);
 		((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g.setColor(BG_COLOR);
-		g.fillRoundRect(0, 0, g.getClipBounds().width, g.getClipBounds().height, 10, 10);
+		g.fillRect(0, 0, g.getClipBounds().width, g.getClipBounds().height);
 		g.setColor(Color.WHITE);
 		g.drawString(((JToolTip) c).getTipText(), 4, g.getFontMetrics().getHeight());
 	}

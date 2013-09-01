@@ -65,6 +65,7 @@ public class MinimalScrollBar extends BasicScrollBarUI {
 			g.setColor(ghostBlue);
 		}
 		((java.awt.Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-		g.fillRoundRect(r.x, r.y, r.width, r.height, 5, 5);
+		g.fillRect(r.x, r.y, r.width, r.height
+		);
 	}
 }

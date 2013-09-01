@@ -13,6 +13,7 @@ import org.whired.nspex.net.ExpandableByteBuffer;
 import org.whired.nspex.net.IoCommunicable;
 import org.whired.nspex.tools.RSAKeySet;
 import org.whired.nspex.tools.RSASession;
+import org.whired.nspex.tools.logging.Log;
 
 /**
  * A client that connects to the authentication server
@@ -93,10 +94,11 @@ public class AuthenticationClient implements AuthenticationListener {
 		};
 
 		// Send local public key specification
+		Log.l.info("Requesting public key from server..");
 		comm.send(Opcodes.RSA_KEY_REQUEST, rsaKeys.getPublicKeySpec());
 	}
 
-	public void login(final String ip, final String user, final String password) throws UnknownHostException, IOException, GeneralSecurityException {
+	public void login(final String ip, final String user, final String password) throws  IOException, GeneralSecurityException {
 		comm = new IoCommunicable(new Socket(ip, 43597)) {
 
 			@Override

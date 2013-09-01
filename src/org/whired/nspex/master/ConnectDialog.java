@@ -34,9 +34,10 @@ public class ConnectDialog extends JDialog {
 	public ConnectDialog(Component par) {
 		setTitle("Connect..");
 		setModal(true);
+		setUndecorated(true);
 		setResizable(false);
 		setModalityType(ModalityType.APPLICATION_MODAL);
-		setSize(230, 132);
+		setSize(230, 102);
 		final Font font = new Font("SansSerif", Font.PLAIN, 9);
 		BorderLayout borderLayout = new BorderLayout();
 		borderLayout.setVgap(-4);
