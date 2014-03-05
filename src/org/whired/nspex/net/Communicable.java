@@ -16,6 +16,10 @@ public abstract class Communicable {
 	boolean connected = true;
 	final String hostName;
 
+	/**
+	 * Creates a new communicable with the specified host name
+	 * @param hostName the host name for the communicable
+	 */
 	public Communicable(String hostName) {
 		this.hostName = hostName;
 	}
@@ -85,33 +89,41 @@ public abstract class Communicable {
 	 */
 	protected abstract void disconnected();
 
+	/**
+	 * Whether or not this communicable is connected
+	 * @return {@code true} if this communicable is connected, otherwise {@code false}
+	 */
 	public boolean isConnected() {
 		return connected;
 	}
 
 	/**
-	 * Gets the amount of time (ms) that can pass between now and the next read and any consecutive reads a non-positive value is interpreted as an infinite timeout
-	 * @return the timeout, in milliseconds
+	 * Gets the amount of time (MS) that can pass between now and the next read and any consecutive reads a non-positive value is interpreted as an infinite timeout
+	 * @return the timeout, in MS
 	 */
 	long getReadTimeout() {
 		return readTimeout;
 	}
 
 	/**
-	 * Sets the amount of time (ms) that can pass between now and the next read and any consecutive reads a non-positive value is interpreted as an infinite timeout
-	 * @param l the timeout, in milliseconds, to set
+	 * Sets the amount of time (MS) that can pass between now and the next read and any consecutive reads a non-positive value is interpreted as an infinite timeout
+	 * @param l the timeout, in MS, to set
 	 */
 	public void setReadTimeout(final long l) {
 		readTimeout = l;
 	}
 
+	/**
+	 * Sets the last time data was read
+	 * @param time the time the data was read, in MS
+	 */
 	void setLastReadTime(final long time) {
 		lastReadTime = time;
 	}
 
 	/**
-	 * Gets the time (in ms) of the last successful read
-	 * @return the time, in ms
+	 * Gets the time (in MS) of the last successful read
+	 * @return the time, in MS
 	 */
 	long getLastReadTime() {
 		return lastReadTime;

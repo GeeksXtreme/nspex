@@ -18,7 +18,7 @@ public class ExpandableByteBuffer {
 	 * Creates a new expandable {@link ByteBuffer} by allocating a new buffer with the default buffer size ({@link Constants#BUFFER_SIZE}).
 	 */
 	public ExpandableByteBuffer() {
-		buf = ByteBuffer.allocate(BUFFER_SIZE);
+		this.buf = ByteBuffer.allocate(BUFFER_SIZE);
 	}
 
 	/**
@@ -148,7 +148,7 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Retrieves a compressed version of this buffer The returned buffer will be compressed so that limit=capacity
+	 * Retrieves a compressed version of this buffer. The returned buffer will be compressed so that limit=capacity.
 	 * @return the buffer
 	 */
 	public ByteBuffer asByteBuffer() {
@@ -158,9 +158,6 @@ public class ExpandableByteBuffer {
 
 	/**
 	 * Retrieves the writable version of this buffer. All the bytes from the internal {@link ByteBuffer} are taken and put into a byte array (with the size of the {@link ByteBuffer#position()}, and then the array is wrapped and returned (<tt>return ByteBuffer.wrap(array)</tt>).
-	 * <p>
-	 * <i>This is an optional method, this is just more convenient than doing so manually!</i>
-	 * </p>
 	 * @return a writable version of this buffer
 	 */
 	public ByteBuffer getWritableBuffer() {
@@ -170,7 +167,7 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Checks if more space needs to be allocated.
+	 * Expands this buffer if more space needs to be allocated
 	 */
 	private void ensureCapacity(final int amount) {
 		if (buf.remaining() >= amount) {
