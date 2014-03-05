@@ -12,21 +12,9 @@ public class BufferUtil {
 	public static byte[] encodeJTF(final String string) {
 
 		// Skip the linear-time counting iteration
-		//int len = 0;
-		// Skip this linear iteration
 		final char[] chrArr = string.toCharArray();
-		//		for (final char c : chrArr) {
-		//			if (c < 0x80) {
-		//				len++;
-		//			}
-		//			else if (c < 0x3fff) {
-		//				len += 2;
-		//			}
-		//			else {
-		//				len += 3;
-		//			}
-		//		}
-		final byte[] encoded = new byte[string.length() * 3];//len];
+		// We can assume max length (len * 3)
+		final byte[] encoded = new byte[string.length() * 3];
 		int idx = 0;
 		for (final int chr : chrArr) {
 			if (chr < 0x80) {
@@ -42,8 +30,7 @@ public class BufferUtil {
 				encoded[idx++] = (byte) (chr >>> 14);
 			}
 		}
-
-		// Should be faster
+		// Skip constant time and use arraycopy
 		final byte[] sizedEncoded = new byte[idx];
 		System.arraycopy(encoded, 0, sizedEncoded, 0, idx);
 		return sizedEncoded;
@@ -84,12 +71,23 @@ public class BufferUtil {
 		return new String(chars, 0, count);
 	}
 
+	/**
+	 * Gets a JTF String from the specified {@code ByteBuffer}
+	 * @param buf the {@code ByteBuffer} that contains the {@code String}
+	 * @return the decoded {@code String}
+	 */
 	public static String getJTF(final ByteBuffer buf) {
 		final byte[] enc = new byte[buf.getShort() & 0xffff];
 		buf.get(enc);
 		return decodeJTF(enc);
 	}
 
+	/**
+	 * Encodes the specified {@code String} to JTF and puts it into the specified {@code ByteBuffer}
+	 * @param buf the {@code ByteBuffer} to encode the {@code String} into
+	 * @param str the {@code String} to encode
+	 * @return the modified {@code ByteBuffer}
+	 */
 	public static ByteBuffer putJTF(final ByteBuffer buf, final String str) {
 		final byte[] toEnc = encodeJTF(str);
 		return buf.putShort((short) toEnc.length).put(toEnc);
