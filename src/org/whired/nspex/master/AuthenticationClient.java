@@ -67,9 +67,6 @@ public class AuthenticationClient implements AuthenticationListener {
 								slavesReceived(slaves);
 							}
 						break;
-						case Opcodes.CONFIRM_ISP_CHANGE:
-							promptISPChange(payload.getLong());
-						break;
 						case Opcodes.LOGIN_WITH_SESSION:
 							sessionIDReceived(BufferUtil.getJTF(rsaSess.decrypt(payload)));
 						break;
@@ -98,7 +95,7 @@ public class AuthenticationClient implements AuthenticationListener {
 		comm.send(Opcodes.RSA_KEY_REQUEST, rsaKeys.getPublicKeySpec());
 	}
 
-	public void login(final String ip, final String user, final String password) throws  IOException, GeneralSecurityException {
+	public void login(final String ip, final String user, final String password) throws IOException, GeneralSecurityException {
 		comm = new IoCommunicable(new Socket(ip, 43597)) {
 
 			@Override
@@ -132,9 +129,6 @@ public class AuthenticationClient implements AuthenticationListener {
 								slavesReceived(slaves);
 							}
 						break;
-						case Opcodes.CONFIRM_ISP_CHANGE:
-							promptISPChange(payload.getLong());
-						break;
 						case Opcodes.LOGIN_WITH_SESSION:
 							sessionIDReceived(BufferUtil.getJTF(rsaSess.decrypt(payload)));
 						break;
@@ -162,14 +156,6 @@ public class AuthenticationClient implements AuthenticationListener {
 		comm.send(Opcodes.RSA_KEY_REQUEST, rsaKeys.getPublicKeySpec());
 	}
 
-	/**
-	 * Confirms a change of ISP
-	 * @param allow whether or not to allow the change
-	 */
-	public void confirmISPChange(boolean allow) {
-		comm.send(Opcodes.CONFIRM_ISP_CHANGE, ByteBuffer.allocate(1).put((byte) (allow ? 1 : 0)));
-	}
-
 	@Override
 	public void slavesReceived(RemoteSlave[] slaves) {
 		listener.slavesReceived(slaves);
@@ -188,11 +174,6 @@ public class AuthenticationClient implements AuthenticationListener {
 	@Override
 	public void sessionIDReceived(String lsessionId) {
 		listener.sessionIDReceived(lsessionId);
-	}
-
-	@Override
-	public void promptISPChange(long timeout) {
-		listener.promptISPChange(timeout);
 	}
 
 	@Override

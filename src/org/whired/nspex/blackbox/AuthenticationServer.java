@@ -15,7 +15,6 @@ import org.whired.nspex.net.Communicable;
 import org.whired.nspex.net.ExpandableByteBuffer;
 import org.whired.nspex.net.NioCommunicable;
 import org.whired.nspex.net.NioServer;
-import org.whired.nspex.tools.IpUtil;
 import org.whired.nspex.tools.RSAKeySet;
 import org.whired.nspex.tools.RSASession;
 import org.whired.nspex.tools.logging.Log;
@@ -25,7 +24,6 @@ import org.whired.nspex.tools.logging.Log;
  * @author Whired
  */
 public class AuthenticationServer {
-	private final static long IP_CHANGE_TIMEOUT = TimeUnit.DAYS.toMillis(3);
 	private NioServer server;
 
 	/**
@@ -66,14 +64,14 @@ public class AuthenticationServer {
 					@Override
 					public void handle(final int id, final ByteBuffer payload) {
 						if (rsaSess == null && id != Opcodes.RSA_KEY_REQUEST) {
-							// We don't care why, but we aren't getting the keyspec
+							// We don't care why, but we didn't get the keyspec
 							remoteLog(Level.SEVERE, "RSA keyspec expected");
 							disconnect();
 						}
 						switch (id) {
 							case Opcodes.RSA_KEY_REQUEST:
 								try {
-									// Get remote public key spec
+									// Get remote public keyspec
 									rsaSess = new RSASession(rsaKeys, payload);
 
 									// Send local public key
@@ -101,45 +99,7 @@ public class AuthenticationServer {
 									try {
 										ResultSet rs = database.executeQuery("SELECT user_password,user_ip,last_ip_change FROM user WHERE user_id = '" + userid + "'");
 										if (rs.next() && rs.getString(1).equals(pass)) {
-
-											// Password is right, grab the ISP from WHOIS db
-											String lastHost = rs.getString(2);
-
-											Log.l.config("[" + this + "] last host: " + lastHost);
-											WhoisInfo wii = WhoisInfo.fromARINJSON(WhoisInfoDownloader.getArinWhoisJson(lastHost));
-											Log.l.info("wii: " + wii.getName() + " start: " + wii.getStartAddress() + " end: " + wii.getEndAddress() + " +/-: " + (wii.getEndAddress() - wii.getStartAddress()));
-
-											if (!wii.withinRange(IpUtil.ip4ToInt(this.toString()))) {
-
-												// ISP has changed
-												long lastChange = rs.getLong(3);
-												Log.l.config("ISP region has changed. lastChange=" + lastChange);
-
-												// Check if client is allowed a mulligan
-												if (System.currentTimeMillis() - IP_CHANGE_TIMEOUT > lastChange) {
-
-													// Warn client that he can change, but at a cost
-													send(Opcodes.CONFIRM_ISP_CHANGE, ByteBuffer.allocate(8).putLong(IP_CHANGE_TIMEOUT));
-
-													// Wait (shortly) for a response
-													setReadTimeout(TimeUnit.SECONDS.toMillis(20));
-													rs.close();
-													return;
-												}
-												else {
-													// Hasn't been long enough
-													// Let's give them a rough idea so they don't spam us (Y U NO WORK??)
-													final long remaining = lastChange - System.currentTimeMillis() + IP_CHANGE_TIMEOUT;
-													remoteLog(Level.SEVERE, String.format("ISP region changed too recently, try again in %.1f days", remaining / 1000d / 60d / 60d / 24d));
-
-													// Bounce them
-													disconnect();
-													return;
-												}
-
-											}
-
-											// Everything is sorted, let's get this guy his slaves
+											// Send the slave list
 											sendSlaves(true);
 										}
 										else {
@@ -175,33 +135,6 @@ public class AuthenticationServer {
 								}
 								catch (Throwable e1) {
 									e1.printStackTrace();
-								}
-							break;
-							case Opcodes.CONFIRM_ISP_CHANGE:
-								boolean allow = payload.get() == 1;
-								if (allow) {
-									// Update database
-									try {
-										Log.l.info("Updating IP: " + this);
-										database.executeStatement("UPDATE user SET last_ip_change='" + System.currentTimeMillis() + "', user_ip='" + this + "' WHERE user_id='" + userid + "'", true);
-									}
-									catch (SQLException e) {
-										Log.l.log(Level.SEVERE, "Error while updating user info: ", e);
-										// Sucks for them, but we can't risk it
-										disconnect();
-									}
-									try {
-										sendSlaves(true);
-									}
-									catch (SQLException e) {
-										// Doesn't really affect us
-										Log.l.log(Level.WARNING, "Error while fetching slaves: ", e);
-									}
-								}
-								else {
-									// Toodles!
-									remoteLog(Level.INFO, "Cancelling. Sorry for any inconvenience");
-									disconnect();
 								}
 							break;
 						}

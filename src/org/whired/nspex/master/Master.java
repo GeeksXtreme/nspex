@@ -7,8 +7,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.security.GeneralSecurityException;
 import java.util.logging.Level;
 
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -107,18 +105,6 @@ public class Master {
 					public void sessionIDReceived(final String lsessionId) {
 						sessionId = lsessionId;
 						Log.l.info("Received sessionId: " + sessionId);
-					}
-
-					@Override
-					public void promptISPChange(final long timeout) {
-						SwingUtilities.invokeLater(new Runnable() {
-
-							@Override
-							public void run() {
-								final int res = JOptionPane.showConfirmDialog(frame, String.format("Your ISP differs from the one on file\nIt is allowed to change once every %.1f days.\n\nElect to change?", timeout / 1000d / 60d / 60d / 24d));
-								ac.confirmISPChange(res == JOptionPane.YES_OPTION);
-							}
-						});
 					}
 
 					@Override
