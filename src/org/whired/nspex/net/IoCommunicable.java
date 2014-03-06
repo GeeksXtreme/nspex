@@ -6,33 +6,48 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.whired.nspex.tools.logging.Log;
 
+/**
+ * A communicable that utilizes {@code java.io} streams
+ * @author whired
+ */
 public abstract class IoCommunicable extends Communicable {
+	/** The input stream for this communicable */
 	private final DataInputStream dis;
+	/** The output stream for this communicable */
 	private final DataOutputStream dos;
+	/** The socket for this communicable */
 	private final Socket socket;
 
+	/**
+	 * Creates a new IO communicable for the specified {@code Socket}
+	 * @param socket the socket for that this communicable will use
+	 * @throws IOException
+	 */
 	public IoCommunicable(final Socket socket) throws IOException {
+		// Provide the host name
 		super(((InetSocketAddress) socket.getRemoteSocketAddress()).getAddress().getHostAddress());
 		this.socket = socket;
 		dis = new DataInputStream(socket.getInputStream());
 		dos = new DataOutputStream(socket.getOutputStream());
 
+		// IO streams block, create a new thread
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				int op;
+				int op; // The op code
 				try {
 					while ((op = dis.read()) != -1) {
-						op &= 0xFF; // Unsign
+						op &= 0xFF; // Unsign the byte
 						socket.setSoTimeout(3500);
-						int fillLen = dis.readInt();
+						int fillLen = dis.readInt(); // Read the length of the packet
 						final byte[] toFill = new byte[fillLen];
 						if (toFill.length > 0) {
-							dis.readFully(toFill);
+							dis.readFully(toFill); // Read the packet
 							Log.l.fine("[" + IoCommunicable.this + "] Packet received=" + op + " length=" + toFill.length);
 							ByteBuffer payload = ByteBuffer.wrap(toFill).asReadOnlyBuffer();
 							if (op != REMOTE_LOG) {
@@ -46,12 +61,15 @@ public abstract class IoCommunicable extends Communicable {
 							Log.l.fine("[" + IoCommunicable.this + "] Packet received=" + op + " length=0");
 							handle(op);
 						}
-						socket.setSoTimeout(60000 * 30);
+						socket.setSoTimeout((int) TimeUnit.MINUTES.toMillis(30)); // Wait up to 30 minutes for a new packet
 					}
 				}
 				catch (final IOException e) {
+					Log.l.log(Level.FINE, "", e);
 				}
-				disconnect();
+				finally {
+					disconnect();
+				}
 			}
 		}).start();
 	}
@@ -63,13 +81,14 @@ public abstract class IoCommunicable extends Communicable {
 			dos.write(id);
 		}
 		catch (final IOException e) {
+			Log.l.log(Level.FINE, "", e);
 			disconnect();
 		}
 	}
 
 	@Override
 	protected final int read() throws IOException {
-		return 0;
+		return 0; // Reads are done internally, so this is unused
 	}
 
 	@Override
@@ -86,6 +105,7 @@ public abstract class IoCommunicable extends Communicable {
 			dos.write(raw);
 		}
 		catch (final IOException e) {
+			Log.l.log(Level.FINE, "", e);
 			disconnect();
 		}
 	}
@@ -93,14 +113,15 @@ public abstract class IoCommunicable extends Communicable {
 	@Override
 	public final void disconnect() {
 		if (connected) {
-			Log.l.config("[" + this + "] Disconnected");
 			connected = false;
 			try {
 				socket.close();
 			}
 			catch (final IOException e) {
+				Log.l.log(Level.FINE, "", e);
 			}
 			disconnected();
+			Log.l.config("[" + this + "] Disconnected");
 		}
 	}
 }

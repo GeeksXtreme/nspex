@@ -212,7 +212,7 @@ public class Master {
 	}
 
 	public static void main(final String[] args) throws InterruptedException, InvocationTargetException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException, FileNotFoundException, IOException, GeneralSecurityException {
-		Log.l.setLevel(Level.INFO);
+		Log.l.setLevel(Level.FINE);
 
 		// Obtain slaves from overlord
 		// (We don't really know how to obtain overlord's IP yet..)
