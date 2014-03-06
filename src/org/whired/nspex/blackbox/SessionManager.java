@@ -20,16 +20,7 @@ public class SessionManager {
 	// The amount of time that should pass before sessions are pruned
 	private final static long TIME_BETWEEN_PRUNES_MS = TimeUnit.MINUTES.toMillis(10);
 	// The amount of time that is allowed to pass before a session is considered invalid
-	private final static long CONSIDERED_INVALID_MS = TimeUnit.MINUTES.toMillis(30);
-
-	/**
-	 * Checks whether or not the specified ip has a session
-	 * @param ip the ip to check
-	 * @return {@code true} if a session exists, otherwise {@code false}
-	 */
-	public boolean hasSession(final String ip) {
-		return sessions.containsKey(ip);
-	}
+	private final static long LIFESPAN_MS = TimeUnit.MINUTES.toMillis(30);
 
 	/**
 	 * Gets a session id for the specified ip
@@ -42,7 +33,7 @@ public class SessionManager {
 
 		Session session = sessions.get(ip);
 		if (session == null) {
-			session = new Session(DigestUtils.sha256Hex(ip + System.currentTimeMillis() + "$5a4lL7t"));
+			session = new Session(DigestUtils.sha256Hex(ip + (int) (Math.random() * Integer.MAX_VALUE)), LIFESPAN_MS);
 			sessions.put(ip, session);
 		}
 		return session.getSessionId();
@@ -56,7 +47,20 @@ public class SessionManager {
 	 */
 	public boolean sessionValid(final String ip, final String sessionId) {
 		final Session session = sessions.get(ip);
-		return session != null && session.getSessionId().equals(sessionId);
+		if (session != null && session.getSessionId().equals(sessionId)) { // Check that the session exists and matches
+			if (!session.hasExpired()) {
+				session.renew(); // Session is still good, renew
+				return true;
+			}
+			else {
+				Log.l.fine("Removing expired session for " + ip);
+				sessions.remove(ip); // Session has expired, remove
+				return false;
+			}
+		}
+		else {
+			return false;
+		}
 	}
 
 	/**
@@ -66,58 +70,13 @@ public class SessionManager {
 		if (System.currentTimeMillis() - lastPruneTime > TIME_BETWEEN_PRUNES_MS) {
 			int before = sessions.size();
 			Iterator<Session> it = sessions.values().iterator();
-			Session session;
 			while (it.hasNext()) {
-				session = it.next();
-				if (isInvalid(session)) {
+				if (it.next().hasExpired()) {
 					it.remove();
 				}
 			}
 			lastPruneTime = System.currentTimeMillis();
-			Log.l.info("Pruned invalid sessions=" + (before - sessions.size()));
-		}
-	}
-
-	/**
-	 * Checks whether or not a session is invalid
-	 * @param session the session to check
-	 */
-	public boolean isInvalid(final Session session) {
-		return System.currentTimeMillis() - session.getCreateTime() > CONSIDERED_INVALID_MS;
-	}
-
-	/**
-	 * A session
-	 * @author Whired
-	 */
-	private final class Session {
-		/** The id for this session */
-		private final String sessionId;
-		/** The time this session was created, in ms */
-		private final long createTime = System.currentTimeMillis();
-
-		/**
-		 * Creates a new session with the specified session id
-		 * @param sessionId the session id for the session to create
-		 */
-		public Session(final String sessionId) {
-			this.sessionId = sessionId;
-		}
-
-		/**
-		 * Gets the session id for this session
-		 * @return the session id
-		 */
-		public String getSessionId() {
-			return this.sessionId;
-		}
-
-		/**
-		 * Gets the create time of this session
-		 * @return the last activity of this session, in MS
-		 */
-		public final long getCreateTime() {
-			return this.createTime;
+			Log.l.info("Pruned expired sessions=" + (before - sessions.size()));
 		}
 	}
 }
