@@ -15,14 +15,14 @@ public class ExpandableByteBuffer {
 	private ByteBuffer buf;
 
 	/**
-	 * Creates a new expandable {@link ByteBuffer} by allocating a new buffer with the default buffer size ({@link Constants#BUFFER_SIZE}).
+	 * Creates a new expandable {@link ByteBuffer}
 	 */
 	public ExpandableByteBuffer() {
 		this.buf = ByteBuffer.allocate(BUFFER_SIZE);
 	}
 
 	/**
-	 * Creates a new expandable {@link ByteBuffer}, initializing the ByteBuffer instance stored using the provided one.
+	 * Creates a new expandable {@link ByteBuffer} containing data from the specified {@code ByteBuffer}
 	 * @param buf
 	 */
 	public ExpandableByteBuffer(final ByteBuffer buf) {
@@ -38,8 +38,9 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Puts a single byte into the buffer.
+	 * Puts a {@code byte} into this buffer
 	 * @param b
+	 * @return this buffer, for chaining
 	 */
 	public ExpandableByteBuffer put(final int b) {
 		ensureCapacity(1);
@@ -48,8 +49,9 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Puts an array of bytes into the buffer.
+	 * Puts a {@code byte[]} into this buffer
 	 * @param bytes
+	 * @return this buffer, for chaining
 	 */
 	public ExpandableByteBuffer put(final byte[] bytes) {
 		ensureCapacity(bytes.length);
@@ -58,10 +60,11 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Puts an array of bytes from the specified offset into the buffer.
+	 * Puts a {@code byte[]} into this buffer
 	 * @param bytes
-	 * @param offset
-	 * @param length
+	 * @param offset the offset in the array to begin copying from
+	 * @param length the length of bytes in the array to copy
+	 * @return this buffer, for chaining
 	 */
 	public ExpandableByteBuffer put(final byte[] bytes, final int offset, final int length) {
 		ensureCapacity(length);
@@ -70,8 +73,9 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Puts the data from another {@link ByteBuffer} into this buffer.
-	 * @param from
+	 * Puts the data from another {@link ByteBuffer} into this buffer
+	 * @param from the {@code ByteBuffer} to copy information from
+	 * @return this buffer, for chaining
 	 */
 	public ExpandableByteBuffer put(final ByteBuffer from) {
 		ensureCapacity(from.capacity() - from.remaining());
@@ -80,8 +84,9 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Puts a character into the the buffer.
+	 * Puts the specified {@code char} into the this buffer
 	 * @param c
+	 * @return this buffer, for chaining
 	 */
 	public ExpandableByteBuffer putChar(final char c) {
 		ensureCapacity(2);
@@ -90,8 +95,9 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Puts a short into the buffer.
+	 * Puts the specified {@code short} into this buffer
 	 * @param s
+	 * @return this buffer, for chaining
 	 */
 	public ExpandableByteBuffer putShort(final short s) {
 		ensureCapacity(2);
@@ -100,8 +106,9 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Puts an integer into the buffer.
+	 * Puts the specified {@code int} into this buffer
 	 * @param i
+	 * @return this buffer, for chaining
 	 */
 	public ExpandableByteBuffer putInt(final int i) {
 		ensureCapacity(4);
@@ -110,8 +117,9 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Puts a float into the buffer.
+	 * Puts the specified {@code float} into this buffer
 	 * @param f
+	 * @return this buffer, for chaining
 	 */
 	public ExpandableByteBuffer putFloat(final float f) {
 		ensureCapacity(4);
@@ -120,8 +128,9 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Puts a double into the buffer.
+	 * Puts the specified {@code double} into this buffer
 	 * @param d
+	 * @return this buffer, for chaining
 	 */
 	public ExpandableByteBuffer putDouble(final double d) {
 		ensureCapacity(8);
@@ -130,8 +139,9 @@ public class ExpandableByteBuffer {
 	}
 
 	/**
-	 * Puts a long into the buffer.
+	 * Puts the specified {@code long} into this buffer
 	 * @param l
+	 * @return this buffer, for chaining
 	 */
 	public ExpandableByteBuffer putLong(final long l) {
 		ensureCapacity(8);
@@ -139,6 +149,11 @@ public class ExpandableByteBuffer {
 		return this;
 	}
 
+	/**
+	 * Encodes the specified {@code String} to JTF and puts it into this buffer
+	 * @param s
+	 * @return this buffer, for chaining
+	 */
 	public ExpandableByteBuffer putJTF(final String s) {
 		final byte[] enc = BufferUtil.encodeJTF(s);
 		ensureCapacity(2 + enc.length);
