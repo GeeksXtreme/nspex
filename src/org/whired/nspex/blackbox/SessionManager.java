@@ -23,7 +23,7 @@ public class SessionManager {
 	private final static long LIFESPAN_MS = TimeUnit.MINUTES.toMillis(30);
 
 	/**
-	 * Gets a session id for the specified ip
+	 * Gets a session id for the specified ip. If no session exists, one is created.
 	 * @param ip the ip to get a session id for
 	 * @return the session id that was created
 	 */

@@ -36,16 +36,12 @@ public class AuthenticationServer {
 	 * @throws ClassNotFoundException
 	 * @throws SQLException
 	 */
-	public AuthenticationServer(final int port) throws GeneralSecurityException, SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
-
+	public AuthenticationServer(final int port, final AccountManager accountManager, final SQLiteDatabase database) throws GeneralSecurityException, SQLException, ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
 		// Set up RSA session
 		final RSAKeySet rsaKeys = RSAKeySet.generateKeys(1024);
 
 		// Set up session manager
 		final SessionManager sessionManager = new SessionManager();
-
-		Log.l.info("Initializing database..");
-		final SQLiteDatabase database = new SQLiteDatabase("", "ispx_db");
 
 		server = new NioServer(port) {
 
@@ -65,7 +61,7 @@ public class AuthenticationServer {
 					public void handle(final int id, final ByteBuffer payload) {
 						if (rsaSess == null && id != Opcodes.RSA_KEY_REQUEST) {
 							// We don't care why, but we didn't get the keyspec
-							remoteLog(Level.SEVERE, "RSA keyspec expected");
+							remoteLog(Level.SEVERE, "Unable to secure connection");
 							disconnect();
 						}
 						switch (id) {
@@ -82,24 +78,39 @@ public class AuthenticationServer {
 									disconnect();
 								}
 							break;
+							case Opcodes.CREATE_ACCOUNT:
+								try {
+									final ByteBuffer decPay = rsaSess.decrypt(payload);
+									userid = BufferUtil.getJTF(decPay);
+									// Create account, send session id back
+									if (!accountManager.accountExists(userid)) {
+										// TODO Might want to do some password strength testing here
+										accountManager.createAccount(userid, BufferUtil.getJTF(decPay));
+									}
+									else {
+										remoteLog(Level.SEVERE, "User already exists!");
+										disconnect();
+									}
+									remoteLog(Level.INFO, "Welcome to nSpex, " + userid);
+									send(Opcodes.LOGIN_WITH_SESSION, rsaSess.encrypt(new ExpandableByteBuffer().putJTF(sessionId).asByteBuffer()));
+								}
+								catch (Throwable t) {
+									t.printStackTrace();
+									disconnect();
+								}
+							break;
 							case Opcodes.LOGIN:
 								try {
 									final ByteBuffer decPay = rsaSess.decrypt(payload);
 
-									// Get client's details
-									String pass;
-
-									// Bake the cake
-									userid = org.apache.commons.codec.digest.DigestUtils.sha512Hex("do%c.a19*'XmwUlm)~xr" + BufferUtil.getJTF(decPay) + "dIliHw308f@(,3s09fu~");
-									pass = org.apache.commons.codec.digest.DigestUtils.sha512Hex("dIliHw308f@(,3s09fu~" + BufferUtil.getJTF(decPay) + "do%c.a19*'XmwUlm)~xr");
+									// Get user's details
+									userid = BufferUtil.getJTF(decPay);
+									final String pass = BufferUtil.getJTF(decPay);
 
 									Log.l.config("[" + this + "] userid: " + userid + " userpass: " + pass);
 
-									// Now we can use the details
 									try {
-										ResultSet rs = database.executeQuery("SELECT user_password,user_ip,last_ip_change FROM user WHERE user_id = '" + userid + "'");
-										if (rs.next() && rs.getString(1).equals(pass)) {
-											// Send the slave list
+										if (accountManager.credentialsValid(userid, pass)) {
 											sendSlaves(true);
 										}
 										else {
@@ -108,10 +119,11 @@ public class AuthenticationServer {
 											remoteLog(Level.SEVERE, "Invalid login");
 											disconnect();
 										}
-										rs.close();
 									}
 									catch (final SQLException e) {
-										e.printStackTrace();
+										Log.l.log(Level.SEVERE, "Unable to access database: ", e);
+										remoteLog(Level.SEVERE, "Unable to verify credentials");
+										disconnect();
 									}
 								}
 								catch (final Exception e) {
@@ -197,6 +209,9 @@ public class AuthenticationServer {
 
 	public static void main(final String[] args) throws Throwable {
 		Log.l.setLevel(Level.ALL);
-		new AuthenticationServer(43597);
+		Log.l.info("Initializing database..");
+		final SQLiteDatabase database = new SQLiteDatabase("", "ispx_db");
+		final AccountManager accountManager = new AccountManager(database);
+		new AuthenticationServer(43597, accountManager, database);
 	}
 }
